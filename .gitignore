@@ -28,5 +28,12 @@
 
 # Executables
 *.exe
+/bin/game.exe
 *.out
 *.app
+
+# IDE shit(vscode)
+*.pdb
+bin/*.pdb
+*.obj
+bin/*.ilk
