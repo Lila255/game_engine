@@ -1,11 +1,16 @@
 #pragma once
 #include <cstdint>
 #include <unordered_set>
+#include <unordered_map>
 
-// #include "util.hpp"
+#include "util.hpp"
 
 namespace game_engine
 {
+    struct engine;
+
+    engine * game_engine_pointer;
+
 
     struct component
     {
@@ -56,11 +61,12 @@ namespace game_engine
     struct engine
     {
     private:
-        std::unordered_set<system *> m_systems;
+        // std::unordered_set<system *> m_systems;
+        std::unordered_map<uint32_t, system *> m_systems;
         std::unordered_set<entity, entity::hash> m_entities;
 
     public:
-        engine() = default;
+        engine() { game_engine_pointer = this;};
         engine(const engine &) = delete;
         engine(engine &&) = delete;
         engine &operator=(const engine &) = delete;
@@ -77,17 +83,18 @@ namespace game_engine
             // Update all graphics systems
         }
 
-        void add_system(system *sys)
+        void add_system(uint32_t type, system *sys)
         {
-            m_systems.insert(sys);
+            m_systems.insert(std::make_pair(type, sys));
+            // m_systems.insert(sys);
         }
 
-        void remove_system(system *sys)
+        void remove_system(uint32_t type)
         {
             // Remove the system from the vector if it contains it
-            if (m_systems.count(sys) > 0)
+            if (m_systems.count(type) > 0)
             {
-                m_systems.erase(sys);
+                m_systems.erase(type);
             }
         }
 

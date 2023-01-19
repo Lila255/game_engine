@@ -9,8 +9,10 @@ void run_game(GLFWwindow * window) {
     // Create the engine and systems
     game_engine::engine eng;
     game_engine::box_system * box_sys = new game_engine::box_system();
-    eng.add_system(box_sys);
-    
+    eng.add_system(game_engine::family::type<game_engine::box_system>(), box_sys);
+    game_engine::render_system * render_sys = new game_engine::render_system(window);
+    eng.add_system(game_engine::family::type<game_engine::render_system>(), render_sys);
+            
 
 
     // Create the game world
@@ -20,14 +22,14 @@ void run_game(GLFWwindow * window) {
     // Add components to entities
 
     // Run the game loop
-
+    while(!glfwWindowShouldClose(window)) {
     //    Move entities/do physics
     //    Raycast from player
     //    Create light texture
     //    Render: background -> entities -> lights -> UI
-    //    Update UI
-
-    //    Repeat
+    //    Update UI(?)
+        render_sys->update();
+    }
     
     // Learn how to do audio
     // Learn how to do chunk switching

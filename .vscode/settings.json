@@ -28,6 +28,26 @@
         "iosfwd": "cpp",
         "typeinfo": "cpp",
         "unordered_set": "cpp",
-        "xhash": "cpp"
+        "xhash": "cpp",
+        "array": "cpp",
+        "atomic": "cpp",
+        "clocale": "cpp",
+        "cmath": "cpp",
+        "ctime": "cpp",
+        "list": "cpp",
+        "unordered_map": "cpp",
+        "ios": "cpp",
+        "iostream": "cpp",
+        "istream": "cpp",
+        "iterator": "cpp",
+        "memory": "cpp",
+        "ostream": "cpp",
+        "streambuf": "cpp",
+        "system_error": "cpp",
+        "xfacet": "cpp",
+        "xiosbase": "cpp",
+        "xlocale": "cpp",
+        "xlocinfo": "cpp",
+        "xlocnum": "cpp"
     }
 }

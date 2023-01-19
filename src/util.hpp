@@ -24,4 +24,18 @@ namespace game_engine
     //         return std::hash<uint32_t>{}(e.m_id);
     //     }
     // };
+
+    struct family {
+    private:
+        static uint32_t identifier() noexcept {
+            static uint32_t id = 0;
+            return id++;
+        }
+    public:
+        template<typename>
+        static uint32_t type() noexcept {
+            static const uint32_t id = identifier();
+            return id;
+        }
+    };
 }
