@@ -29,6 +29,12 @@ namespace game_engine {
         uint32_t id;
     };
 
+    /// @brief A Box2D component that stores a body
+    struct box2d_body : public component {
+        uint32_t id;
+    }; 
+ 
+
 
 
     //////////////
