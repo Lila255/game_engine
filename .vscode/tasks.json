@@ -5,11 +5,19 @@
             "label": "C/C++: cl.exe build workspace",
             "command": "cl.exe",
             "args": [
+                "/std:c++latest",
+                "/I../libraries/glfw-3.3.8.bin.WIN64/include/",
+                "/I../libraries/glew-2.1.0/include",
                 "/Zi",
                 "/EHsc",
                 "/nologo",
                 "/Febin/game.exe",
-                "src/*.cpp"
+                "src/*.cpp",
+                "/link",
+                "../libraries/glfw-3.3.8.bin.WIN64/lib-vc2022/glfw3dll.lib",
+                "../libraries/glew-2.1.0/lib/Release/x64/glew32.lib",
+                "opengl32.lib",
+
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

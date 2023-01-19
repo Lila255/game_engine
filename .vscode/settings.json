@@ -26,6 +26,8 @@
         "cctype": "cpp",
         "string": "cpp",
         "iosfwd": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "unordered_set": "cpp",
+        "xhash": "cpp"
     }
 }
