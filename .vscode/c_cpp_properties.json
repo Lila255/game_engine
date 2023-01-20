@@ -6,7 +6,7 @@
                 "${workspaceFolder}/**",
                 "../libraries/glfw-3.3.8.bin.WIN64/include/GLFW/*",
                 "../libraries/glfw-3.3.8.bin.WIN64/include",
-                "../libraries/glew-2.1.0/**",
+                // "../libraries/glew-2.1.0/**",
                 "../libraries/glew-2.1.0/include"
             ],
             "defines": [

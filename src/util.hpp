@@ -1,9 +1,13 @@
 #pragma once
+
 #include <cstddef>
 #include <cstdlib>
 #include <unordered_map>
+#include <queue>
 
-#include "engine_core.hpp"
+#include "PerlinNoise.hpp"
+#include "opengl_util.hpp"
+// #include "engine_core.hpp"
 
 namespace game_engine
 {
@@ -38,4 +42,33 @@ namespace game_engine
             return id;
         }
     };
+
+    struct id_generator {
+    public:
+        static uint32_t generate() noexcept ;// {
+            // static uint32_t current_max = 0;
+            // static std::priority_queue<uint32_t> free_ids;
+            
+            // printf("Free is empty: %d\n", free_ids.empty());
+            // if (free_ids.empty()) {
+            //     return current_max++;
+            // } else {
+            //     uint32_t id = free_ids.top();
+            //     free_ids.pop();
+            //     return id;
+            // }
+        // }
+
+
+        static void free_id(uint32_t id) noexcept;// {
+        //     static std::priority_queue<uint32_t> free_ids;
+        //     free_ids.push(id);
+        //     if(free_ids.empty()) {
+        //         printf("Error: free_ids is empty\n");
+        //     } else {
+        //         printf("free_ids is not empty: %d\n", free_ids.size());
+        //     }
+        // }
+    };
+
 }

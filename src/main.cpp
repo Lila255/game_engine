@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 
 #include "engine_comp.hpp"
+#include "game_core.hpp"
 
 void run_game(GLFWwindow * window) {
     // Create the engine and systems
@@ -12,8 +13,18 @@ void run_game(GLFWwindow * window) {
     eng.add_system(game_engine::family::type<game_engine::box_system>(), box_sys);
     game_engine::render_system * render_sys = new game_engine::render_system(window);
     eng.add_system(game_engine::family::type<game_engine::render_system>(), render_sys);
-            
 
+    game::world_tile_system * world_sys = new game::world_tile_system();
+    eng.add_system(game_engine::family::type<game::world_tile_system>(), world_sys);
+ 
+    world_sys->generate_world();
+
+    game_engine::texture background_texture;
+    game_engine::texture foreground_texture;
+    game_engine::texture light_texture;
+
+    game_engine::create_texture_from_data(background_texture, 800, 600, 1);
+    
 
     // Create the game world
 

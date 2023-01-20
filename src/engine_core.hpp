@@ -1,4 +1,6 @@
 #pragma once
+
+
 #include <cstdint>
 #include <unordered_set>
 #include <unordered_map>
@@ -8,7 +10,6 @@
 namespace game_engine
 {
     struct engine;
-
     engine * game_engine_pointer;
 
 
@@ -89,6 +90,17 @@ namespace game_engine
             // m_systems.insert(sys);
         }
 
+        system * get_system(uint32_t type)
+        {
+            // Get the system from the vector if it contains it
+            if (m_systems.count(type) > 0)
+            {
+                return m_systems[type];
+            }
+
+            return nullptr;
+        }
+
         void remove_system(uint32_t type)
         {
             // Remove the system from the vector if it contains it
@@ -109,9 +121,9 @@ namespace game_engine
             if (m_entities.count(ent) > 0)
             {
                 m_entities.erase(ent);
+                game_engine::id_generator::free_id(ent.m_id);
             }
         }
-
     };
 }
 
