@@ -9,8 +9,10 @@
 void run_game(GLFWwindow * window) {
     // Create the engine and systems
     game_engine::engine eng;
+    
     game_engine::box_system * box_sys = new game_engine::box_system();
     eng.add_system(game_engine::family::type<game_engine::box_system>(), box_sys);
+    
     game_engine::render_system * render_sys = new game_engine::render_system(window);
     eng.add_system(game_engine::family::type<game_engine::render_system>(), render_sys);
 
@@ -23,7 +25,7 @@ void run_game(GLFWwindow * window) {
     game_engine::texture foreground_texture;
     game_engine::texture light_texture;
 
-    game_engine::create_texture_from_data(background_texture, 800, 600, 1);
+    // game_engine::create_texture_from_data(background_texture, 800, 600, 1);
     
 
     // Create the game world

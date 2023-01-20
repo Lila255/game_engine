@@ -34,9 +34,9 @@ namespace game_engine {
         // check for errors
         GLenum err;
         while ((err = glGetError()) != GL_NO_ERROR) {
-            printf("OpenGL error: %d (%s)\n", err, gluErrorString(err));
+            printf("OpenGL error: %d\n", err);
         }
-        
+
         
     }
 

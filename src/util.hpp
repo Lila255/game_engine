@@ -6,7 +6,6 @@
 #include <queue>
 
 #include "PerlinNoise.hpp"
-#include "opengl_util.hpp"
 // #include "engine_core.hpp"
 
 namespace game_engine

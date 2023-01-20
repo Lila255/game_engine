@@ -6,6 +6,8 @@
 #include <unordered_map>
 
 #include "util.hpp"
+#include "opengl_util.hpp"
+
 
 namespace game_engine
 {
