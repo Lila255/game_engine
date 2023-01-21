@@ -17,6 +17,9 @@ namespace game
         std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> data;
         uint16_t chunk_x;
         uint16_t chunk_y;
+        entity * background_entity;
+        entity * foreground_entity;
+        entity * light_entity;
 
         chunk() = default;
         chunk(uint16_t x, uint16_t y) : chunk_x(x), chunk_y(y)
@@ -30,7 +33,7 @@ namespace game
             {
                 for (int y = 0; y < CHUNK_SIZE; y++)
                 {
-                    double noise = perlin_noise.noise2D_01(x, y);
+                    double noise = perlin_noise.noise2D_01(x / 50.0, y / 50.0);
                     if (noise > 0.5)
                     {
                         data[x][y] = 1;
@@ -53,14 +56,28 @@ namespace game
             }
             printf("\n");
         }
+
+        void create_texture_from_chunk(GLuint & texture)
+        {
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            // set data and size
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, CHUNK_SIZE, CHUNK_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
+            // set texture parameters
+            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
+        
     };
 
     struct world_tile_system : public game_engine::system
     {
     private:
         std::array<chunk *, NUM_CHUNKS> chunk_data;
-        // std::
-        // std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *, NUM_CHUNKS> chunk_data;
+        // std::array<game_engine::entity *, NUM_CHUNKS> chunk_entities;
 
     public:
         world_tile_system()
@@ -91,11 +108,21 @@ namespace game
 
         void generate_world()
         {
-
             for (int chunk = 0; chunk < NUM_CHUNKS; chunk++)
             {
                 chunk_data[chunk]->create_chunk();
             }
+        }
+        // std::array<GLuint, NUM_CHUNKS> chunk_textures;
+
+        std::array<GLuint, NUM_CHUNKS> create_chunk_textures()
+        {
+            std::array<GLuint, NUM_CHUNKS> textures;
+            for (int chunk = 0; chunk < NUM_CHUNKS; chunk++)
+            {
+                chunk_data[chunk]->create_texture_from_chunk(textures[chunk]);
+            }
+            return textures;
         }
     };
 } // namespace game

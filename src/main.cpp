@@ -1,14 +1,12 @@
 #include <stdio.h>
-#include <GL/glew.h>
-#include <gl\GL.h>
-#include <GLFW/glfw3.h>
 
 #include "engine_comp.hpp"
 #include "game_core.hpp"
 
 void run_game(GLFWwindow * window) {
     // Create the engine and systems
-    game_engine::engine eng;
+    game_engine::engine eng{};
+    game_engine::shader_programs = load_shaders();
     
     game_engine::box_system * box_sys = new game_engine::box_system();
     eng.add_system(game_engine::family::type<game_engine::box_system>(), box_sys);
@@ -16,14 +14,27 @@ void run_game(GLFWwindow * window) {
     game_engine::render_system * render_sys = new game_engine::render_system(window);
     eng.add_system(game_engine::family::type<game_engine::render_system>(), render_sys);
 
+    game_engine::texture_vbo_system * texture_vbo_sys = new game_engine::texture_vbo_system();
+    eng.add_system(game_engine::family::type<game_engine::texture_vbo_system>(), texture_vbo_sys);
+
     game::world_tile_system * world_sys = new game::world_tile_system();
     eng.add_system(game_engine::family::type<game::world_tile_system>(), world_sys);
  
     world_sys->generate_world();
+    std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys -> create_chunk_textures();
+    // for(int i = 0; i < game::NUM_CHUNKS; i++) {
+    for(int y = 0; y < game::NUM_CHUNKS; y++) {
+        for(int x = 0; x < game::NUM_CHUNKS; x++) {
+            entity chunk_entity = eng.create_entity();
+            float top_left_x = 1 / 3.0f * x;
+            float top_left_y = 1 / 3.0f * y; 
 
-    game_engine::texture background_texture;
-    game_engine::texture foreground_texture;
-    game_engine::texture light_texture;
+            box_sys->add(chunk_entity, { top_left_x, top_left_y, 0.0f, 1.0f / 3.0f, 1.0f / 3.0f});
+            texture_vbo_sys->add(chunk_entity);
+            render_sys->add(chunk_entity, {chunk_textures[y * game::NUM_CHUNKS + x]});
+        }
+    }
+
 
     // game_engine::create_texture_from_data(background_texture, 800, 600, 1);
     

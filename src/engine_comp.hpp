@@ -8,7 +8,6 @@
 // Define engine components/systems here
 namespace game_engine
 {
-
     ////////////////
     // Components //
     ////////////////
@@ -23,14 +22,18 @@ namespace game_engine
     struct box : public component
     {
     public:
-        float x, y, w, h;
+        float x, y, z, w, h;
         box() = default;
-        box(float x, float y, float w, float h) : x(x), y(y), w(w), h(h) {}
+        box(float x, float y, float w, float h) : x(x), y(y), w(w), h(h), z(0) {}
+        box(float x, float y, float z, float w, float h) : x(x), y(y), w(w), h(h), z(z) {}
     };
+
     /// @brief A component that stores a texture id
     struct texture : public component
     {
         GLuint id;
+        texture() = default;
+        texture(GLuint id) : id(id) {}
     };
 
     /// @brief A Box2D component that stores a body
@@ -55,19 +58,91 @@ namespace game_engine
             throw std::runtime_error("box_system::update() should not be called");
         }
 
-        void add(uint32_t entity, box &&b)
+        void add(uint32_t ent, box &&b)
         {
-            m_boxes.add(entity, std::move(b));
+            m_boxes.add(ent, b);
         }
 
-        void remove(uint32_t entity)
+        void remove(uint32_t ent)
         {
-            m_boxes.remove(entity);
+            m_boxes.remove(ent);
         }
 
-        box &get(uint32_t entity)
+        box &get(uint32_t ent)
         {
-            return m_boxes.get(entity);
+            return m_boxes.get(ent);
+        }
+    };
+
+    struct texture_vbo_system : public system
+    {
+    private:
+        sparse_component_set<GLuint> m_vbos;
+        GLuint m_vao = 0;
+
+    public:
+        texture_vbo_system()
+        {
+            // Create a VAO
+            glGenVertexArrays(1, &m_vao);
+            glBindVertexArray(m_vao);
+        }
+
+        /// @brief Create a new VBO for the given entity.
+        /// @param ent The entity to create a VBO for. Entity must contain a box component to pull values from
+        void add(uint32_t ent)
+        {
+            // Bind the VAO
+            glBindVertexArray(m_vao);
+            
+            // Create a new VBO
+            GLuint vbo;
+            glGenBuffers(1, &vbo);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+            // Get the box component
+            box &b = ((box_system*)game_engine_pointer->get_system(family::type<box_system>())) -> get(ent);
+
+            // Create the vertex data
+            float vertex_data[] = {
+                b.x, b.y, b.z, 0.0f, 0.0f,
+                b.x + b.w, b.y, b.z, 1.0f, 0.0f,
+                b.x + b.w, b.y + b.h, b.z, 1.0f, 1.0f,
+                b.x, b.y + b.h, b.z, 0.0f, 1.0f
+            };
+
+            // Upload the vertex data to the GPU
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_DYNAMIC_DRAW);
+
+            // Enable the vertex attributes
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+            // Add the VBO to the sparse component set
+            m_vbos.add(ent, vbo);
+
+            // Unbind the VAO
+            glBindVertexArray(0);
+        }
+
+        /// @brief Get the VAO for this system
+        GLuint get_vao()
+        {
+            return m_vao;
+        }
+
+        /// @brief Get the VBO for the given entity
+        GLuint get_vbo(uint32_t ent)
+        {
+            return m_vbos.get(ent);
+        }
+
+        void update() override
+        {
+            // Do not call update() on this system
+            throw std::runtime_error("texture_vbo_system::update() should not be called");
         }
     };
 
@@ -75,9 +150,9 @@ namespace game_engine
     {
     private:
         sparse_component_set<texture> m_sprite_textures;
-        texture background_texture;
-        texture foreground_texture;
-        texture light_texture;
+        // texture background_texture;
+        // texture foreground_texture;
+        // texture light_texture;
 
         GLFWwindow *m_window;
         uint32_t m_frame_count = 0;
@@ -109,7 +184,41 @@ namespace game_engine
             // Do rendering stuff
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+            texture_vbo_system *texture_vbo_system_pointer = ((texture_vbo_system*)game_engine_pointer->get_system(family::type<texture_vbo_system>()));
             // draw stuff
+            glBindVertexArray(texture_vbo_system_pointer -> get_vao());
+            std::vector<uint32_t> * entities = m_sprite_textures.get_entities();
+
+            glUseProgram(shader_programs[0] );
+            for (std::vector<uint32_t>::iterator it = entities->begin(); it != entities->end(); it++)
+            {   
+                // entity e = *it;
+                texture &t = m_sprite_textures.get(*it);
+                GLuint vbo = texture_vbo_system_pointer -> get_vbo(*it);
+
+                // Bind the texture
+                glBindTexture(GL_TEXTURE_2D, t.id);
+
+                // Bind the VBO
+                glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+                // Draw the VBO
+                glDrawArrays(GL_QUADS, 0, 4);
+            }
+            glUseProgram(0);
+            // {
+            //     texture &t = pair.second;
+            //     GLuint vbo = ((texture_vbo_system*)game_engine_pointer->get_system(family::type<texture_vbo_system>())) -> get_vbo(pair.first);
+
+            //     // Bind the texture
+            //     glBindTexture(GL_TEXTURE_2D, t.id);
+
+            //     // Bind the VBO
+            //     glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+            //     // Draw the VBO
+            //     glDrawArrays(GL_QUADS, 0, 4);
+            // }
 
             glfwSwapBuffers(m_window);
             glfwPollEvents();
@@ -118,26 +227,12 @@ namespace game_engine
 
         void add(uint32_t entity, texture &&t)
         {
-            m_sprite_textures.add(entity, std::move(t));
+            m_sprite_textures.add(entity, t);
         }
 
         void remove(uint32_t entity)
         {
             m_sprite_textures.remove(entity);
         }
-
-        void set_background_texture(texture &&t)
-        {
-            background_texture = std::move(t);
-        }
-        void set_foreground_texture(texture &&t)
-        {
-            foreground_texture = std::move(t);
-        }
-        void set_light_texture(texture &&t)
-        {
-            light_texture = std::move(t);
-        }
-
     };
 }

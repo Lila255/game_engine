@@ -53,6 +53,10 @@
         "deque": "cpp",
         "queue": "cpp",
         "ranges": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "numeric": "cpp",
+        "random": "cpp",
+        "functional": "cpp",
+        "sstream": "cpp"
     }
 }
