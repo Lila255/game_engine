@@ -47,16 +47,16 @@ namespace game_engine
         }
 
         /// @brief Add an entity and its component to the set
-        /// @param entity The entity to add
+        /// @param ent The entity to add
         /// @param comp The component to add
-        void add(uint32_t entity, component_type &comp)
+        void add(uint32_t ent, component_type &comp)
         {
-            if (contains(entity))
+            if (contains(ent))
                 return;
-            if (entity >= m_capacity)
-                reserve(entity + 1);
-            m_sparse[entity] = m_size;
-            m_dense[m_size] = entity;
+            if (ent >= m_capacity)
+                reserve(ent + 1);
+            m_sparse[ent] = m_size;
+            m_dense[m_size] = ent;
             m_components[m_size] = std::move(comp);
             m_size++;
         }
@@ -78,19 +78,19 @@ namespace game_engine
 
         /// @brief Get the component asscociated with the specified entity.
         /// Will throw exception if the entity is not in the set
-        /// @param entity The entity to get the component for
+        /// @param ent The entity to get the component for
         /// @return The component associated with the entity
-        component_type &get(uint32_t entity)
+        component_type &get(uint32_t ent)
         {
-            if (!contains(entity))
+            if (!contains(ent))
             {
                 // std::string error_string = "Sparse component_type<" + typeid(component_type).name() + "> set does not contain entity: " + std::to_string(entity);
                 char *error_string = (char *)malloc(100);
-                sprintf(error_string, "sparse_component_set<%s> does not contain entity: %d\n", typeid(component_type).name(), entity);
+                sprintf(error_string, "sparse_component_set<%s> does not contain entity: %d\n", typeid(component_type).name(), ent);
                 throw std::runtime_error(error_string);
             }
 
-            return m_components[m_sparse[entity]];
+            return m_components[m_sparse[ent]];
         }
 
         /// @brief Get the number of entities in the set

@@ -92,6 +92,31 @@ namespace game_engine
         /// @param ent The entity to create a VBO for. Entity must contain a box component to pull values from
         void add(uint32_t ent)
         {
+            // Get the box component
+            box &b = ((box_system*)game_engine_pointer->get_system(family::type<box_system>())) -> get(ent);
+
+            // Create the vertex data
+            // float vertex_data[] = {
+            //     b.x, b.y, b.z, 0.0f, 0.0f,
+            //     b.x + b.w, b.y, b.z, 1.0f, 0.0f,
+            //     b.x + b.w, b.y + b.h, b.z, 1.0f, 1.0f,
+            //     b.x, b.y + b.h, b.z, 0.0f, 1.0f
+            // };
+            // verticies data   
+            float vertices[] = {
+                b.x, b.y, b.z,
+                b.x + b.w, b.y, b.z,
+                b.x + b.w, b.y + b.h, b.z,
+                b.x, b.y + b.h, b.z
+            };
+            // texture data
+            float texture_data[] = {
+                0.0f, 0.0f,
+                1.0f, 0.0f,
+                1.0f, 1.0f,
+                0.0f, 1.0f
+            };
+            
             // Bind the VAO
             glBindVertexArray(m_vao);
             
@@ -100,29 +125,27 @@ namespace game_engine
             glGenBuffers(1, &vbo);
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-            // Get the box component
-            box &b = ((box_system*)game_engine_pointer->get_system(family::type<box_system>())) -> get(ent);
-
-            // Create the vertex data
-            float vertex_data[] = {
-                b.x, b.y, b.z, 0.0f, 0.0f,
-                b.x + b.w, b.y, b.z, 1.0f, 0.0f,
-                b.x + b.w, b.y + b.h, b.z, 1.0f, 1.0f,
-                b.x, b.y + b.h, b.z, 0.0f, 1.0f
-            };
-
             // Upload the vertex data to the GPU
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(texture_data), NULL, GL_DYNAMIC_DRAW);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+            glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(texture_data), texture_data);
 
             // Enable the vertex attributes
+            // glEnableVertexAttribArray(0);
+            // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+            // glEnableVertexAttribArray(1);
+            // glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)sizeof(vertices));
+
             glEnableVertexAttribArray(0);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
             // Add the VBO to the sparse component set
             m_vbos.add(ent, vbo);
 
+            // Unbind the VB0
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
             // Unbind the VAO
             glBindVertexArray(0);
         }
@@ -160,12 +183,29 @@ namespace game_engine
     public:
         render_system(GLFWwindow *window) : m_window(window)
         {
+            printf("Error_1.5: x%d\n", glGetError());
             // Do some initialization stuff
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClearColor(0.25f, 0.0f, 0.2f, 1.0f);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
+            printf("Error_1.5: x%d\n", glGetError());
+
+            // GLint currnet_matrix_mode;
+            // glGetIntegerv(GL_MATRIX_MODE, &currnet_matrix_mode);
+            // if(currnet_matrix_mode == GL_PROJECTION) {
+            //     printf("Error: already matrix\n");
+            // }
+
+            // glMatrixMode(GL_PROJECTION);
+            // printf("Error_1.5: x%d\n", glGetError());
+            // glLoadIdentity();
+            // printf("Error_1.5: x%d\n", glGetError());
+            // glOrtho(0.0f, 1.0f * window_width, 1.0f * window_height, 0.0f, 0.0f, 1.0f);
+            // printf("Error_1.5: x%d\n", glGetError());
+            // glMatrixMode(GL_MODELVIEW);
+            // printf("Error_1.5: x%d\n", glGetError());
 
             // create textures
             // glGenTextures(1, &background_texture.id);
@@ -188,22 +228,53 @@ namespace game_engine
             // draw stuff
             glBindVertexArray(texture_vbo_system_pointer -> get_vao());
             std::vector<uint32_t> * entities = m_sprite_textures.get_entities();
-
+            
             glUseProgram(shader_programs[0] );
+            
+            glActiveTexture(GL_TEXTURE0);
+
+            GLuint projection_location = glGetUniformLocation(shader_programs[0], "projection");
+            glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix);
+
+            printf("Rendfering %d entities\n", entities->size());
             for (std::vector<uint32_t>::iterator it = entities->begin(); it != entities->end(); it++)
             {   
-                // entity e = *it;
+                glUseProgram(shader_programs[0] );
                 texture &t = m_sprite_textures.get(*it);
                 GLuint vbo = texture_vbo_system_pointer -> get_vbo(*it);
 
+                printf("Rendering entity %d\n", *it);
+                printf("    texture id: %d\n", t.id);
+                printf("    vbo id: %d\n", vbo);
+
                 // Bind the texture
                 glBindTexture(GL_TEXTURE_2D, t.id);
-
                 // Bind the VBO
                 glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
+                // GLint active_texture;
+                // glGetIntegerv(GL_ACTIVE_TEXTURE, &active_texture);
+                // printf("Error_1.5: x%d\n", glGetError());
+                // printf("active_texture: %d\n", active_texture);
+                // printf("real texture: %d\n", t.id);
+                // printf("GL_TEXTURE0: %d\n", GL_TEXTURE0);
+
+
+                // GLint vao2;
+                // glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &vao2);
+                // printf("vao2: %d\n", vao2);
+                // printf("vao: %d\n", texture_vbo_system_pointer -> get_vao());
+
+                // // GL_ARRAY_BUFFER_BINDING 
+                // GLint vbo2;
+                // glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &vbo2);
+                // printf("Error_1.5: x%d\n", glGetError());
+                // printf("vbo2: %d\n", vbo2);
+                // printf("vbo: %d\n", vbo);
+                // set the texture uniform
+                glUniform1i(glGetUniformLocation(shader_programs[0], "tex"), 0);
                 // Draw the VBO
-                glDrawArrays(GL_QUADS, 0, 4);
+                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
             glUseProgram(0);
             // {
@@ -225,14 +296,14 @@ namespace game_engine
             m_frame_count++;
         }
 
-        void add(uint32_t entity, texture &&t)
+        void add(uint32_t ent, texture &&t)
         {
-            m_sprite_textures.add(entity, t);
+            m_sprite_textures.add(ent, t);
         }
 
-        void remove(uint32_t entity)
+        void remove(uint32_t ent)
         {
-            m_sprite_textures.remove(entity);
+            m_sprite_textures.remove(ent);
         }
     };
 }

@@ -7,7 +7,7 @@ namespace game
 {
     const uint16_t NUM_CHUNKS = 9; // 3x3 chunks in world
     const uint16_t CHUNKS_WIDTH = 3;
-    const uint16_t CHUNK_SIZE = 512; // 4x4 tiles in chunk
+    const uint16_t CHUNK_SIZE = 256; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
     siv::PerlinNoise perlin_noise(0.0);
 
@@ -62,6 +62,8 @@ namespace game
             glGenTextures(1, &texture);
             glBindTexture(GL_TEXTURE_2D, texture);
             // set data and size
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, CHUNK_SIZE, CHUNK_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
             // set texture parameters
             // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -76,7 +78,7 @@ namespace game
     struct world_tile_system : public game_engine::system
     {
     private:
-        std::array<chunk *, NUM_CHUNKS> chunk_data;
+        std::array<chunk *, NUM_CHUNKS> chunk_data{};
         // std::array<game_engine::entity *, NUM_CHUNKS> chunk_entities;
 
     public:

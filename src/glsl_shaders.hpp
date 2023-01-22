@@ -12,22 +12,23 @@ namespace glsl_helper
     {
         std::stringstream frag_0;
         frag_0 << "#version 330\n"
-             << "in vec2 v_TexCoord;\n"
-             << "uniform sampler2D u_Texture;\n"
-             << "out vec4 out_Color;\n"
-             << "void main()\n"
-             << "{\n"
-             << "float intensity = texture(u_Texture, v_TexCoord).r;\n"
-             << "if(intensity == 0.0) {\n"
-             << "out_Color = vec4(0.0, 0.0, 1.0, 1.0);\n"
-             << "} else if(intensity == 1.0 / 255) {\n"
-             << "out_Color = vec4(1.0, 0.5, 0.5, 1.0);\n"
-             << "} else if(intensity == 2.0 / 255) {\n"
-             << "out_Color = vec4(0.5, 0.5, 0.5, 1.0);\n"
-             << "} else {\n"
-             << "out_Color = vec4(1.0, 0.41, 0.71, 1.0);\n"
-             << "}\n"
-             << "}\n";
+               << "in vec2 v_TexCoord;\n"
+               << "uniform sampler2D tex;\n"
+               << "out vec4 out_Color;\n"
+               << "void main()\n"
+               << "{\n"
+               << "float intensity = texture(tex, v_TexCoord).r;\n"
+               << "if(intensity == 0.0) {\n"
+               << "out_Color = vec4(0.5, 0.5, 1.0, 1.0);\n"
+               << "} else if(intensity == 1.0 / 255) {\n"
+               << "out_Color = vec4(1.0, 0.15, 0.15, 1.0);\n"
+               << "} else if(intensity == 2.0 / 255) {\n"
+               << "out_Color = vec4(0.5, 0.5, 0.5, 1.0);\n"
+               << "} else {\n"
+               << "out_Color = vec4(1.0, 0.41, 0.71, 1.0);\n"
+               << "}\n"
+            //    << "gl_FragDepth = gl_FragCoord.z;\n"
+               << "}\n";
         return frag_0.str();
     }
     // #version 330
@@ -45,15 +46,17 @@ namespace glsl_helper
     std::string vert_0()
     {
         std::stringstream vert_0;
-        vert_0 << "#version 330\n"
-             << "layout (location = 0) in vec3 in_Position;\n"
-             << "layout (location = 1) in vec2 in_TexCoord;\n"
-             << "out vec2 v_TexCoord;\n"
-             << "void main()\n"
-             << "{\n"
-             << "v_TexCoord = in_TexCoord;\n"
-             << "gl_Position = vec4(in_Position, 1.0);\n"
-             << "}\n";
+        vert_0
+            << "#version 330\n"
+            << "layout (location = 0) in vec3 in_Position;\n"
+            << "layout (location = 1) in vec2 in_TexCoord;\n"
+            << "uniform mat4 projection;\n"
+            << "out vec2 v_TexCoord;\n"
+            << "void main()\n"
+            << "{\n"
+            << "v_TexCoord = in_TexCoord;\n"
+            << "gl_Position = projection * vec4(in_Position, 1.0);\n"
+            << "}\n";
         return vert_0.str();
     }
 
@@ -81,13 +84,13 @@ std::vector<GLuint> load_shaders()
     uint16_t shader_number = 1;
 
     // programs.push_back(glsl_helper::load_shader(glsl_helper::vert_0.str(), GL_VERTEX_SHADER));
-    for(int i = 0; i < shader_number; i++)
+    for (int i = 0; i < shader_number; i++)
     {
         GLuint vert_shader = glsl_helper::load_shader(glsl_helper::vert_0(), GL_VERTEX_SHADER);
         GLuint frag_shader = glsl_helper::load_shader(glsl_helper::frag_0(), GL_FRAGMENT_SHADER);
-        
+
         GLuint program = glCreateProgram();
-        if(program == 0)
+        if (program == 0)
         {
             std::printf("Failed to create shader program %d with error %d\n", i, glGetError());
         }
@@ -99,10 +102,28 @@ std::vector<GLuint> load_shaders()
         printf("Error_2: %d\n", glGetError());
         programs.push_back(program);
 
+        GLint linkStatus;
+        glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
+        if (linkStatus == GL_FALSE)
+        {
+            printf("Failed to link shader program\n");
+            GLint logLength;
+            glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLength);
+            char *log = (char *)malloc(logLength);
+            glGetProgramInfoLog(program, logLength, NULL, log);
+            printf("Log: %s\n", log);
+            free(log);
+            // return -1;
+        }
+        else
+        {
+            printf("Shader program %d linked\n", i);
+        }
+
         glDeleteShader(vert_shader);
         glDeleteShader(frag_shader);
-        
-        if(glGetError() != GL_NO_ERROR)
+
+        if (glGetError() != GL_NO_ERROR)
         {
             std::printf("Failed to load shader %d with error %d\n", i, glGetError());
         }

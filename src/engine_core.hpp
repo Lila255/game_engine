@@ -17,7 +17,10 @@ namespace game_engine
     struct engine;
     engine *game_engine_pointer;
     std::vector<GLuint> shader_programs;
-
+    uint16_t window_width = 1920;
+    uint16_t window_height = 1080;
+    float projection_matrix[16]{};
+    
     struct component
     {
         virtual ~component() = default;
