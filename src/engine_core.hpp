@@ -21,6 +21,7 @@ namespace game_engine
     uint16_t window_height = 1080;
     float projection_matrix[16]{};
     
+
     struct component
     {
         virtual ~component() = default;

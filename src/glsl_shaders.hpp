@@ -1,3 +1,4 @@
+#pragma once
 // Store strings for GLSL shaders and load into programs
 #include <string>
 #include <sstream>

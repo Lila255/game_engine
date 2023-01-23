@@ -5,8 +5,8 @@
 
 namespace game
 {
-    const uint16_t NUM_CHUNKS = 9; // 3x3 chunks in world
-    const uint16_t CHUNKS_WIDTH = 3;
+    const uint16_t NUM_CHUNKS = 16; // 3x3 chunks in world
+    const uint16_t CHUNKS_WIDTH = 4;
     const uint16_t CHUNK_SIZE = 256; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
     siv::PerlinNoise perlin_noise(0.0);
@@ -72,7 +72,6 @@ namespace game
             // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glBindTexture(GL_TEXTURE_2D, 0);
         }
-        
     };
 
     struct world_tile_system : public game_engine::system

@@ -78,15 +78,16 @@ namespace game_engine
     {
     private:
         sparse_component_set<GLuint> m_vbos;
-        GLuint m_vao = 0;
+        sparse_component_set<GLuint> m_vaos;
+        // GLuint m_vao = 0;
 
     public:
-        texture_vbo_system()
-        {
+        texture_vbo_system() = default;
+        // {
             // Create a VAO
-            glGenVertexArrays(1, &m_vao);
-            glBindVertexArray(m_vao);
-        }
+            // glGenVertexArrays(1, &m_vao);
+            // glBindVertexArray(m_vao);
+        // }
 
         /// @brief Create a new VBO for the given entity.
         /// @param ent The entity to create a VBO for. Entity must contain a box component to pull values from
@@ -117,8 +118,11 @@ namespace game_engine
                 0.0f, 1.0f
             };
             
+            GLuint new_vao;
+            glGenVertexArrays(1, &new_vao);
+            
             // Bind the VAO
-            glBindVertexArray(m_vao);
+            glBindVertexArray(new_vao);
             
             // Create a new VBO
             GLuint vbo;
@@ -143,6 +147,7 @@ namespace game_engine
 
             // Add the VBO to the sparse component set
             m_vbos.add(ent, vbo);
+            m_vaos.add(ent, new_vao);
 
             // Unbind the VB0
             glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -151,9 +156,9 @@ namespace game_engine
         }
 
         /// @brief Get the VAO for this system
-        GLuint get_vao()
+        GLuint get_vao(entity ent)
         {
-            return m_vao;
+            return m_vaos.get(ent);
         }
 
         /// @brief Get the VBO for the given entity
@@ -226,7 +231,7 @@ namespace game_engine
 
             texture_vbo_system *texture_vbo_system_pointer = ((texture_vbo_system*)game_engine_pointer->get_system(family::type<texture_vbo_system>()));
             // draw stuff
-            glBindVertexArray(texture_vbo_system_pointer -> get_vao());
+            // glBindVertexArray(texture_vbo_system_pointer -> get_vao());
             std::vector<uint32_t> * entities = m_sprite_textures.get_entities();
             
             glUseProgram(shader_programs[0] );
@@ -236,22 +241,21 @@ namespace game_engine
             GLuint projection_location = glGetUniformLocation(shader_programs[0], "projection");
             glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix);
 
-            printf("Rendfering %d entities\n", entities->size());
+
+
+            // printf("Rendfering %d entities\n", entities->size());
             for (std::vector<uint32_t>::iterator it = entities->begin(); it != entities->end(); it++)
             {   
                 glUseProgram(shader_programs[0] );
                 texture &t = m_sprite_textures.get(*it);
                 GLuint vbo = texture_vbo_system_pointer -> get_vbo(*it);
-
-                printf("Rendering entity %d\n", *it);
-                printf("    texture id: %d\n", t.id);
-                printf("    vbo id: %d\n", vbo);
+                glBindVertexArray(texture_vbo_system_pointer -> get_vao(*it));
 
                 // Bind the texture
                 glBindTexture(GL_TEXTURE_2D, t.id);
                 // Bind the VBO
                 glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
+                // printf("Texture: %d\n", t.id);
                 // GLint active_texture;
                 // glGetIntegerv(GL_ACTIVE_TEXTURE, &active_texture);
                 // printf("Error_1.5: x%d\n", glGetError());
