@@ -89,7 +89,6 @@ namespace game_engine
                 sprintf(error_string, "sparse_component_set<%s> does not contain entity: %d\n", typeid(component_type).name(), ent);
                 throw std::runtime_error(error_string);
             }
-
             return m_components[m_sparse[ent]];
         }
 

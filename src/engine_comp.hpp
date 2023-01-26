@@ -190,7 +190,7 @@ namespace game_engine
         {
             printf("Error_1.5: x%d\n", glGetError());
             // Do some initialization stuff
-            glClearColor(0.25f, 0.0f, 0.2f, 1.0f);
+            glClearColor(0.8392f, 0.0078f, 0.4392f, 1.0f);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_DEPTH_TEST);

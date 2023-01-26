@@ -29,11 +29,11 @@ namespace game
 
         void create_chunk()
         {
-            for (int x = 0; x < CHUNK_SIZE; x++)
+            for (int y = 0; y < CHUNK_SIZE; y++)
             {
-                for (int y = 0; y < CHUNK_SIZE; y++)
+                for (int x = 0; x < CHUNK_SIZE; x++)
                 {
-                    double noise = perlin_noise.noise2D_01(x / 50.0, y / 50.0);
+                    double noise = perlin_noise.noise2D_01((x + chunk_x * game::CHUNK_SIZE) / 50.0, (y + chunk_y * game::CHUNK_SIZE) / 50.0);
                     if (noise > 0.5)
                     {
                         data[x][y] = 1;
