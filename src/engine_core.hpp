@@ -20,7 +20,6 @@ namespace game_engine
     uint16_t window_width = 1920;
     uint16_t window_height = 1080;
     float projection_matrix[16]{};
-    
 
     struct component
     {
@@ -53,7 +52,7 @@ namespace game_engine
 // What dumbass wrote this code ^^^
 #define entity uint32_t
 
-    struct system
+struct system
     {
     private:
     public:

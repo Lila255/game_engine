@@ -36,7 +36,7 @@ void run_game(GLFWwindow * window) {
             // float top_left_x = 2 * x * game::CHUNK_SIZE; 
             // float top_left_y = 2 * y * game::CHUNK_SIZE;
 
-            box_sys->add(chunk_entity, {top_left_x * 2.0f, top_left_y * 2.0f, 0.0, game::CHUNK_SIZE * 2.0, game::CHUNK_SIZE * 2.0});
+            box_sys->add(chunk_entity, {top_left_x * 1.0f, top_left_y * 1.0f, 0.0, game::CHUNK_SIZE * 1.0, game::CHUNK_SIZE * 1.0});
             // box_sys->add(chunk_entity, { top_left_x, top_left_y, 0.0, 1.0/3.0, 1.0/3.0});
             // box_sys->add(chunk_entity, { top_left_x, top_left_y, 1.0f, 1.0/3.0, 1.0/3.0});
             // box_sys->add(chunk_entity, { top_left_x, top_left_y, 1.0f, 8 * game::CHUNK_SIZE, 8 * game::CHUNK_SIZE});

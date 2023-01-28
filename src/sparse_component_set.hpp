@@ -49,7 +49,8 @@ namespace game_engine
         /// @brief Add an entity and its component to the set
         /// @param ent The entity to add
         /// @param comp The component to add
-        void add(uint32_t ent, component_type &comp)
+
+        void add(entity ent, component_type &comp)
         {
             if (contains(ent))
                 return;
@@ -63,7 +64,7 @@ namespace game_engine
 
         /// @brief Check if the set contains the specified entity
         /// @param ent The entity to check for
-        void remove(uint32_t ent)
+        void remove(entity ent)
         {
             if (!contains(ent))
                 return;
@@ -80,11 +81,10 @@ namespace game_engine
         /// Will throw exception if the entity is not in the set
         /// @param ent The entity to get the component for
         /// @return The component associated with the entity
-        component_type &get(uint32_t ent)
+        component_type &get(entity ent)
         {
             if (!contains(ent))
             {
-                // std::string error_string = "Sparse component_type<" + typeid(component_type).name() + "> set does not contain entity: " + std::to_string(entity);
                 char *error_string = (char *)malloc(100);
                 sprintf(error_string, "sparse_component_set<%s> does not contain entity: %d\n", typeid(component_type).name(), ent);
                 throw std::runtime_error(error_string);
@@ -105,7 +105,7 @@ namespace game_engine
         }
 
         /// @brief Check if the set contains the specified entity
-        bool contains(uint32_t ent) const
+        bool contains(entity ent) const
         {
             if (ent >= m_capacity)
                 return false;
@@ -116,7 +116,7 @@ namespace game_engine
         /// Not likely to be used, as index in the dense array is not easily known. Access through entity ID is prefered.
         /// @param index The index of the entity to get from the dense array
         /// @return The entity at the specified index in the dense array
-        uint32_t get_entity(uint16_t index) const
+        uint32_t get_entity(uint32_t index) const
         {
             return m_dense[index];
         }
@@ -125,13 +125,13 @@ namespace game_engine
         /// Not likely to be used, as index in the dense array is not easily known. Access through entity ID is prefered.
         /// @param index The index of the component to get from the components array
         /// @return The component at the specified index in the components array
-        component_type &get_component(uint16_t index)
+        component_type &get_component(uint32_t index)
         {
             return m_components[index];
         }
 
-        /// @brief Get an iterator to the beginning of the dense array
-        /// @return An iterator to the beginning of the dense array
+        /// @brief Get a pointer to the beginning of the dense array
+        /// @return A pointer to the beginning of the dense array
         std::vector<uint32_t> *get_entities()
         {
             return &m_dense;
