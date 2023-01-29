@@ -20,15 +20,19 @@ namespace glsl_helper
                << "{\n"
                << "float intensity = texture(tex, v_TexCoord).r;\n"
                << "if(intensity == 0.0) {\n"
-               << "out_Color = vec4(0.8392, 0.0078, 0.4392, 1.0);\n"
+               << "out_Color = vec4(0.0, 0.0, 0.0, 0.0);\n"
                << "} else if(intensity == 1.0 / 255) {\n"
-               << "out_Color = vec4(0.0, 0.2196, 0.6588, 1.0);\n"
+               << "out_Color = vec4(0.4118, 0.7333, 0.0039, 1.0);\n"
                << "} else if(intensity == 2.0 / 255) {\n"
-               << "out_Color = vec4(0.5, 0.5, 0.5, 1.0);\n"
+               << "out_Color = vec4(0.75, 0.8, 0.1, 1.0);\n"
+               << "} else if(intensity == 100.0 / 255) {\n"
+               << "out_Color = vec4(0.9, 0.7, 0.4, 1.0);\n"
+               << "} else if(intensity == 101.0 / 255) {\n"
+               << "out_Color = vec4(0.19, 0.09, 0.197, 1.0);\n"
                << "} else {\n"
                << "out_Color = vec4(1.0, 0.41, 0.71, 1.0);\n"
                << "}\n"
-            //    << "gl_FragDepth = gl_FragCoord.z;\n"
+               //    << "gl_FragDepth = gl_FragCoord.z;\n"
                << "}\n";
         return frag_0.str();
     }
@@ -52,11 +56,14 @@ namespace glsl_helper
             << "layout (location = 0) in vec3 in_Position;\n"
             << "layout (location = 1) in vec2 in_TexCoord;\n"
             << "uniform mat4 projection;\n"
+            << "uniform mat4 view;\n"
             << "out vec2 v_TexCoord;\n"
             << "void main()\n"
             << "{\n"
             << "v_TexCoord = in_TexCoord;\n"
-            << "gl_Position = projection * vec4(in_Position, 1.0);\n"
+            << "gl_Position = projection * view * vec4(in_Position, 1.0);\n"
+            // << "gl_Position = vec4(in_Position, 1.0);\n"
+            // << "gl_Position = projection * vec4(in_Position, 1.0);\n"
             << "}\n";
         return vert_0.str();
     }
@@ -77,6 +84,48 @@ namespace glsl_helper
         }
         return shader;
     }
+
+    void create_character_texture(GLuint &texture)
+    {
+        // Create a texture for the character
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        // Set texture options
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+        // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        // // Set texture filtering
+        // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // Set texture data
+        // std::array<std::array<uint8_t, 3>, 8> data = {
+        //     std::array<uint8_t, 3>{101, 100, 101},
+        //     std::array<uint8_t, 3>{0, 100, 0},
+        //     std::array<uint8_t, 3>{100, 100, 0},
+        //     std::array<uint8_t, 3>{100, 100, 100},
+        //     std::array<uint8_t, 3>{100, 0, 100},
+        //     std::array<uint8_t, 3>{100, 100, 100},
+        //     std::array<uint8_t, 3>{0, 100, 101},
+        //     std::array<uint8_t, 3>{100, 101, 100},
+        // };
+        // std::array<std::array<uint8_t, 8>, 3> data = {
+        //     std::array<uint8_t, 8>{101, 100, 101, 0, 100, 0, 100, 100},
+        //     std::array<uint8_t, 8>{100, 100, 100, 100, 0, 100, 100, 100},
+        //     std::array<uint8_t, 8>{100, 101, 100, 0, 100, 101, 100, 101},
+        // };
+        std::array<uint8_t, 24>  data = {
+            101, 100, 101, 0, 100, 0, 100, 100,
+            100, 100, 100, 100, 0, 100, 100, 100,
+            100, 101, 100, 0, 100, 101, 100, 101,
+        };
+        
+        // glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 3, 8, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 3, 8, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
+    }
+
 };
 
 std::vector<GLuint> load_shaders()

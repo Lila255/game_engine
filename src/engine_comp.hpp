@@ -84,9 +84,9 @@ namespace game_engine
     public:
         texture_vbo_system() = default;
         // {
-            // Create a VAO
-            // glGenVertexArrays(1, &m_vao);
-            // glBindVertexArray(m_vao);
+        // Create a VAO
+        // glGenVertexArrays(1, &m_vao);
+        // glBindVertexArray(m_vao);
         // }
 
         /// @brief Create a new VBO for the given entity.
@@ -94,7 +94,7 @@ namespace game_engine
         void add(uint32_t ent)
         {
             // Get the box component
-            box &b = ((box_system*)game_engine_pointer->get_system(family::type<box_system>())) -> get(ent);
+            box &b = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()))->get(ent);
 
             // Create the vertex data
             // float vertex_data[] = {
@@ -103,27 +103,25 @@ namespace game_engine
             //     b.x + b.w, b.y + b.h, b.z, 1.0f, 1.0f,
             //     b.x, b.y + b.h, b.z, 0.0f, 1.0f
             // };
-            // verticies data   
+            // verticies data
             float vertices[] = {
                 b.x, b.y, b.z,
                 b.x + b.w, b.y, b.z,
                 b.x + b.w, b.y + b.h, b.z,
-                b.x, b.y + b.h, b.z
-            };
+                b.x, b.y + b.h, b.z};
             // texture data
             float texture_data[] = {
                 0.0f, 0.0f,
                 1.0f, 0.0f,
                 1.0f, 1.0f,
-                0.0f, 1.0f
-            };
-            
+                0.0f, 1.0f};
+
             GLuint new_vao;
             glGenVertexArrays(1, &new_vao);
-            
+
             // Bind the VAO
             glBindVertexArray(new_vao);
-            
+
             // Create a new VBO
             GLuint vbo;
             glGenBuffers(1, &vbo);
@@ -140,7 +138,7 @@ namespace game_engine
             // glEnableVertexAttribArray(1);
             // glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)sizeof(vertices));
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void *)sizeof(vertices));
 
             glEnableVertexAttribArray(0);
             glEnableVertexAttribArray(1);
@@ -148,6 +146,50 @@ namespace game_engine
             // Add the VBO to the sparse component set
             m_vbos.add(ent, vbo);
             m_vaos.add(ent, new_vao);
+
+            // Unbind the VB0
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            // Unbind the VAO
+            glBindVertexArray(0);
+        }
+
+        /// @brief Update the VBO for the given entity.
+        /// @param ent The entity to update the VBO for. Entity must contain a box component to pull values from
+        void update(entity ent)
+        {
+            // Get the box component
+            box &b = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()))->get(ent);
+
+            // Create the vertex data
+            // float vertex_data[] = {
+            //     b.x, b.y, b.z, 0.0f, 0.0f,
+            //     b.x + b.w, b.y, b.z, 1.0f, 0.0f,
+            //     b.x + b.w, b.y + b.h, b.z, 1.0f, 1.0f,
+            //     b.x, b.y + b.h, b.z, 0.0f, 1.0f
+            // };
+            // verticies data
+            float vertices[] = {
+                b.x, b.y, b.z,
+                b.x + b.w, b.y, b.z,
+                b.x + b.w, b.y + b.h, b.z,
+                b.x, b.y + b.h, b.z};
+            // texture data
+            float texture_data[] = {
+                0.0f, 0.0f,
+                1.0f, 0.0f,
+                1.0f, 1.0f,
+                0.0f, 1.0f};
+
+            // Bind the VAO
+            glBindVertexArray(m_vaos.get(ent));
+
+            // Bind the VBO
+            glBindBuffer(GL_ARRAY_BUFFER, m_vbos.get(ent));
+
+            // Upload the vertex data to the GPU
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(texture_data), NULL, GL_DYNAMIC_DRAW);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+            glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(texture_data), texture_data);
 
             // Unbind the VB0
             glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -190,7 +232,9 @@ namespace game_engine
         {
             printf("Error_1.5: x%d\n", glGetError());
             // Do some initialization stuff
-            glClearColor(0.8392f, 0.0078f, 0.4392f, 1.0f);
+            // glClearColor(0.8392f, 0.0078f, 0.4392f, 1.0f);
+            // glClearColor(0.2902, 0.0118, 0.2118, 1.0f);
+            glClearColor(0.02, 0.5118, 0.7118, 1.0f);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_DEPTH_TEST);
@@ -228,28 +272,54 @@ namespace game_engine
         {
             // Do rendering stuff
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            
+            update_keys();
 
-            texture_vbo_system *texture_vbo_system_pointer = ((texture_vbo_system*)game_engine_pointer->get_system(family::type<texture_vbo_system>()));
+            texture_vbo_system *texture_vbo_system_pointer = ((texture_vbo_system *)game_engine_pointer->get_system(family::type<texture_vbo_system>()));
+            box_system *bo_system_pointer = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()));
+            box &b = bo_system_pointer->get(game_engine_pointer->player_entitiy);
+
+            // update view matrix based on player position
+            // float view_matrix[16]{
+            //     1.0f, 0.0f, 0.0f, 0.0f,
+            //     0.0f, 1.0f, 0.0f, 0.0f,
+            //     0.0f, 0.0f, 1.0f, 0.0f,
+            //     -b.x, -b.y, 0.0f, 1.0f};
+            // };
+            view_matrix[12] = -b.x + window_width / 2.0f;
+            view_matrix[13] = -b.y + window_height / 2.0f;
+
+            // projection_matrix[0] += 0.001 / window_width;
+            // projection_matrix[5] += 0.001 / window_height;
+
+            // print the projection matrix
+            // printf("Projection matrix: ");
+            // for (int i = 0; i < 16; i++)
+            // {
+            //     printf("%f ", projection_matrix[i]);
+            // }
+            // printf("\n");
+
             // draw stuff
             // glBindVertexArray(texture_vbo_system_pointer -> get_vao());
-            std::vector<uint32_t> * entities = m_sprite_textures.get_entities();
-            
-            glUseProgram(shader_programs[0] );
-            
+            std::vector<uint32_t> *entities = m_sprite_textures.get_entities();
+
+            glUseProgram(shader_programs[0]);
+
             glActiveTexture(GL_TEXTURE0);
 
             GLuint projection_location = glGetUniformLocation(shader_programs[0], "projection");
             glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix);
-
-
+            GLuint view_location = glGetUniformLocation(shader_programs[0], "view");
+            glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
 
             // printf("Rendfering %d entities\n", entities->size());
             for (std::vector<uint32_t>::iterator it = entities->begin(); it != entities->end(); it++)
-            {   
-                glUseProgram(shader_programs[0] );
+            {
+                glUseProgram(shader_programs[0]);
                 texture &t = m_sprite_textures.get(*it);
-                GLuint vbo = texture_vbo_system_pointer -> get_vbo(*it);
-                glBindVertexArray(texture_vbo_system_pointer -> get_vao(*it));
+                GLuint vbo = texture_vbo_system_pointer->get_vbo(*it);
+                glBindVertexArray(texture_vbo_system_pointer->get_vao(*it));
 
                 // Bind the texture
                 glBindTexture(GL_TEXTURE_2D, t.id);
@@ -263,13 +333,12 @@ namespace game_engine
                 // printf("real texture: %d\n", t.id);
                 // printf("GL_TEXTURE0: %d\n", GL_TEXTURE0);
 
-
                 // GLint vao2;
                 // glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &vao2);
                 // printf("vao2: %d\n", vao2);
                 // printf("vao: %d\n", texture_vbo_system_pointer -> get_vao());
 
-                // // GL_ARRAY_BUFFER_BINDING 
+                // // GL_ARRAY_BUFFER_BINDING
                 // GLint vbo2;
                 // glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &vbo2);
                 // printf("Error_1.5: x%d\n", glGetError());
@@ -281,21 +350,8 @@ namespace game_engine
                 glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
             glUseProgram(0);
-            // {
-            //     texture &t = pair.second;
-            //     GLuint vbo = ((texture_vbo_system*)game_engine_pointer->get_system(family::type<texture_vbo_system>())) -> get_vbo(pair.first);
 
-            //     // Bind the texture
-            //     glBindTexture(GL_TEXTURE_2D, t.id);
-
-            //     // Bind the VBO
-            //     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-            //     // Draw the VBO
-            //     glDrawArrays(GL_QUADS, 0, 4);
-            // }
-
-            glfwSwapBuffers(m_window);
+            // glfwSwapBuffers(m_window);
             glfwPollEvents();
             m_frame_count++;
         }
@@ -309,5 +365,50 @@ namespace game_engine
         {
             m_sprite_textures.remove(ent);
         }
+
+        void update_keys()
+        {
+            if(!game_engine_pointer->pressed_keys.size()) return;
+            // iterate over game_engine_pointer -> keys
+            // if WASD key is pressed, move player
+            
+            box_system *b_system = (game_engine::box_system *)(game_engine_pointer->get_system(family::type<game_engine::box_system>())); 
+            texture_vbo_system *vbo_system = (game_engine::texture_vbo_system *)(game_engine_pointer->get_system(family::type<game_engine::texture_vbo_system>()));
+            box &b = b_system->get(game_engine_pointer->player_entitiy);
+
+            for(auto &key : game_engine_pointer->pressed_keys){
+                if(key == GLFW_KEY_W){
+                    b.y -= 4.0f;
+                }
+                if(key == GLFW_KEY_A){
+                    b.x -= 4.0f;
+                }
+                if(key == GLFW_KEY_S){
+                    b.y += 4.0f;
+                }
+                if(key == GLFW_KEY_D){
+                    b.x += 4.0f;
+                }
+            }
+            vbo_system->update(game_engine_pointer->player_entitiy);
+
+        }
     };
+
+    void draw_line(float x1, float y1, float z1, float x2, float y2, float z2)
+    {
+        float vertices[] = {
+            x1, y1, z1,
+            x2, y2, z2};
+        GLuint vbo;
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glDrawArrays(GL_LINES, 0, 2);
+        glDisableVertexAttribArray(0);
+        glDeleteBuffers(1, &vbo);
+    }
+
 }

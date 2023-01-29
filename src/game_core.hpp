@@ -20,6 +20,9 @@ namespace game
         entity * background_entity;
         entity * foreground_entity;
         entity * light_entity;
+        int dx[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+        int dy[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
+
 
         chunk() = default;
         chunk(uint16_t x, uint16_t y) : chunk_x(x), chunk_y(y)
@@ -36,11 +39,11 @@ namespace game
                     double noise = perlin_noise.noise2D_01((x + chunk_x * game::CHUNK_SIZE) / 50.0, (y + chunk_y * game::CHUNK_SIZE) / 50.0);
                     if (noise > 0.5)
                     {
-                        data[x][y] = 1;
+                        data[y][x] = 1;
                     }
                     else
                     {
-                        data[x][y] = 0;
+                        data[y][x] = 0;
                     }
                 }
             }
@@ -62,8 +65,10 @@ namespace game
             glGenTextures(1, &texture);
             glBindTexture(GL_TEXTURE_2D, texture);
             // set data and size
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, CHUNK_SIZE, CHUNK_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
             // set texture parameters
             // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -71,6 +76,99 @@ namespace game
             // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glBindTexture(GL_TEXTURE_2D, 0);
+        }
+
+
+        // // Helper function to check if a tile is a boundary tile
+        // bool isBoundaryTile(int x, int y) {
+        //     int rows = data.size();
+        //     int cols = data[0].size();
+        //     for (int i = -1; i <= 1; i++) {
+        //         for (int j = -1; j <= 1; j++) {
+        //             int newX = x + i;
+        //             int newY = y + j;
+        //             if (newX >= 0 && newX < rows && newY >= 0 && newY < cols && data[newX][newY] == 0) {
+        //                 return true;
+        //             }
+        //         }
+        //     }
+        //     return false;
+        // }
+        bool isBoundaryTile(int x, int y) {
+            int rows = data.size();
+            int cols = data[0].size();
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    int newX = x + i;
+                    int newY = y + j;
+                    if (newX < 0 || newX >= rows || newY < 0 || newY >= cols || data[newX][newY] == 0) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Helper function to get the next boundary tile
+        std::pair<int, int> getNextBoundaryTile(int x, int y, int direction) {
+            int rows = data.size();
+            int cols = data[0].size();
+            int newX = x + dx[direction];
+            int newY = y + dy[direction];
+            if (newX >= 0 && newX < rows && newY >= 0 && newY < cols && data[newX][newY] > 0) {
+                return std::make_pair(newX, newY);
+            }
+            int newDirection = (direction + 1) % 8;
+            newX = x + dx[newDirection];
+            newY = y + dy[newDirection];
+            if (newX >= 0 && newX < rows && newY >= 0 && newY < cols && data[newX][newY] > 0) {
+                return std::make_pair(newX, newY);
+            }
+            return std::make_pair(-1, -1);
+        }
+
+        std::vector<std::vector<std::pair<int, int>>> create_outlines()
+        {
+            std::vector<std::vector<std::pair<int, int>>> outlines;
+            std::unordered_set<std::pair<int, int>, game_engine::pair_hash> visited;
+            for (int y = 0; y < CHUNK_SIZE; y++)
+            {
+                for (int x = 0; x < CHUNK_SIZE; x++)
+                {
+                    std::pair<int, int> tile = std::make_pair(x, y);
+                    if (data[x][y] > 0 && !visited.count(tile))
+                    {
+                        if (isBoundaryTile(x, y))
+                        {
+                            int start_x = x;
+                            int start_y = y;
+                            int direction = 0;
+
+                            outlines.push_back({std::make_pair(start_x + chunk_x * CHUNK_SIZE, start_y + chunk_y * CHUNK_SIZE)});
+                            visited.insert(tile);
+                            while (true) 
+                            {
+
+                                std::pair<int, int> next_tile = getNextBoundaryTile(start_x, start_y, direction);
+                                int next_x = std::get<0>(next_tile);
+                                int next_y = std::get<1>(next_tile);
+                                visited.insert(next_tile);
+                                if (next_x == -1 && next_y == -1 || (next_x == x && next_y == y)) {
+                                    break;
+                                }
+                                outlines.back().push_back(std::make_pair(next_x + chunk_x * CHUNK_SIZE, next_y + chunk_y * CHUNK_SIZE));
+                                //.push_back(std::make_pair(next_x, next_y));
+                                start_x = next_x;
+                                start_y = next_y;
+                                direction = (direction + 7) % 8;
+
+                            }
+
+                        }
+                    }
+                }
+            }
+            return outlines;
         }
     };
 
@@ -124,6 +222,11 @@ namespace game
                 chunk_data[chunk]->create_texture_from_chunk(textures[chunk]);
             }
             return textures;
+        }
+
+        std::vector<std::vector<std::pair<int, int>>> create_outlines(int x, int y)
+        {
+            return chunk_data[x + y * CHUNKS_WIDTH]->create_outlines();
         }
     };
 } // namespace game

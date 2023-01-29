@@ -17,9 +17,29 @@ namespace game_engine
     struct engine;
     engine *game_engine_pointer;
     std::vector<GLuint> shader_programs;
-    uint16_t window_width = 1920;
-    uint16_t window_height = 1080;
-    float projection_matrix[16]{};
+    const uint16_t window_width = 1920;
+    const uint16_t window_height = 1080;
+    // float projection_matrix[16]{
+    //     //};
+    //     8.0f / window_width, 0.0f, 0.0f, 0.0f,
+    //     0.0f, 8.0f / window_height, 0.0f, 0.0f,
+    //     0.0f, 0.0f, -1.0f, 0.0f,
+    //     -8.0f, -8.0f, 0.0f, 1.0f
+    //     // 0.001042, 0.000000, 0.000000, 0.000000,
+    //     // 0.000000, -0.001852, 0.000000, 0.000000,
+    //     // 0.000000, 0.000000, -0.020000, 0.000000,
+    //     // -1.000000, 1.000000, -1.000000, 1.000000
+    // };
+    float projection_matrix[16] = {
+        8.0f / window_width, 0.0f, 0.0f, 0.0f,
+        0.0f, 8.0f / window_height, 0.0f, 0.0f,
+        0.0f, 0.0f, -1.0f, 0.0f,
+        -8.0f, -8.0f, 0.0f, 1.0f};
+    float view_matrix[16]{
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f};
 
     struct component
     {
@@ -52,7 +72,7 @@ namespace game_engine
 // What dumbass wrote this code ^^^
 #define entity uint32_t
 
-struct system
+    struct system
     {
     private:
     public:
@@ -83,6 +103,9 @@ struct system
         engine &operator=(const engine &) = delete;
         engine &operator=(engine &&) = delete;
         ~engine() = default;
+
+        entity player_entitiy; // player entity
+        std::unordered_set<int> pressed_keys;
 
         void update_physics()
         {
@@ -140,6 +163,64 @@ struct system
                 m_entities.erase(ent);
                 game_engine::id_generator::free_id(ent);
             }
+        }
+
+        void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+        {
+            if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+            {
+                glfwSetWindowShouldClose(window, GLFW_TRUE);
+            }
+
+            if (action == GLFW_PRESS)
+            {
+                pressed_keys.insert(key);
+            }
+            else if (action == GLFW_RELEASE)
+            {
+                if (pressed_keys.count(key) > 0)
+                    pressed_keys.erase(key);
+            }
+
+            // box_system *b_system = (game_engine::box_system *)(game_engine_pointer->get_system(family::type<game_engine::box_system>()));
+            // texture_vbo_system *vbo_system = (game_engine::texture_vbo_system *)(game_engine_pointer->get_system(family::type<game_engine::texture_vbo_system>()));
+
+            // if (key == GLFW_KEY_W && action == GLFW_PRESS)
+            // {
+            //     // Move up
+            //     box & b = b_system->get(game_engine_pointer->player_entitiy);
+            //     b.y -= 10.1f;
+            //     vbo_system->update(game_engine_pointer->player_entitiy);
+
+            // }
+            // if (key == GLFW_KEY_S && action == GLFW_PRESS)
+            // {
+            //     printf("Moving down\n");
+            //     // Move down
+            //     box & b = b_system->get(game_engine_pointer->player_entitiy);
+            //     b.y += 10.1f;
+            //     box b2 = b_system->get(game_engine_pointer->player_entitiy);
+            //     printf("b.y: %f, b2.y: %f\n", b.y, b2.y);
+            //     vbo_system->update(game_engine_pointer->player_entitiy);
+            //     // view_matrix[13] -= 10.1f;
+
+            // }
+            // if (key == GLFW_KEY_A && action == GLFW_PRESS)
+            // {
+            //     // Move left
+            //     box & b = b_system->get(game_engine_pointer->player_entitiy);
+            //     b.x -= 10.1f;
+            //     box b2 = b_system->get(game_engine_pointer->player_entitiy);
+            //     vbo_system->update(game_engine_pointer->player_entitiy);
+            // }
+            // if (key == GLFW_KEY_D && action == GLFW_PRESS)
+            // {
+            //     // Move right
+            //     box & b = b_system->get(game_engine_pointer->player_entitiy);
+            //     b.x += 10.1f;
+            //     box b2 = b_system->get(game_engine_pointer->player_entitiy);
+            //     vbo_system->update(game_engine_pointer->player_entitiy);
+            // }
         }
     };
 }
