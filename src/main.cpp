@@ -70,20 +70,27 @@ void run_game(GLFWwindow *window)
 
         // Update the engine
         render_sys->update();
+        uint16_t chunk_num = 0
         for (std::vector<std::vector<std::pair<int, int>>> chunk_outline : chunk_outlines)
         {
+            uint16_t chunk_x = chunk_num % game::CHUNKS_WIDTH;
+            uint16_t chunk_y = chunk_num / game::CHUNKS_WIDTH;
             for (std::vector<std::pair<int, int>> outline : chunk_outline)
             {
                 for (int i = 0; i < outline.size() - 1; i++)
                 {
                     std::pair<int, int> p1 = outline[i];
                     std::pair<int, int> p2 = outline[i + 1];
-                    game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
+                    // game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
+                    game_engine::draw_line(p1.first + chunk_x * game::CHUNK_SIZE, p1.second + chunk_y * game::CHUNK_SIZE, -2.0f, p2.first + chunk_x * game::CHUNK_SIZE, p2.second + chunk_y * game::CHUNK_SIZE, -2.0f);
                 }
             }
+            chunk_num++;
         }
         glfwSwapBuffers(window);
     }
+
+
 
     // Learn how to do audio
     // Learn how to do chunk switching
