@@ -4,10 +4,10 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "../libraries/glfw-3.3.8.bin.WIN64/include/GLFW/*",
-                "../libraries/glfw-3.3.8.bin.WIN64/include",
-                // "../libraries/glew-2.1.0/**",
-                "../libraries/glew-2.1.0/include"
+                // "../libraries/glfw-3.3.8.bin.WIN64/include/GLFW/*",
+                // "../libraries/glfw-3.3.8.bin.WIN64/include",
+                // "../libraries/glew-2.1.0/include"
+                "${env:VCPKG_ROOT}/installed/x64-windows/include/"
             ],
             "defines": [
                 "_DEBUG",
@@ -17,8 +17,9 @@
             "windowsSdkVersion": "10.0.22000.0",
             "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe",
             "cStandard": "c17",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64"
+            "cppStandard": "c++20",
+            "intelliSenseMode": "windows-msvc-x64",
+            "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
     "version": 4

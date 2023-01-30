@@ -5,9 +5,8 @@
     "version": "0.2.0",
     "configurations": [
         // build with task "C/C++: cl.exe build workspace" and run game.exe
-
         {
-            "name": "(Windows) Launch",
+            "name": "(Windows) Build with task & Launch",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}\\bin\\game.exe",
@@ -17,6 +16,19 @@
             "environment": [],
             "console": "integratedTerminal",
             "preLaunchTask": "C/C++: cl.exe build workspace"
+        },
+        // build with cmake and run game.exe
+        {
+            "name": "(Windows) Build with cmake & Launch",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Release/game.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "CMake Build"
         }
     ]
 }

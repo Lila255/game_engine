@@ -38,3 +38,20 @@ bin/*.pdb
 *.obj
 bin/*.ilk
 bin/*
+
+# CMake shit
+build/
+Debug/
+Release/
+CMakeFiles/
+x64/
+x86/
+ALL_BUILD.vcxproj
+ALL_BUILD.vcxproj.filters
+cmake_install.cmake
+CMakeCache.txt
+game.sln
+game.vcxproj
+game.vcxproj.filters
+ZERO_CHECK.vcxproj
+ZERO_CHECK.vcxproj.filters

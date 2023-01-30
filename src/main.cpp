@@ -70,7 +70,7 @@ void run_game(GLFWwindow *window)
 
         // Update the engine
         render_sys->update();
-        uint16_t chunk_num = 0
+        uint16_t chunk_num = 0;
         for (std::vector<std::vector<std::pair<int, int>>> chunk_outline : chunk_outlines)
         {
             uint16_t chunk_x = chunk_num % game::CHUNKS_WIDTH;
