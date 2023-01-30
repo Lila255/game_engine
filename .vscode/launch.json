@@ -22,7 +22,7 @@
             "name": "(Windows) Build with cmake & Launch",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Release/game.exe",
+            "program": "${workspaceFolder}/build/Release/game.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
