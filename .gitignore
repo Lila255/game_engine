@@ -41,3 +41,4 @@ bin/*
 
 # CMake shit
 /build/*
+!build/readme.md
