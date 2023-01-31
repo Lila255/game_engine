@@ -142,7 +142,7 @@ int main()
     glfwMakeContextCurrent(window);
     printf("Error_0: %d\n", glGetError());
 
-    glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, game_engine::window_width, game_engine::window_height, GLFW_DONT_CARE);
+    // glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, game_engine::window_width, game_engine::window_height, GLFW_DONT_CARE);
 
     glfwSwapInterval( 1 );
 
