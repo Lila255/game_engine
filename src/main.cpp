@@ -57,7 +57,7 @@ void run_game(GLFWwindow *window)
     glsl_helper::create_character_texture(player_texture);
     render_sys->add(player_entity, {player_texture});
     // box_sys->add(player_entity, {0.f, 0.f, -1.f, 4 * 8.f, 1 * 85.333333333f});
-    box_sys->add(player_entity, {960.f / 8, 540.f / 8, -1.f, 4.f, 10.6666666667f});
+    box_sys->add(player_entity, {8.f, 8.f, -1.f, glsl_helper::character_width, glsl_helper::character_height});
     texture_vbo_sys->add(player_entity);
     eng.player_entitiy = player_entity;
     printf("Error_0: %d\n", glGetError());
@@ -71,6 +71,7 @@ void run_game(GLFWwindow *window)
         // Update the engine
         render_sys->update();
         uint16_t chunk_num = 0;
+        // uint64_t line_number = 0;
         for (std::vector<std::vector<std::pair<int, int>>> chunk_outline : chunk_outlines)
         {
             uint16_t chunk_x = chunk_num % game::CHUNKS_WIDTH;
@@ -82,11 +83,13 @@ void run_game(GLFWwindow *window)
                     std::pair<int, int> p1 = outline[i];
                     std::pair<int, int> p2 = outline[i + 1];
                     // game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
-                    game_engine::draw_line(p1.first + chunk_x * game::CHUNK_SIZE, p1.second + chunk_y * game::CHUNK_SIZE, -2.0f, p2.first + chunk_x * game::CHUNK_SIZE, p2.second + chunk_y * game::CHUNK_SIZE, -2.0f);
+                    // line_number++;
+                    game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
                 }
             }
             chunk_num++;
         }
+        // printf("Number of lines: %d\n", line_number);
         glfwSwapBuffers(window);
     }
 
@@ -139,7 +142,9 @@ int main()
     glfwMakeContextCurrent(window);
     printf("Error_0: %d\n", glGetError());
 
-    // glfwSwapInterval( 0 );
+    glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, game_engine::window_width, game_engine::window_height, GLFW_DONT_CARE);
+
+    glfwSwapInterval( 1 );
 
     // Init glew
     err = glewInit();
@@ -161,13 +166,44 @@ int main()
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    // glOrtho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 100.0f);
-    glOrtho(0.0f, 1920.0/1, 1080.0/1, 0.0f, 0.0f, 100.0f);
+    glOrtho(0.0f, game_engine::window_width, game_engine::window_height, 0.0f, 0.0f, 100.0f);
     glGetFloatv(GL_PROJECTION_MATRIX, game_engine::projection_matrix);
+    // Print matrix
+    printf("Projection Matrix:\n");
+    for (int i = 0; i < 16; i++)
+    {
+        printf("%f ", game_engine::projection_matrix[i]);
+        if (i % 4 == 3)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
+    
+    game_engine::projection_matrix[0] *= 8.0f;
+    game_engine::projection_matrix[5] *= 8.0f;
+    // game_engine::projection_matrix[10] = -1.f;
+    // game_engine::projection_matrix[15] = 1.f;
+    // game_engine::projection_matrix[5] *= 2.0f;
+    // game_engine::projection_matrix[10] *= 2.0f;
+    // game_engine::projection_matrix[12] *= 2.0f;
+    // game_engine::projection_matrix[13] *= 2.0f;
+    // game_engine::projection_matrix[14] *= 2.0f;
+    // game_engine::projection_matrix[15] *= 2.0f;
+    printf("Projection Matrix:\n");
+    for (int i = 0; i < 16; i++)
+    {
+        printf("%f ", game_engine::projection_matrix[i]);
+        if (i % 4 == 3)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n");
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    glViewport(0, 0, 1920.0, 1080.0);
+    glViewport(0, 0, game_engine::window_width, game_engine::window_height);
     printf("Error_0: %d\n", glGetError());
 
     glfwSetErrorCallback(error_callback);

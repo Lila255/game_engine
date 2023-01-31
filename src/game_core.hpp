@@ -1,13 +1,13 @@
 #pragma once
 #include <array>
-
+#include <chrono>
 #include "engine_comp.hpp"
 
 namespace game
 {
     const uint16_t NUM_CHUNKS = 9; // 3x3 chunks in world
     const uint16_t CHUNKS_WIDTH = 3;
-    const uint16_t CHUNK_SIZE = 256; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
+    const uint16_t CHUNK_SIZE = 32; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
     siv::PerlinNoise perlin_noise(0.0);
 
@@ -17,12 +17,11 @@ namespace game
         std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> data;
         uint16_t chunk_x;
         uint16_t chunk_y;
-        entity * background_entity;
-        entity * foreground_entity;
-        entity * light_entity;
-        int dx[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
-        int dy[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
-
+        entity *background_entity;
+        entity *foreground_entity;
+        entity *light_entity;
+        int dx[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+        int dy[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
 
         chunk() = default;
         chunk(uint16_t x, uint16_t y) : chunk_x(x), chunk_y(y)
@@ -51,8 +50,10 @@ namespace game
 
         void to_string()
         {
-            for (int x = 0; x < CHUNK_SIZE; x++){
-                for (int y = 0; y < CHUNK_SIZE; y++){
+            for (int x = 0; x < CHUNK_SIZE; x++)
+            {
+                for (int y = 0; y < CHUNK_SIZE; y++)
+                {
                     printf("%d ", data[x][y]);
                 }
                 printf("\n");
@@ -60,7 +61,7 @@ namespace game
             printf("\n");
         }
 
-        void create_texture_from_chunk(GLuint & texture)
+        void create_texture_from_chunk(GLuint &texture)
         {
             glGenTextures(1, &texture);
             glBindTexture(GL_TEXTURE_2D, texture);
@@ -78,7 +79,6 @@ namespace game
             glBindTexture(GL_TEXTURE_2D, 0);
         }
 
-
         // // Helper function to check if a tile is a boundary tile
         // bool isBoundaryTile(int x, int y) {
         //     int rows = data.size();
@@ -94,6 +94,140 @@ namespace game
         //     }
         //     return false;
         // }
+        // bool isBoundaryTile(int x, int y)
+        // {
+        //     int rows = data.size();
+        //     int cols = data[0].size();
+        //     for (int i = -1; i <= 1; i++)
+        //     {
+        //         for (int j = -1; j <= 1; j++)
+        //         {
+        //             int newX = x + i;
+        //             int newY = y + j;
+        //             if (newX < 0 || newX >= rows || newY < 0 || newY >= cols || data[newX][newY] == 0)
+        //             {
+        //                 return true;
+        //             }
+        //         }
+        //     }
+        //     return false;
+        // }
+
+        // // Helper function to get the next boundary tile
+        // std::pair<int, int> getNextBoundaryTile(int x, int y, int direction)
+        // {
+        //     int rows = data.size();
+        //     int cols = data[0].size();
+        //     int newX = x + dx[direction];
+        //     int newY = y + dy[direction];
+        //     if (newX >= 0 && newX < rows && newY >= 0 && newY < cols && data[newX][newY] > 0)
+        //     {
+        //         return std::make_pair(newX, newY);
+        //     }
+        //     int newDirection = (direction + 1) % 8;
+        //     newX = x + dx[newDirection];
+        //     newY = y + dy[newDirection];
+        //     if (newX >= 0 && newX < rows && newY >= 0 && newY < cols && data[newX][newY] > 0)
+        //     {
+        //         return std::make_pair(newX, newY);
+        //     }
+        //     return std::make_pair(-1, -1);
+        // }
+
+        //     std::vector<std::vector<std::pair<int, int>>> create_outlines()
+        //     {
+        //         // get time in nano seconds
+        //         auto start = std::chrono::high_resolution_clock::now();
+        //         std::vector<std::vector<std::pair<int, int>>> outlines;
+        //         std::unordered_set<std::pair<int, int>, game_engine::pair_hash> visited;
+        //         for (int x = 0; x < CHUNK_SIZE; x++)
+        //         {
+        //             for (int y = 0; y < CHUNK_SIZE; y++)
+        //             {
+        //                 std::pair<int, int> tile = std::make_pair(x, y);
+        //                 if (data[x][y] > 0 && !visited.count(tile))
+        //                 {
+        //                     if (isBoundaryTile(x, y))
+        //                     {
+        //                         int start_x = x;
+        //                         int start_y = y;
+        //                         int direction = 0;
+
+        //                         outlines.push_back({std::make_pair(start_x + chunk_x * CHUNK_SIZE, start_y + chunk_y * CHUNK_SIZE)});
+        //                         visited.insert(tile);
+        //                         while (true)
+        //                         {
+        //                             std::pair<int, int> next_tile = getNextBoundaryTile(start_x, start_y, direction);
+        //                             int next_x = std::get<0>(next_tile);
+        //                             int next_y = std::get<1>(next_tile);
+        //                             visited.insert(next_tile);
+        //                             if (next_x == -1 && next_y == -1 || (next_x == x && next_y == y)) {
+        //                                 break;
+        //                             }
+        //                             outlines.back().push_back(std::make_pair(next_x + chunk_x * CHUNK_SIZE, next_y + chunk_y * CHUNK_SIZE));
+        //                             //.push_back(std::make_pair(next_x, next_y));
+        //                             start_x = next_x;
+        //                             start_y = next_y;
+        //                             direction = (direction + 7) % 8;
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //         // decimate the meshes
+        //         for (int i = 0; i < outlines.size(); i++)
+        //         {
+        //             std::vector<std::pair<int, int>> outline = outlines[i];
+        //             std::vector<std::pair<int, int>> new_outline;
+        //             new_outline.push_back(outline[0]);
+        //             for (int j = 1; j < outline.size(); j++)
+        //             {
+        //                 std::pair<int, int> p1 = outline[j - 1];
+        //                 std::pair<int, int> p2 = outline[j];
+        //                 std::pair<int, int> p3 = outline[(j + 1) % outline.size()];
+        //                 if (p1.first != p2.first || p1.second != p2.second)
+        //                 {
+        //                     if (p2.first != p3.first || p2.second != p3.second)
+        //                     {
+        //                         new_outline.push_back(p2);
+        //                     }
+        //                 }
+        //             }
+        //             outlines[i] = new_outline;
+        //         }
+
+        //         int decimation = 8;
+        //         // remove points to keep only one every decimation value
+        //         for (int i = 0; i < outlines.size(); i++)
+        //         {
+        //             std::vector<std::pair<int, int>> outline = outlines[i];
+        //             std::vector<std::pair<int, int>> new_outline;
+        //             for (int j = 0; j < outline.size(); j++)
+        //             {
+        //                 if (j % decimation == 0)
+        //                 {
+        //                     new_outline.push_back(outline[j]);
+        //                 }
+        //             }
+        //             outlines[i] = new_outline;
+        //         }
+
+        //         auto end = std::chrono::high_resolution_clock::now();
+        //         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        //         printf("Time taken by function: %d\n", duration.count());
+
+        //         // print the number of lines and the number of points in each line
+        //         printf("Number of lines: %d\n", outlines.size());
+        //         for (int i = 0; i < outlines.size(); i++)
+        //         {
+        //             printf("Number of points in line %d: %d\n", i, outlines[i].size());
+        //         }
+        //         printf("\n");
+
+        //         return outlines;
+        //     }
+        // };
+        
         bool isBoundaryTile(int x, int y) {
             int rows = data.size();
             int cols = data[0].size();
@@ -109,7 +243,6 @@ namespace game
             return false;
         }
 
-        // Helper function to get the next boundary tile
         std::pair<int, int> getNextBoundaryTile(int x, int y, int direction) {
             int rows = data.size();
             int cols = data[0].size();
@@ -129,45 +262,119 @@ namespace game
 
         std::vector<std::vector<std::pair<int, int>>> create_outlines()
         {
+            // get time in nano seconds
+            auto start = std::chrono::high_resolution_clock::now();
             std::vector<std::vector<std::pair<int, int>>> outlines;
             std::unordered_set<std::pair<int, int>, game_engine::pair_hash> visited;
-            for (int y = 0; y < CHUNK_SIZE; y++)
+
+            // Iterate over all tiles
+            for (int x = 0; x < CHUNK_SIZE; x++)
             {
-                for (int x = 0; x < CHUNK_SIZE; x++)
+                for (int y = 0; y < CHUNK_SIZE; y++)
                 {
                     std::pair<int, int> tile = std::make_pair(x, y);
+                    // If the tile is solid and not visited, start outlining
                     if (data[x][y] > 0 && !visited.count(tile))
                     {
+                        // Check if the current tile is a boundary tile
                         if (isBoundaryTile(x, y))
                         {
+                            // Start outlining from this tile
                             int start_x = x;
                             int start_y = y;
                             int direction = 0;
 
-                            outlines.push_back({std::make_pair(start_x + chunk_x * CHUNK_SIZE, start_y + chunk_y * CHUNK_SIZE)});
+                            // Create a new outline
+                            std::vector<std::pair<int, int>> outline;
+                            outline.push_back({std::make_pair(start_x + chunk_x * CHUNK_SIZE, start_y + chunk_y * CHUNK_SIZE)});
+                            // outlines.push_back({std::make_pair(start_x + chunk_x * CHUNK_SIZE, start_y + chunk_y * CHUNK_SIZE)});
+                            // outlines.push_back(outline);
                             visited.insert(tile);
-                            while (true) 
-                            {
 
+                            uint32_t count = 1;
+                            // Keep outlining until we reach the starting tile again
+                            while (true)
+                            {
                                 std::pair<int, int> next_tile = getNextBoundaryTile(start_x, start_y, direction);
-                                int next_x = std::get<0>(next_tile);
-                                int next_y = std::get<1>(next_tile);
-                                visited.insert(next_tile);
-                                if (next_x == -1 && next_y == -1 || (next_x == x && next_y == y)) {
+                                int next_x = next_tile.first;
+                                int next_y = next_tile.second;
+                                // If there is no next tile, stop outlining
+                                if (next_x == -1 && next_y == -1)
+                                {
                                     break;
                                 }
-                                outlines.back().push_back(std::make_pair(next_x + chunk_x * CHUNK_SIZE, next_y + chunk_y * CHUNK_SIZE));
-                                //.push_back(std::make_pair(next_x, next_y));
+                                // If we reached the starting tile again, stop outlining
+                                if (next_x == x && next_y == y)
+                                {
+                                    break;
+                                }
+                                // printf("count: %d\n", count);
+                                count++;
+                                // Add the next tile to the outline
+                                outline.push_back(std::make_pair(next_x + chunk_x * CHUNK_SIZE, next_y + chunk_y * CHUNK_SIZE));
+                                visited.insert(next_tile);
+                                // Update the current tile
                                 start_x = next_x;
                                 start_y = next_y;
                                 direction = (direction + 7) % 8;
-
                             }
-
+                            outlines.push_back(outline);
                         }
                     }
                 }
             }
+            printf("Number of 1 lines: %d\n", outlines.size());
+            // decimate the meshes
+            for (int i = 0; i < outlines.size(); i++)
+            {
+                std::vector<std::pair<int, int>> outline = outlines[i];
+                std::vector<std::pair<int, int>> new_outline;
+                new_outline.push_back(outline[0]);
+                for (int j = 1; j < outline.size(); j++)
+                {
+                    std::pair<int, int> p1 = outline[j - 1];
+                    std::pair<int, int> p2 = outline[j];
+                    std::pair<int, int> p3 = outline[(j + 1) % outline.size()];
+                    if (p1.first != p2.first || p1.second != p2.second)
+                    {
+                        if (p2.first != p3.first || p2.second != p3.second)
+                        {
+                            new_outline.push_back(p2);
+                        }
+                    }
+                }
+                outlines[i] = new_outline;
+            }
+            printf("Number of 2 lines: %d\n", outlines.size());
+
+            int decimation = 2;
+            // remove points to keep only one every decimation value
+            for (int i = 0; i < outlines.size(); i++)
+            {
+                std::vector<std::pair<int, int>> outline = outlines[i];
+                std::vector<std::pair<int, int>> new_outline;
+                for (int j = 0; j < outline.size(); j++)
+                {
+                    if (j % decimation == 0)
+                    {
+                        new_outline.push_back(outline[j]);
+                    }
+                }
+                outlines[i] = new_outline;
+            }
+
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("Time taken by function: %d\n", duration.count());
+
+            // print the number of lines and the number of points in each line
+            printf("Number of 3 lines: %d\n", outlines.size());
+            // for (int i = 0; i < outlines.size(); i++)
+            // {
+            //     printf("Number of points in line %d: %d\n", i, outlines[i].size());
+            // }
+            printf("\n");
+
             return outlines;
         }
     };

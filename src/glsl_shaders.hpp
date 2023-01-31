@@ -85,6 +85,8 @@ namespace glsl_helper
         return shader;
     }
 
+    const uint32_t character_height = 8;
+    const uint32_t character_width = 3;
     void create_character_texture(GLuint &texture)
     {
         // Create a texture for the character
@@ -123,7 +125,7 @@ namespace glsl_helper
         };
         
         // glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 3, 8, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 3, 8, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, character_width, character_height, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
     }
 
 };

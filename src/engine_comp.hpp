@@ -286,19 +286,11 @@ namespace game_engine
             //     0.0f, 0.0f, 1.0f, 0.0f,
             //     -b.x, -b.y, 0.0f, 1.0f};
             // };
-            view_matrix[12] = -b.x + window_width / 2.0f;
-            view_matrix[13] = -b.y + window_height / 2.0f;
+            view_matrix[12] = -b.x - 0.5 * glsl_helper::character_width + window_width * 0.0625f;
+            view_matrix[13] = -b.y - 0.5 * glsl_helper::character_height + window_height * 0.0625f;
 
             // projection_matrix[0] += 0.001 / window_width;
             // projection_matrix[5] += 0.001 / window_height;
-
-            // print the projection matrix
-            // printf("Projection matrix: ");
-            // for (int i = 0; i < 16; i++)
-            // {
-            //     printf("%f ", projection_matrix[i]);
-            // }
-            // printf("\n");
 
             // draw stuff
             // glBindVertexArray(texture_vbo_system_pointer -> get_vao());
@@ -349,7 +341,7 @@ namespace game_engine
                 // Draw the VBO
                 glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
-            glUseProgram(0);
+            // glUseProgram(0);
 
             // glfwSwapBuffers(m_window);
             glfwPollEvents();
