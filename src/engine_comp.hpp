@@ -297,6 +297,7 @@ namespace game_engine
             std::vector<uint32_t> *entities = m_sprite_textures.get_entities();
 
             glUseProgram(shader_programs[0]);
+            glUniform1i(glGetUniformLocation(shader_programs[0], "tex"), 0);
 
             glActiveTexture(GL_TEXTURE0);
 
@@ -337,7 +338,7 @@ namespace game_engine
                 // printf("vbo2: %d\n", vbo2);
                 // printf("vbo: %d\n", vbo);
                 // set the texture uniform
-                glUniform1i(glGetUniformLocation(shader_programs[0], "tex"), 0);
+                // glUniform1i(glGetUniformLocation(shader_programs[0], "tex"), 0);
                 // Draw the VBO
                 glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
@@ -370,16 +371,16 @@ namespace game_engine
 
             for(auto &key : game_engine_pointer->pressed_keys){
                 if(key == GLFW_KEY_W){
-                    b.y -= 4.0f;
+                    b.y -= 1.0f;
                 }
                 if(key == GLFW_KEY_A){
-                    b.x -= 4.0f;
+                    b.x -= 1.0f;
                 }
                 if(key == GLFW_KEY_S){
-                    b.y += 4.0f;
+                    b.y += 1.0f;
                 }
                 if(key == GLFW_KEY_D){
-                    b.x += 4.0f;
+                    b.x += 1.0f;
                 }
             }
             vbo_system->update(game_engine_pointer->player_entitiy);

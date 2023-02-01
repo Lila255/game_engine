@@ -7,7 +7,7 @@ namespace game
 {
     const uint16_t NUM_CHUNKS = 9; // 3x3 chunks in world
     const uint16_t CHUNKS_WIDTH = 3;
-    const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
+    const uint16_t CHUNK_SIZE = 256; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
     siv::PerlinNoise perlin_noise(0.0);
 
@@ -20,9 +20,10 @@ namespace game
         entity *background_entity;
         entity *foreground_entity;
         entity *light_entity;
-        int dx[8] = {0, 1, 1, 1, 0, -1, -1, -1};
-        int dy[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
-
+        // int dx[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+        // int dy[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
+        const int8_t dx[4] = {0, 1, 0, -1};
+        const int8_t dy[4] = {-1, 0, 1, 0};
         chunk() = default;
         chunk(uint16_t x, uint16_t y) : chunk_x(x), chunk_y(y)
         {
@@ -246,7 +247,8 @@ namespace game
             int cols = data[0].size();
             int newX = x + dx[direction];
             int newY = y + dy[direction];
-            if (newX >= 0 && newX < rows && newY >= 0 && newY < cols && data[newX][newY] > 0) {
+            if (newX >= 0 && newX < rows && newY >= 0 && newY < cols && data[newX][newY] > 0)
+            {
                 return std::make_pair(newX, newY);
             }
             // int newDirection = (direction + 1) % 8;
@@ -260,7 +262,7 @@ namespace game
             // int cols = data[0].size();
             // int newX;
             // int newY;
-            
+
             // for (int i = 0; i < 8; i++)
             // {
 
@@ -273,6 +275,170 @@ namespace game
             //     }
             // }
             // return std::make_pair(-1, -1);
+        }
+        std::pair<int, int> getNextBoundaryTile2(int x, int y, std::pair<int, int> came_from)
+        {
+            // check N, NE, E, SE, S, SW, W, NW
+            // The first direction that is a boundary tile is the next boundary tile
+            int rows = data.size();
+            int cols = data[0].size();
+            int newX;
+            int newY;
+            for (int i = 0; i < sizeof(dx); i++)
+            {
+                int newDirection = i;
+                newX = x + dx[newDirection];
+                newY = y + dy[newDirection];
+                if (newX == came_from.first && newY == came_from.second)
+                {
+                    continue;
+                }
+                if (newX >= 0 && newX < rows && newY >= 0 && newY < cols && data[newX][newY] > 0 && isBoundaryTile(newX, newY))
+                {
+                    return std::make_pair(newX, newY);
+                }
+            }
+            return std::make_pair(-1, -1);
+        }
+
+        std::vector<std::vector<std::pair<float, float>>> create_outlines_centers()
+        {
+            auto start = std::chrono::high_resolution_clock::now();
+            std::vector<std::vector<std::pair<float, float>>> outlines;
+            std::unordered_set<std::pair<int, int>, game_engine::pair_hash> visited;
+            int rows = data.size();
+            int cols = data[0].size();
+            // Iterate over all tiles
+            for (int x = 0; x < CHUNK_SIZE; x++)
+            {
+                for (int y = 0; y < CHUNK_SIZE; y++)
+                {
+                    if (data[x][y] > 0)
+                    {
+                        std::pair<int, int> tile = std::make_pair(x, y);
+                        // If the tile is solid and not visited, start outlining
+                        if (!visited.count(tile))
+                        {
+                            if(chunk_x == 1) printf("Current start tile: (%d, %d)\n", x, y);
+                            if (isBoundaryTile(x, y))
+                            {
+                                uint32_t current_x = x;
+                                uint32_t current_y = y;
+                                uint32_t previous_x = x;
+                                uint32_t previous_y = y;
+                                uint32_t direction = 0;
+                                std::vector<std::pair<float, float>> outline;
+                                printf("Current tile(init): (%d, %d)\n", current_x, current_y);
+                                std::pair<int, int> next_tile = getNextBoundaryTile2(current_x, current_y, {current_x, current_y});
+                                if(next_tile.first == -1) continue;
+                                current_x = next_tile.first;
+                                current_y = next_tile.second;
+                                // printf("Next tile: (%d, %d)\n", current_x, current_y);
+
+                                while (current_x != x || current_y != y)
+                                {
+                                    printf("Current tile: (%d, %d)\n", current_x, current_y);
+                                    // outline.push_back(std::make_pair(current_y + chunk_y * game::CHUNK_SIZE + 0.5, current_x + 0.5 + chunk_x * game::CHUNK_SIZE));
+                                    // std::pair<float, float> point = std::make_pair(current_y + 0.5 + chunk_x * game::CHUNK_SIZE, current_x + 0.5 + chunk_y * game::CHUNK_SIZE);
+                                    // outline.push_back(point);
+                                    // outline.push_back(std::make_pair(current_y + chunk_x * game::CHUNK_SIZE + 0.5, current_x + chunk_y * game::CHUNK_SIZE + 0.5));
+                                    std::pair<float, float> p = std::make_pair(current_y + chunk_x * game::CHUNK_SIZE + 0.5, current_x + chunk_y * game::CHUNK_SIZE + 0.5);
+                                    outline.push_back(p);
+
+                                    // outline.push_back(std::make_pair(current_y + 0.5 + chunk_x * game::CHUNK_SIZE, current_x + chunk_y * game::CHUNK_SIZE + 0.5));
+
+                                    // outline.push_back(std::make_pair(current_x + 0.5 + chunk_x * game::CHUNK_SIZE, current_y + chunk_y * game::CHUNK_SIZE + 0.5));
+                                    visited.insert(std::make_pair(current_x, current_y));
+                                    // next_tile = getNextBoundaryTile2(current_x, current_y,  {previous_x, previous_y});
+                                    // Do this ^^^ inline
+                                
+                                
+                                    int newX;
+                                    int newY;
+                                    for (int i = 0; i < 4; i++)
+                                    {
+                                        newX = current_x + dx[i];
+                                        newY = current_y + dy[i];
+                                        if (newX == previous_x && newY == previous_y)
+                                        {
+                                            continue;
+                                        }
+                                        // if (newX >= 0 && newX < rows && newY >= 0 && newY < cols && data[newX][newY] > 0)
+                                        // {
+
+                                        if (newX >= 0 && newX < rows && newY >= 0 && newY < cols && data[newX][newY] > 0 && isBoundaryTile(newX, newY))
+                                        {
+                                            next_tile = std::make_pair(newX, newY);
+                                            if (visited.count(next_tile))
+                                            {
+                                                continue;
+                                            }
+                                            break;
+                                        }
+                                        // if ended
+                                        // if(i == 3) {
+                                        //     // didnt find a next tile
+                                        //     // printf("No next tile found\n");
+                                        //     // printf("Current tile: (%d, %d)\n", current_x, current_y);
+                                        //     current_x = x;
+                                        //     current_y = y;
+                                        // }
+                                    }
+
+                                    previous_x = current_x;
+                                    previous_y = current_y;
+                                    current_x = next_tile.first;
+                                    current_y = next_tile.second;
+                                    // printf("Next tile(looping): (%d, %d)\n", current_x, current_y);
+                                }
+                                outlines.push_back(outline);
+                            }
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < outlines.size(); i++)
+            {
+                std::vector<std::pair<float, float>> outline = outlines[i];
+                std::vector<std::pair<float, float>> new_outline;
+                new_outline.push_back(outline[0]);
+                for (int j = 1; j < outline.size(); j++)
+                {
+                    std::pair<float, float> p1 = outline[j - 1];
+                    std::pair<float, float> p2 = outline[j];
+                    std::pair<float, float> p3 = outline[(j + 1) % outline.size()];
+                    if (p1.first != p2.first || p1.second != p2.second)
+                    {
+                        if (p2.first != p3.first || p2.second != p3.second)
+                        {
+                            new_outline.push_back(p2);
+                        }
+                    }
+                }
+                outlines[i] = new_outline;
+            }
+
+            int decimation = 4;
+            // remove points to keep only one every decimation value
+            for (int i = 0; i < outlines.size(); i++)
+            {
+                std::vector<std::pair<float, float>> outline = outlines[i];
+                std::vector<std::pair<float, float>> new_outline;
+                for (int j = 0; j < outline.size(); j++)
+                {
+                    if (j % decimation == 0)
+                    {
+                        new_outline.push_back(outline[j]);
+                    }
+                }
+                // push first point to end to close the outline
+                new_outline.push_back(new_outline[0]);
+                outlines[i] = new_outline;
+            }
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("Time taken by function: %d\n", duration.count());
+            return outlines;
         }
 
         std::vector<std::vector<std::pair<int, int>>> create_outlines()
@@ -311,7 +477,7 @@ namespace game
                             // Keep outlining until we reach the starting tile again
                             while (true)
                             {
-                                printf("count: %d\n", count);
+                                // printf("count: %d\n", count);
                                 std::pair<int, int> next_tile = getNextBoundaryTile(start_x, start_y, direction);
                                 // std::pair<int, int> next_tile;
                                 // if(visited.count(next_tile))
@@ -454,9 +620,9 @@ namespace game
             return textures;
         }
 
-        std::vector<std::vector<std::pair<int, int>>> create_outlines(int x, int y)
+        std::vector<std::vector<std::pair<float, float>>> create_outlines(int x, int y)
         {
-            return chunk_data[x + y * CHUNKS_WIDTH]->create_outlines();
+            return chunk_data[x + y * CHUNKS_WIDTH]->create_outlines_centers();
         }
     };
 } // namespace game

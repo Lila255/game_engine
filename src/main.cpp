@@ -29,7 +29,7 @@ void run_game(GLFWwindow *window)
     printf("Error_0: %d\n", glGetError());
     std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
     // for(int i = 0; i < game::NUM_CHUNKS; i++) {
-    std::vector<std::vector<std::vector<std::pair<int, int>>>> chunk_outlines;
+    std::vector<std::vector<std::vector<std::pair<float, float>>>> chunk_outlines;
     for (int y = 0; y < game::CHUNKS_WIDTH; y++)
     {
         for (int x = 0; x < game::CHUNKS_WIDTH; x++)
@@ -71,12 +71,12 @@ void run_game(GLFWwindow *window)
         // Update the engine
         render_sys->update();
         uint16_t chunk_num = 0;
-        // uint64_t line_number = 0;
-        for (std::vector<std::vector<std::pair<int, int>>> chunk_outline : chunk_outlines)
+        uint64_t line_number = 0;
+        for (std::vector<std::vector<std::pair<float, float>>> chunk_outline : chunk_outlines)
         {
             uint16_t chunk_x = chunk_num % game::CHUNKS_WIDTH;
             uint16_t chunk_y = chunk_num / game::CHUNKS_WIDTH;
-            for (std::vector<std::pair<int, int>> outline : chunk_outline)
+            for (std::vector<std::pair<float, float>> outline : chunk_outline)
             {
                 for (int i = 0; i < outline.size() - 1; i++)
                 {
