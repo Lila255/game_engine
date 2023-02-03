@@ -72,20 +72,29 @@ void run_game(GLFWwindow *window)
         render_sys->update();
         uint16_t chunk_num = 0;
         uint64_t line_number = 0;
-        for (std::vector<std::vector<std::pair<float, float>>> chunk_outline : chunk_outlines)
+        // printf("Rendering\n");
+        for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
         {
             uint16_t chunk_x = chunk_num % game::CHUNKS_WIDTH;
             uint16_t chunk_y = chunk_num / game::CHUNKS_WIDTH;
-            for (std::vector<std::pair<float, float>> outline : chunk_outline)
+            // printf("Chunk: %d, %d\n", chunk_x, chunk_y);
+            for (std::vector<std::pair<float, float>> &outline : chunk_outline)
             {
-                for (int i = 0; i < outline.size() - 1; i++)
+                if(outline.size() == 0) continue;
+                // if(outline.size() %2 != 0) continue;
+                // printf("Outlining: %d\n", outline.size());
+                for (int i = 0; i < outline.size() - 2; i+=1)
                 {
-                    std::pair<int, int> p1 = outline[i];
-                    std::pair<int, int> p2 = outline[i + 1];
+
+                    // printf("Line: %d\n", i);
+                    std::pair<float, float> p1 = outline[i];
+                    std::pair<float, float> p2 = outline[i + 1];
                     // game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
                     // line_number++;
+                    // printf("Line: %f %f %f %f\n", i);
                     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
                 }
+                game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
             }
             chunk_num++;
         }
@@ -216,6 +225,7 @@ int main()
     printf("Error_0: %d\n", glGetError());
 
     printf("Program exiting\n");
+
     return 0;
 }
 // 0.001042 0.000000 0.000000 0.000000 0.000000 -0.001852 0.000000 0.000000 0.000000 0.000000 -0.020000 0.000000 -1.000000 1.000000 -1.000000 1.000000

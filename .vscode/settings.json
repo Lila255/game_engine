@@ -72,6 +72,12 @@
         "xlocbuf": "cpp",
         "xlocmes": "cpp",
         "xlocmon": "cpp",
-        "xloctime": "cpp"
+        "xloctime": "cpp",
+        "csignal": "cpp",
+        "map": "cpp",
+        "fstream": "cpp",
+        "source_location": "cpp",
+        "strstream": "cpp",
+        "xtree": "cpp"
     }
 }
