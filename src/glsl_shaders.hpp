@@ -130,7 +130,7 @@ namespace glsl_helper
 
 };
 
-std::vector<GLuint> load_shaders()
+std::vector<GLuint> load_shaders(std::string vert, std::string frag)
 {
     std::vector<GLuint> programs;
     uint16_t shader_number = 1;
@@ -138,8 +138,8 @@ std::vector<GLuint> load_shaders()
     // programs.push_back(glsl_helper::load_shader(glsl_helper::vert_0.str(), GL_VERTEX_SHADER));
     for (int i = 0; i < shader_number; i++)
     {
-        GLuint vert_shader = glsl_helper::load_shader(glsl_helper::vert_0(), GL_VERTEX_SHADER);
-        GLuint frag_shader = glsl_helper::load_shader(glsl_helper::frag_0(), GL_FRAGMENT_SHADER);
+        GLuint vert_shader = glsl_helper::load_shader(vert, GL_VERTEX_SHADER);
+        GLuint frag_shader = glsl_helper::load_shader(frag, GL_FRAGMENT_SHADER);
 
         GLuint program = glCreateProgram();
         if (program == 0)

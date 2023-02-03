@@ -21,7 +21,7 @@ namespace game
 {
     const uint16_t NUM_CHUNKS = 9; // 3x3 chunks in world
     const uint16_t CHUNKS_WIDTH = 3;
-    const uint16_t CHUNK_SIZE = 32; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
+    const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
     siv::PerlinNoise perlin_noise(0.0);
 
@@ -314,6 +314,43 @@ namespace game
             return std::make_pair(-1, -1);
         }
 
+        // DistanceToLineSegment(p1->x, p1->y, p2->x, p2->y, p->x, p->y);
+        // float DistanceToLineSegment(float x1, float y1, float x2, float y2, float x, float y)
+        // {
+        //     float A = x - x1;
+        //     float B = y - y1;
+        //     float C = x2 - x1;
+        //     float D = y2 - y1;
+
+        //     float dot = A * C + B * D;
+        //     float len_sq = C * C + D * D;
+        //     float param = -1;
+        //     if (len_sq != 0) //in case of 0 length line
+        //         param = dot / len_sq;
+
+        //     float xx, yy;
+
+        //     if (param < 0)
+        //     {
+        //         xx = x1;
+        //         yy = y1;
+        //     }
+        //     else if (param > 1)
+        //     {
+        //         xx = x2;
+        //         yy = y2;
+        //     }
+        //     else
+        //     {
+        //         xx = x1 + param * C;
+        //         yy = y1 + param * D;
+        //     }
+
+        //     float dx = x - xx;
+        //     float dy = y - yy;
+        //     return sqrt(dx * dx + dy * dy);
+        // }
+
         std::vector<std::vector<std::pair<float, float>>> create_outlines_centers()
         {
             auto start = std::chrono::high_resolution_clock::now();
@@ -372,6 +409,7 @@ namespace game
 
                                     int newX;
                                     int newY;
+                                    next_tile = std::make_pair(-1, -1);
                                     for (int i = 0; i < 4; i++)
                                     {
                                         newX = current_x + dx[i];
@@ -385,11 +423,12 @@ namespace game
 
                                         if (newX >= 0 && newX < cols && newY >= 0 && newY < rows && data[newY][newX] > 0 && isBoundaryTile(newX, newY))
                                         {
-                                            next_tile = std::make_pair(newX, newY);
-                                            if (visited.count(next_tile))
+                                            std::pair<float, float> next_next_tile = std::make_pair(newX, newY);
+                                            if (visited.count(next_next_tile))
                                             {
                                                 continue;
                                             }
+                                            next_tile = std::make_pair(newX, newY);
                                             break;
                                         }
                                         // if ended
@@ -400,6 +439,15 @@ namespace game
                                         //     current_x = x;
                                         //     current_y = y;
                                         // }
+                                    }
+                                    if (next_tile.first == -1)
+                                    {
+                                        // didnt find a next tile
+                                        // printf("No next tile found\n");
+                                        // printf("Current tile: (%d, %d)\n", current_x, current_y);
+                                        current_x = x;
+                                        current_y = y;
+                                        continue;
                                     }
 
                                     previous_x = current_x;
@@ -490,22 +538,50 @@ namespace game
                 {
                     outline_points.push_back(new p2t::Point(outline[j].first, outline[j].second));
                 }
-                printf("Points size: %d\n", outline_points.size());
+                // printf("Points size: %d\n", outline_points.size());
                 if (outline_points.size() < 3)
                     continue;
-                for (int j = 0; j < outline_points.size(); j++)
-                {
-                    printf("Point %d: %f, %f\n", j, outline_points[j]->x, outline_points[j]->y);
-                }
+                
                 p2t::CDT *cdt = new p2t::CDT(outline_points);
-                printf("Actu sedf Here\n");
-
                 cdt->Triangulate();
-                printf("Actu sedf Here\n");
-                // p2t::CDT *cdt = new p2t::CDT(outline_points);
+
+                // const float MAX_ASPECT_RATIO = 4.0f; // Adjust as desired
+                // add steiner points
+                std::vector<p2t::Triangle *> triangles = cdt->GetTriangles();
+                
+                // for(p2t::Triangle * triangle : triangles)
+                // {
+                //     for (int j = 0; j < 3; j++)
+                //     {
+                //         p2t::Point *p1 = triangle->GetPoint(j);
+                //         p2t::Point *p2 = triangle->GetPoint((j + 1) % 3);
+
+                //         float sideLength = std::sqrt((p2->x - p1->x) * (p2->x - p1->x) + (p2->y - p1->y) * (p2->y - p1->y));
+                //         float minWidth = std::numeric_limits<float>::max();
+
+                //         for (int j = 0; j < 3; j++) {
+                //             p2t::Point *p = triangle->GetPoint(j);
+                //             if (j == i || j == (i + 1) % 3) {
+                //             continue;
+                //             }
+
+                //             // Calculate the distance from the point to the side
+                //             float distance = DistanceToLineSegment(p1->x, p1->y, p2->x, p2->y, p->x, p->y);
+                //             minWidth = std::min(minWidth, distance);
+                //         }
+
+                //         float aspectRatio = sideLength / minWidth;
+                //         if (aspectRatio > MAX_ASPECT_RATIO) {
+                //             // This triangle side is long and skinny
+                //             p2t::Point *steinerPoint = new p2t::Point((p1->x + p2->x) / 2, (p1->y + p2->y) / 2);
+                //             cdt->AddPoint(steinerPoint);
+                //         }
+
+                //     }
+                // }
                 // cdt->Triangulate();
 
-                std::vector<p2t::Triangle *> triangles = cdt->GetTriangles();
+                // triangles = cdt->GetTriangles();
                 for (p2t::Triangle *triangle : triangles)
                 {
                     for (int j = 0; j < 3; j++)

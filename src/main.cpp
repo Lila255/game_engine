@@ -7,7 +7,7 @@ void run_game(GLFWwindow *window)
 {
     // Create the engine and systems
     game_engine::engine eng{};
-    game_engine::shader_programs = load_shaders();
+    game_engine::shader_programs = load_shaders(glsl_helper::vert_0(), glsl_helper::frag_0());
     printf("Error_0: %d\n", glGetError());
 
     game_engine::box_system *box_sys = new game_engine::box_system();
@@ -83,7 +83,7 @@ void run_game(GLFWwindow *window)
                 if(outline.size() == 0) continue;
                 // if(outline.size() %2 != 0) continue;
                 // printf("Outlining: %d\n", outline.size());
-                for (int i = 0; i < outline.size() - 2; i+=1)
+                for (int i = 0; i < outline.size() - 1; i+=2)
                 {
 
                     // printf("Line: %d\n", i);
@@ -94,7 +94,8 @@ void run_game(GLFWwindow *window)
                     // printf("Line: %f %f %f %f\n", i);
                     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
                 }
-                game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
+                // game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
+                // break;
             }
             chunk_num++;
         }
