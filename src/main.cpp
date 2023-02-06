@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 #include "engine_comp.hpp"
 #include "game_core.hpp"
@@ -83,16 +84,22 @@ void run_game(GLFWwindow *window)
                 if(outline.size() == 0) continue;
                 // if(outline.size() %2 != 0) continue;
                 // printf("Outlining: %d\n", outline.size());
-                for (int i = 0; i < outline.size() - 1; i+=2)
+                for (int i = 0; i < outline.size() - 2; i+=3)
                 {
 
                     // printf("Line: %d\n", i);
                     std::pair<float, float> p1 = outline[i];
                     std::pair<float, float> p2 = outline[i + 1];
+                    std::pair<float, float> p3 = outline[i + 2];
+                    game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
+                    game_engine::draw_line(p2.first, p2.second, -2.0f, p3.first, p3.second, -2.0f);
+                    game_engine::draw_line(p3.first, p3.second, -2.0f, p1.first, p1.second, -2.0f);
+
+                    // printf("Line: %f %f %f %f\n", i);
                     // game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
                     // line_number++;
                     // printf("Line: %f %f %f %f\n", i);
-                    game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
+                    // game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
                 }
                 // game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
                 // break;
@@ -125,6 +132,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     //     printf("W pressed\n");
     // }
 }
+
 
 int main()
 {
@@ -220,6 +228,13 @@ int main()
     printf("Error_0: %d\n", glGetError());
     glfwSetKeyCallback(window, key_callback);
     printf("Error_0: %d\n", glGetError());
+
+
+    // do_tests();
+    // return 0;
+
+
+
 
     // Run the game
     run_game(window);
