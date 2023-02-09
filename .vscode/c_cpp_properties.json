@@ -4,10 +4,8 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                // "../libraries/glfw-3.3.8.bin.WIN64/include/GLFW/*",
-                // "../libraries/glfw-3.3.8.bin.WIN64/include",
-                // "../libraries/glew-2.1.0/include"
-                "${env:VCPKG_ROOT}/installed/x64-windows/include/"
+                "${env:VCPKG_ROOT}/installed/x64-windows/include/",
+                "C:/Users/Luke/not_marsello/vcpkg_install/vcpkg/installed/x64-windows/include"
             ],
             "defines": [
                 "_DEBUG",

@@ -182,46 +182,10 @@ namespace game_engine
                 if (pressed_keys.count(key) > 0)
                     pressed_keys.erase(key);
             }
-
-            // box_system *b_system = (game_engine::box_system *)(game_engine_pointer->get_system(family::type<game_engine::box_system>()));
-            // texture_vbo_system *vbo_system = (game_engine::texture_vbo_system *)(game_engine_pointer->get_system(family::type<game_engine::texture_vbo_system>()));
-
-            // if (key == GLFW_KEY_W && action == GLFW_PRESS)
-            // {
-            //     // Move up
-            //     box & b = b_system->get(game_engine_pointer->player_entitiy);
-            //     b.y -= 10.1f;
-            //     vbo_system->update(game_engine_pointer->player_entitiy);
-
-            // }
-            // if (key == GLFW_KEY_S && action == GLFW_PRESS)
-            // {
-            //     printf("Moving down\n");
-            //     // Move down
-            //     box & b = b_system->get(game_engine_pointer->player_entitiy);
-            //     b.y += 10.1f;
-            //     box b2 = b_system->get(game_engine_pointer->player_entitiy);
-            //     printf("b.y: %f, b2.y: %f\n", b.y, b2.y);
-            //     vbo_system->update(game_engine_pointer->player_entitiy);
-            //     // view_matrix[13] -= 10.1f;
-
-            // }
-            // if (key == GLFW_KEY_A && action == GLFW_PRESS)
-            // {
-            //     // Move left
-            //     box & b = b_system->get(game_engine_pointer->player_entitiy);
-            //     b.x -= 10.1f;
-            //     box b2 = b_system->get(game_engine_pointer->player_entitiy);
-            //     vbo_system->update(game_engine_pointer->player_entitiy);
-            // }
-            // if (key == GLFW_KEY_D && action == GLFW_PRESS)
-            // {
-            //     // Move right
-            //     box & b = b_system->get(game_engine_pointer->player_entitiy);
-            //     b.x += 10.1f;
-            //     box b2 = b_system->get(game_engine_pointer->player_entitiy);
-            //     vbo_system->update(game_engine_pointer->player_entitiy);
-            // }
         }
     };
+    void static static_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+    {
+        game_engine_pointer->key_callback(window, key, scancode, action, mods);
+    }
 }

@@ -21,7 +21,7 @@ find_package(GLEW REQUIRED)
 include_directories(${GLEW_INCLUDE_DIRS})
 find_package(poly2tri CONFIG REQUIRED)
 include_directories(${POLY2TRI_INCLUDE_DIRS})
-# include_directories(VCPKG_ROOT/installed/x64-windows/include/GL/glew.h)
+find_package(box2d CONFIG REQUIRED)
 
 
 # Set compiler options
@@ -32,7 +32,7 @@ file(GLOB SOURCES src/*.cpp)
 
 # Build executable
 add_executable(game ${SOURCES})
-target_link_libraries(game PRIVATE glfw GLEW::glew opengl32 poly2tri::poly2tri)
+target_link_libraries(game PRIVATE glfw GLEW::glew opengl32 poly2tri::poly2tri box2d::box2d)
 # target_link_libraries(game glfw3 glew opengl32)
 
 # Find all dependencies

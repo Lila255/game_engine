@@ -77,6 +77,16 @@ namespace game_engine
             m_size--;
         }
 
+        /// @brief Update the component associated with the specified entity
+        /// @param ent The entity to update the component for
+        /// @param comp The component to update
+        void update(entity ent, component_type &comp)
+        {
+            if (!contains(ent))
+                return;
+            m_components[m_sparse[ent]] = std::move(comp);
+        }
+
         /// @brief Get the component asscociated with the specified entity.
         /// Will throw exception if the entity is not in the set
         /// @param ent The entity to get the component for

@@ -72,6 +72,11 @@ namespace game_engine
         {
             return m_boxes.get(ent);
         }
+
+        void update_box(entity ent, box b)
+        {
+            m_boxes.update(ent, b);
+        }
     };
 
     struct texture_vbo_system : public system
@@ -159,7 +164,6 @@ namespace game_engine
         {
             // Get the box component
             box &b = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()))->get(ent);
-
             // Create the vertex data
             // float vertex_data[] = {
             //     b.x, b.y, b.z, 0.0f, 0.0f,
@@ -224,6 +228,9 @@ namespace game_engine
         // texture foreground_texture;
         // texture light_texture;
 
+        // function pointer for key callback
+        void (*key_callback)(std::unordered_set<int> &keys_pressed);
+
         GLFWwindow *m_window;
         uint32_t m_frame_count = 0;
 
@@ -239,40 +246,21 @@ namespace game_engine
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
-            printf("Error_1.5: x%d\n", glGetError());
+            // void (engine::*ptr)(GLFWwindow *window, int key, int scancode, int action, int mods) = &(engine::key_callback);
+            // glfwSetKeyCallback(window, (game_engine_pointer->*ptr));
+            glfwSetKeyCallback(window, game_engine::static_key_callback);
+        }
 
-            // GLint currnet_matrix_mode;
-            // glGetIntegerv(GL_MATRIX_MODE, &currnet_matrix_mode);
-            // if(currnet_matrix_mode == GL_PROJECTION) {
-            //     printf("Error: already matrix\n");
-            // }
-
-            // glMatrixMode(GL_PROJECTION);
-            // printf("Error_1.5: x%d\n", glGetError());
-            // glLoadIdentity();
-            // printf("Error_1.5: x%d\n", glGetError());
-            // glOrtho(0.0f, 1.0f * window_width, 1.0f * window_height, 0.0f, 0.0f, 1.0f);
-            // printf("Error_1.5: x%d\n", glGetError());
-            // glMatrixMode(GL_MODELVIEW);
-            // printf("Error_1.5: x%d\n", glGetError());
-
-            // create textures
-            // glGenTextures(1, &background_texture.id);
-            // glGenTextures(1, &foreground_texture.id);
-            // glGenTextures(1, &light_texture.id);
-
-            // glBindTexture(GL_TEXTURE_2D, background_texture.id);
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        void set_key_callback(void (*key_callback)(std::unordered_set<int> &keys_pressed))
+        {
+            this->key_callback = key_callback;
         }
 
         void update() override
         {
             // Do rendering stuff
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            
+
             update_keys();
 
             texture_vbo_system *texture_vbo_system_pointer = ((texture_vbo_system *)game_engine_pointer->get_system(family::type<texture_vbo_system>()));
@@ -361,30 +349,40 @@ namespace game_engine
 
         void update_keys()
         {
-            if(!game_engine_pointer->pressed_keys.size()) return;
-            // iterate over game_engine_pointer -> keys
-            // if WASD key is pressed, move player
-            
-            box_system *b_system = (game_engine::box_system *)(game_engine_pointer->get_system(family::type<game_engine::box_system>())); 
+            if (!game_engine_pointer->game_engine::engine::pressed_keys.size())
+                return;
+
+            // if key_callback is defined, use it instead
+            if (key_callback)
+            {
+                key_callback(game_engine_pointer->pressed_keys);
+                return;
+            }
+
+            box_system *b_system = (game_engine::box_system *)(game_engine_pointer->get_system(family::type<game_engine::box_system>()));
             texture_vbo_system *vbo_system = (game_engine::texture_vbo_system *)(game_engine_pointer->get_system(family::type<game_engine::texture_vbo_system>()));
             box &b = b_system->get(game_engine_pointer->player_entitiy);
 
-            for(auto &key : game_engine_pointer->pressed_keys){
-                if(key == GLFW_KEY_W){
+            for (auto &key : game_engine_pointer->pressed_keys)
+            {
+                if (key == GLFW_KEY_W)
+                {
                     b.y -= 1.0f;
                 }
-                if(key == GLFW_KEY_A){
+                if (key == GLFW_KEY_A)
+                {
                     b.x -= 1.0f;
                 }
-                if(key == GLFW_KEY_S){
+                if (key == GLFW_KEY_S)
+                {
                     b.y += 1.0f;
                 }
-                if(key == GLFW_KEY_D){
+                if (key == GLFW_KEY_D)
+                {
                     b.x += 1.0f;
                 }
             }
             vbo_system->update(game_engine_pointer->player_entitiy);
-
         }
     };
 

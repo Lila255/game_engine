@@ -4,38 +4,84 @@
 #include "engine_comp.hpp"
 #include "game_core.hpp"
 
+void custom_key_callback(std::unordered_set<int>& keys)
+{
+    if(keys.find(GLFW_KEY_ESCAPE) != keys.end()) {
+        glfwSetWindowShouldClose(glfwGetCurrentContext(), true);
+    }
+    // w
+    if(keys.count(GLFW_KEY_W) > 0) {
+        game::box2d_system * b2d_sys = (game::box2d_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+        entity player = game_engine::game_engine_pointer->player_entitiy;
+        b2Body *body = b2d_sys->get_dynamic_body(player);
+        b2Vec2 impulse = b2Vec2(0.0f, 10.1f);
+        body->ApplyLinearImpulseToCenter(impulse, true);
+
+    }
+    // s
+    if(keys.count(GLFW_KEY_S) > 0) {
+        game_engine::box_system* box_sys = (game_engine::box_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
+        game_engine::texture_vbo_system* texture_vbo_sys = (game_engine::texture_vbo_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
+        entity player = game_engine::game_engine_pointer->player_entitiy;
+        
+        game_engine::box player_box = box_sys->get(player);
+        player_box.y += 0.1f;
+        box_sys->update_box(player, player_box);
+        texture_vbo_sys->update(player);        
+        printf("Player y: %f\n", player_box.y);
+    }
+}
+
 void run_game(GLFWwindow *window)
 {
     // Create the engine and systems
     game_engine::engine eng{};
     game_engine::shader_programs = load_shaders(glsl_helper::vert_0(), glsl_helper::frag_0());
-    printf("Error_0: %d\n", glGetError());
 
     game_engine::box_system *box_sys = new game_engine::box_system();
     eng.add_system(game_engine::family::type<game_engine::box_system>(), box_sys);
 
     game_engine::render_system *render_sys = new game_engine::render_system(window);
     eng.add_system(game_engine::family::type<game_engine::render_system>(), render_sys);
-    printf("Error_0: %d\n", glGetError());
+    render_sys->set_key_callback(custom_key_callback);
 
     game_engine::texture_vbo_system *texture_vbo_sys = new game_engine::texture_vbo_system();
     eng.add_system(game_engine::family::type<game_engine::texture_vbo_system>(), texture_vbo_sys);
-    printf("Error_0: %d\n", glGetError());
 
     game::world_tile_system *world_sys = new game::world_tile_system();
     eng.add_system(game_engine::family::type<game::world_tile_system>(), world_sys);
-    printf("Error_0: %d\n", glGetError());
+
+    game::box2d_system *box2d_sys = new game::box2d_system();
+    eng.add_system(game_engine::family::type<game::box2d_system>(), box2d_sys);
+
+
 
     world_sys->generate_world();
     printf("Error_0: %d\n", glGetError());
-    std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
+    // std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
+    std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
+    std::array<GLuint, game::NUM_CHUNKS> chunk_textures;
+    for(int i = 0; i < game::NUM_CHUNKS; i++) {
+        GLuint texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        // set data and size
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, game::CHUNK_SIZE, game::CHUNK_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, chunks_data[i] -> data());
+        glBindTexture(GL_TEXTURE_2D, 0);
+        chunk_textures[i] = texture;
+    }
     // for(int i = 0; i < game::NUM_CHUNKS; i++) {
     std::vector<std::vector<std::vector<std::pair<float, float>>>> chunk_outlines;
     for (int y = 0; y < game::CHUNKS_WIDTH; y++)
     {
         for (int x = 0; x < game::CHUNKS_WIDTH; x++)
         {
-            chunk_outlines.push_back(world_sys->create_outlines(x, y));
+            if(x != 0 || y != 0)
+                chunk_outlines.push_back(world_sys->create_outlines(x, y));
             entity chunk_entity = eng.create_entity();
             float top_left_x = game::CHUNK_SIZE * x * 1.0;
             float top_left_y = game::CHUNK_SIZE * y * 1.0;
@@ -53,6 +99,15 @@ void run_game(GLFWwindow *window)
         }
     }
 
+    // for(std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines) {
+    //     for(std::vector<std::pair<float, float>> &outline : chunk_outline) {
+    //         entity outline_entity = eng.create_entity();
+    //         box2d_sys->create_static_body(outline_entity, outline);
+    //     }
+    // }
+
+    
+    // create player
     entity player_entity = eng.create_entity();
     GLuint player_texture;
     glsl_helper::create_character_texture(player_texture);
@@ -61,51 +116,58 @@ void run_game(GLFWwindow *window)
     box_sys->add(player_entity, {8.f, 8.f, -1.f, glsl_helper::character_width, glsl_helper::character_height});
     texture_vbo_sys->add(player_entity);
     eng.player_entitiy = player_entity;
-    printf("Error_0: %d\n", glGetError());
+    // create box2d body
+    std::vector<std::pair<float, float>> player_shape = {
+        {0.f, 0.f},
+        {glsl_helper::character_width, 0.f},
+        {glsl_helper::character_width, glsl_helper::character_height},
+        {0.f, glsl_helper::character_height},
+        // {0.f, 0.f}
+    };
+    box2d_sys->create_dynamic_body(player_entity, player_shape);
+    
+
+
 
     // Run the game loop
     while (!glfwWindowShouldClose(window))
     {
 
         // draw lines for chunk outlines
-
+        box2d_sys->update();
         // Update the engine
         render_sys->update();
         uint16_t chunk_num = 0;
         uint64_t line_number = 0;
         // printf("Rendering\n");
-        for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
-        {
-            uint16_t chunk_x = chunk_num % game::CHUNKS_WIDTH;
-            uint16_t chunk_y = chunk_num / game::CHUNKS_WIDTH;
-            // printf("Chunk: %d, %d\n", chunk_x, chunk_y);
-            for (std::vector<std::pair<float, float>> &outline : chunk_outline)
-            {
-                if(outline.size() == 0) continue;
-                // if(outline.size() %2 != 0) continue;
-                // printf("Outlining: %d\n", outline.size());
-                for (int i = 0; i < outline.size() - 2; i+=3)
-                {
+        // for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
+        // {
+        //     uint16_t chunk_x = chunk_num % game::CHUNKS_WIDTH;
+        //     uint16_t chunk_y = chunk_num / game::CHUNKS_WIDTH;
+        //     // printf("Chunk: %d, %d\n", chunk_x, chunk_y);
+        //     for (std::vector<std::pair<float, float>> &outline : chunk_outline)
+        //     {
+        //         for (int i = 0; i < outline.size() - 2; i+=3)
+        //         {
+        //             // printf("Line: %d\n", i);
+        //             std::pair<float, float> p1 = outline[i];
+        //             std::pair<float, float> p2 = outline[i + 1];
+        //             std::pair<float, float> p3 = outline[i + 2];
+        //             game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
+        //             game_engine::draw_line(p2.first, p2.second, -2.0f, p3.first, p3.second, -2.0f);
+        //             game_engine::draw_line(p3.first, p3.second, -2.0f, p1.first, p1.second, -2.0f);
+        //         }
 
-                    // printf("Line: %d\n", i);
-                    std::pair<float, float> p1 = outline[i];
-                    std::pair<float, float> p2 = outline[i + 1];
-                    std::pair<float, float> p3 = outline[i + 2];
-                    game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
-                    game_engine::draw_line(p2.first, p2.second, -2.0f, p3.first, p3.second, -2.0f);
-                    game_engine::draw_line(p3.first, p3.second, -2.0f, p1.first, p1.second, -2.0f);
-
-                    // printf("Line: %f %f %f %f\n", i);
-                    // game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
-                    // line_number++;
-                    // printf("Line: %f %f %f %f\n", i);
-                    // game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
-                }
-                // game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
-                // break;
-            }
-            chunk_num++;
-        }
+        //         // for (int i = 0; i < outline.size() - 1; i+=1)
+        //         // {
+        //         //     // Non-triangulated outlines
+        //         //     std::pair<float, float> p1 = outline[i];
+        //         //     std::pair<float, float> p2 = outline[i + 1];
+        //         //     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
+        //         // }
+        //     }
+        //     chunk_num++;
+        // }
         // printf("Number of lines: %d\n", line_number);
         glfwSwapBuffers(window);
     }
@@ -132,6 +194,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     //     printf("W pressed\n");
     // }
 }
+
 
 
 int main()
@@ -225,9 +288,7 @@ int main()
     printf("Error_0: %d\n", glGetError());
 
     glfwSetErrorCallback(error_callback);
-    printf("Error_0: %d\n", glGetError());
-    glfwSetKeyCallback(window, key_callback);
-    printf("Error_0: %d\n", glGetError());
+    // glfwSetKeyCallback(window, key_callback);
 
 
     // do_tests();
