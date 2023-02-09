@@ -14,22 +14,62 @@ void custom_key_callback(std::unordered_set<int>& keys)
         game::box2d_system * b2d_sys = (game::box2d_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
         entity player = game_engine::game_engine_pointer->player_entitiy;
         b2Body *body = b2d_sys->get_dynamic_body(player);
-        b2Vec2 impulse = b2Vec2(0.0f, 10.1f);
-        body->ApplyLinearImpulseToCenter(impulse, true);
+        // if body is touching something
+        if(body->GetContactList() != NULL) {
+            for(b2ContactEdge *ce = body->GetContactList(); ce != NULL; ce = ce->next) {
+                // if the normal is pointing up
+                if(ce->contact->GetManifold()->localNormal.y < 0) {
+                    b2Vec2 impulse = b2Vec2(0.0f, -1000.1f);
+                    body->ApplyLinearImpulseToCenter(impulse, true);
+                }
+            }
+            // b2Vec2 impulse = b2Vec2(0.0f, -1000.1f);
+            // body->ApplyLinearImpulseToCenter(impulse, true);
+        }
+        // b2Vec2 impulse = b2Vec2(0.0f, -100.1f);
+        // body->ApplyLinearImpulseToCenter(impulse, true);
 
+    }
+    // a
+    if(keys.count(GLFW_KEY_A) > 0) {
+        game::box2d_system * b2d_sys = (game::box2d_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+        entity player = game_engine::game_engine_pointer->player_entitiy;
+        b2Body *body = b2d_sys->get_dynamic_body(player);
+        b2Vec2 impulse = b2Vec2(-100.1f, 0.0f);
+        body->ApplyLinearImpulseToCenter(impulse, true);
     }
     // s
     if(keys.count(GLFW_KEY_S) > 0) {
-        game_engine::box_system* box_sys = (game_engine::box_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
-        game_engine::texture_vbo_system* texture_vbo_sys = (game_engine::texture_vbo_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
-        entity player = game_engine::game_engine_pointer->player_entitiy;
-        
-        game_engine::box player_box = box_sys->get(player);
-        player_box.y += 0.1f;
-        box_sys->update_box(player, player_box);
-        texture_vbo_sys->update(player);        
-        printf("Player y: %f\n", player_box.y);
+        // if in water or something, idk
     }
+
+    // d
+    if(keys.count(GLFW_KEY_D) > 0) {
+        game::box2d_system * b2d_sys = (game::box2d_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+        entity player = game_engine::game_engine_pointer->player_entitiy;
+        b2Body *body = b2d_sys->get_dynamic_body(player);
+        b2Vec2 impulse = b2Vec2(100.1f, 0.0f);
+        body->ApplyLinearImpulseToCenter(impulse, true);
+    }
+
+    // shift
+    if(keys.count(GLFW_KEY_LEFT_SHIFT) > 0) {
+        int direction = 0;
+        if(keys.count(GLFW_KEY_A) > 0 && keys.count(GLFW_KEY_D) > 0) {
+            direction = 0;
+        } else if(keys.count(GLFW_KEY_A)) {
+            direction = -1;
+        } else if(keys.count(GLFW_KEY_D)) {
+            direction = 1;
+        }
+        game::box2d_system * b2d_sys = (game::box2d_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+        entity player = game_engine::game_engine_pointer->player_entitiy;
+        b2Body *body = b2d_sys->get_dynamic_body(player);
+        b2Vec2 impulse = b2Vec2(direction * 1000.f, 0.f);
+        body->ApplyLinearImpulseToCenter(impulse, true);
+    }
+
+    
 }
 
 void run_game(GLFWwindow *window)
@@ -57,7 +97,6 @@ void run_game(GLFWwindow *window)
 
 
     world_sys->generate_world();
-    printf("Error_0: %d\n", glGetError());
     // std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
     std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
     std::array<GLuint, game::NUM_CHUNKS> chunk_textures;
@@ -99,12 +138,12 @@ void run_game(GLFWwindow *window)
         }
     }
 
-    // for(std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines) {
-    //     for(std::vector<std::pair<float, float>> &outline : chunk_outline) {
-    //         entity outline_entity = eng.create_entity();
-    //         box2d_sys->create_static_body(outline_entity, outline);
-    //     }
-    // }
+    for(std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines) {
+        for(std::vector<std::pair<float, float>> &outline : chunk_outline) {
+            entity outline_entity = eng.create_entity();
+            box2d_sys->create_static_body(outline_entity, outline);
+        }
+    }
 
     
     // create player
@@ -122,7 +161,7 @@ void run_game(GLFWwindow *window)
         {glsl_helper::character_width, 0.f},
         {glsl_helper::character_width, glsl_helper::character_height},
         {0.f, glsl_helper::character_height},
-        // {0.f, 0.f}
+        // {0.1f, 0.1f}
     };
     box2d_sys->create_dynamic_body(player_entity, player_shape);
     
@@ -140,34 +179,34 @@ void run_game(GLFWwindow *window)
         uint16_t chunk_num = 0;
         uint64_t line_number = 0;
         // printf("Rendering\n");
-        // for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
-        // {
-        //     uint16_t chunk_x = chunk_num % game::CHUNKS_WIDTH;
-        //     uint16_t chunk_y = chunk_num / game::CHUNKS_WIDTH;
-        //     // printf("Chunk: %d, %d\n", chunk_x, chunk_y);
-        //     for (std::vector<std::pair<float, float>> &outline : chunk_outline)
-        //     {
-        //         for (int i = 0; i < outline.size() - 2; i+=3)
-        //         {
-        //             // printf("Line: %d\n", i);
-        //             std::pair<float, float> p1 = outline[i];
-        //             std::pair<float, float> p2 = outline[i + 1];
-        //             std::pair<float, float> p3 = outline[i + 2];
-        //             game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
-        //             game_engine::draw_line(p2.first, p2.second, -2.0f, p3.first, p3.second, -2.0f);
-        //             game_engine::draw_line(p3.first, p3.second, -2.0f, p1.first, p1.second, -2.0f);
-        //         }
+        for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
+        {
+            uint16_t chunk_x = chunk_num % game::CHUNKS_WIDTH;
+            uint16_t chunk_y = chunk_num / game::CHUNKS_WIDTH;
+            // printf("Chunk: %d, %d\n", chunk_x, chunk_y);
+            for (std::vector<std::pair<float, float>> &outline : chunk_outline)
+            {
+                // for (int i = 0; i < outline.size() - 2; i+=3)
+                // {
+                //     // printf("Line: %d\n", i);
+                //     std::pair<float, float> p1 = outline[i];
+                //     std::pair<float, float> p2 = outline[i + 1];
+                //     std::pair<float, float> p3 = outline[i + 2];
+                //     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
+                //     game_engine::draw_line(p2.first, p2.second, -2.0f, p3.first, p3.second, -2.0f);
+                //     game_engine::draw_line(p3.first, p3.second, -2.0f, p1.first, p1.second, -2.0f);
+                // }
 
-        //         // for (int i = 0; i < outline.size() - 1; i+=1)
-        //         // {
-        //         //     // Non-triangulated outlines
-        //         //     std::pair<float, float> p1 = outline[i];
-        //         //     std::pair<float, float> p2 = outline[i + 1];
-        //         //     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
-        //         // }
-        //     }
-        //     chunk_num++;
-        // }
+                for (int i = 0; i < outline.size() - 1; i+=1)
+                {
+                    // Non-triangulated outlines
+                    std::pair<float, float> p1 = outline[i];
+                    std::pair<float, float> p2 = outline[i + 1];
+                    game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
+                }
+            }
+            chunk_num++;
+        }
         // printf("Number of lines: %d\n", line_number);
         glfwSwapBuffers(window);
     }

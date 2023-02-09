@@ -101,7 +101,7 @@ namespace game
         // box2d_system() = default;
         box2d_system()
         {
-            gravity = b2Vec2(0.0f, 9.8f);
+            gravity = b2Vec2(0.0f, 109.8f);
             world = new b2World(gravity);
         }
 
@@ -110,6 +110,8 @@ namespace game
         /// @param mesh The triangulated mesh to add to the body
         void create_static_body(entity ent, std::vector<std::pair<float, float>> mesh)
         {
+
+            if(mesh.size() < 3) return;
             // static_bodies.add(ent, body);
             b2BodyDef bodyDef;
             bodyDef.type = b2_staticBody;
@@ -125,7 +127,7 @@ namespace game
             b2FixtureDef fixtureDef;
             fixtureDef.shape = &chain;
             fixtureDef.density = 0.0f;
-            fixtureDef.friction = 0.3f;
+            fixtureDef.friction = 0.73f;
             body->CreateFixture(&fixtureDef);
             static_bodies.add(ent, body);
         }
@@ -140,24 +142,38 @@ namespace game
         void create_dynamic_body(entity ent, std::vector<std::pair<float, float>> mesh)
         {
             // static_bodies.add(ent, body);
-            b2BodyDef bodyDef;
-            bodyDef.type = b2_dynamicBody;
-            // set position
-            bodyDef.position.Set(110.0f, 100.0f);
-            b2Body *body = world -> CreateBody(&bodyDef);
-            // add mesh
-            b2ChainShape chain;
-            b2Vec2 *vertices = new b2Vec2[mesh.size()];
-            for (int i = 0; i < mesh.size(); i++)
-            {
-                vertices[i].Set(mesh[i].first, mesh[i].second);
-            }
-            chain.CreateLoop(vertices, mesh.size());
-            b2FixtureDef fixtureDef;
-            fixtureDef.shape = &chain;
-            fixtureDef.density = 10.0f;
-            fixtureDef.friction = 0.3f;
-            body->CreateFixture(&fixtureDef);
+            // b2BodyDef bodyDef;
+            // bodyDef.type = b2_dynamicBody;
+            // // set position
+            // bodyDef.position.Set(110.0f, 100.0f);
+            // b2Body *body = world -> CreateBody(&bodyDef);
+            // // add mesh
+            // b2ChainShape chain;
+            // b2Vec2 *vertices = new b2Vec2[mesh.size()];
+            // for (int i = 0; i < mesh.size(); i++)
+            // {
+            //     vertices[i].Set(mesh[i].first, mesh[i].second);
+            // }
+            // chain.CreateLoop(vertices, mesh.size());
+            // b2FixtureDef fixtureDef;
+            // fixtureDef.shape = &chain;
+            // fixtureDef.density = 10.0f;
+            // fixtureDef.friction = 0.3f;
+            // body->CreateFixture(&fixtureDef);
+            // dynamic_bodies.add(ent, body);
+
+            // create rectangle shape and add
+            b2BodyDef body_def;
+            body_def.type = b2_dynamicBody;
+            body_def.position.Set(110.0f, 100.0f);
+            b2Body *body = world->CreateBody(&body_def);
+            b2PolygonShape dynamic_box;
+            dynamic_box.SetAsBox(1.0f, 1.0f);
+            b2FixtureDef fixture_def;
+            fixture_def.shape = &dynamic_box;
+            fixture_def.density = 10.0f;
+            fixture_def.friction = 0.3f;
+            body->CreateFixture(&fixture_def);
             dynamic_bodies.add(ent, body);
         }
         
@@ -175,7 +191,7 @@ namespace game
             
             b2Body *body = dynamic_bodies.get(game_engine::game_engine_pointer->player_entitiy);
             b2Vec2 position = body->GetPosition();
-            
+
             // get player position
             // b2Body *body = dynamic_bodies.get(game_engine::game_engine_pointer->player_entitiy);
             // b2Vec2 position = body->GetPosition();
