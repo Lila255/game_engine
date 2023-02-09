@@ -68,6 +68,35 @@ namespace glsl_helper
         return vert_0.str();
     }
 
+    // generic shader program for drawing lines and points using the projection and view matrix uniforms
+    std::string vert_1()
+    {
+        std::stringstream vert_1;
+        vert_1
+            << "#version 330\n"
+            << "layout (location = 0) in vec3 in_Position;\n"
+            << "uniform mat4 projection;\n"
+            << "uniform mat4 view;\n"
+            << "void main()\n"
+            << "{\n"
+            << "gl_Position = projection * view * vec4(in_Position, 1.0);\n"
+            << "}\n";
+        return vert_1.str();
+    }
+    std::string frag_1()
+    {
+        std::stringstream frag_1;
+        frag_1
+            << "#version 330\n"
+            << "out vec4 out_Color;\n"
+            << "void main()\n"
+            << "{\n"
+            << "out_Color = vec4(1.0, 1.0, 1.0, 1.0);\n"
+            << "}\n";
+        return frag_1.str();
+    }
+
+
     GLuint load_shader(const std::string &source, GLenum type)
     {
         GLuint shader = glCreateShader(type);

@@ -4,23 +4,29 @@
 #include "engine_comp.hpp"
 #include "game_core.hpp"
 
-void custom_key_callback(std::unordered_set<int>& keys)
+void custom_key_callback(std::unordered_set<int> &keys)
 {
-    if(keys.find(GLFW_KEY_ESCAPE) != keys.end()) {
+    if (keys.find(GLFW_KEY_ESCAPE) != keys.end())
+    {
         glfwSetWindowShouldClose(glfwGetCurrentContext(), true);
     }
     // w
-    if(keys.count(GLFW_KEY_W) > 0) {
-        game::box2d_system * b2d_sys = (game::box2d_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+    if (keys.count(GLFW_KEY_W) > 0)
+    {
+        game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
         entity player = game_engine::game_engine_pointer->player_entitiy;
         b2Body *body = b2d_sys->get_dynamic_body(player);
         // if body is touching something
-        if(body->GetContactList() != NULL) {
-            for(b2ContactEdge *ce = body->GetContactList(); ce != NULL; ce = ce->next) {
+        if (body->GetContactList() != NULL)
+        {
+            for (b2ContactEdge *ce = body->GetContactList(); ce != NULL; ce = ce->next)
+            {
                 // if the normal is pointing up
-                if(ce->contact->GetManifold()->localNormal.y < 0) {
-                    b2Vec2 impulse = b2Vec2(0.0f, -1000.1f);
+                if (ce->contact->GetManifold()->localNormal.y < 0)
+                {
+                    b2Vec2 impulse = b2Vec2(0.0f, -2500.1f);
                     body->ApplyLinearImpulseToCenter(impulse, true);
+                    break;
                 }
             }
             // b2Vec2 impulse = b2Vec2(0.0f, -1000.1f);
@@ -28,48 +34,54 @@ void custom_key_callback(std::unordered_set<int>& keys)
         }
         // b2Vec2 impulse = b2Vec2(0.0f, -100.1f);
         // body->ApplyLinearImpulseToCenter(impulse, true);
-
     }
     // a
-    if(keys.count(GLFW_KEY_A) > 0) {
-        game::box2d_system * b2d_sys = (game::box2d_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+    if (keys.count(GLFW_KEY_A) > 0)
+    {
+        game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
         entity player = game_engine::game_engine_pointer->player_entitiy;
         b2Body *body = b2d_sys->get_dynamic_body(player);
-        b2Vec2 impulse = b2Vec2(-100.1f, 0.0f);
+        b2Vec2 impulse = b2Vec2(-250.1f, 0.0f);
         body->ApplyLinearImpulseToCenter(impulse, true);
     }
     // s
-    if(keys.count(GLFW_KEY_S) > 0) {
+    if (keys.count(GLFW_KEY_S) > 0)
+    {
         // if in water or something, idk
     }
 
     // d
-    if(keys.count(GLFW_KEY_D) > 0) {
-        game::box2d_system * b2d_sys = (game::box2d_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+    if (keys.count(GLFW_KEY_D) > 0)
+    {
+        game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
         entity player = game_engine::game_engine_pointer->player_entitiy;
         b2Body *body = b2d_sys->get_dynamic_body(player);
-        b2Vec2 impulse = b2Vec2(100.1f, 0.0f);
+        b2Vec2 impulse = b2Vec2(250.1f, 0.0f);
         body->ApplyLinearImpulseToCenter(impulse, true);
     }
 
     // shift
-    if(keys.count(GLFW_KEY_LEFT_SHIFT) > 0) {
+    if (keys.count(GLFW_KEY_LEFT_SHIFT) > 0)
+    {
         int direction = 0;
-        if(keys.count(GLFW_KEY_A) > 0 && keys.count(GLFW_KEY_D) > 0) {
+        if (keys.count(GLFW_KEY_A) > 0 && keys.count(GLFW_KEY_D) > 0)
+        {
             direction = 0;
-        } else if(keys.count(GLFW_KEY_A)) {
+        }
+        else if (keys.count(GLFW_KEY_A))
+        {
             direction = -1;
-        } else if(keys.count(GLFW_KEY_D)) {
+        }
+        else if (keys.count(GLFW_KEY_D))
+        {
             direction = 1;
         }
-        game::box2d_system * b2d_sys = (game::box2d_system*)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+        game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
         entity player = game_engine::game_engine_pointer->player_entitiy;
         b2Body *body = b2d_sys->get_dynamic_body(player);
         b2Vec2 impulse = b2Vec2(direction * 1000.f, 0.f);
         body->ApplyLinearImpulseToCenter(impulse, true);
     }
-
-    
 }
 
 void run_game(GLFWwindow *window)
@@ -94,13 +106,12 @@ void run_game(GLFWwindow *window)
     game::box2d_system *box2d_sys = new game::box2d_system();
     eng.add_system(game_engine::family::type<game::box2d_system>(), box2d_sys);
 
-
-
     world_sys->generate_world();
     // std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
     std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
     std::array<GLuint, game::NUM_CHUNKS> chunk_textures;
-    for(int i = 0; i < game::NUM_CHUNKS; i++) {
+    for (int i = 0; i < game::NUM_CHUNKS; i++)
+    {
         GLuint texture;
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -109,7 +120,7 @@ void run_game(GLFWwindow *window)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, game::CHUNK_SIZE, game::CHUNK_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, chunks_data[i] -> data());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, game::CHUNK_SIZE, game::CHUNK_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, chunks_data[i]->data());
         glBindTexture(GL_TEXTURE_2D, 0);
         chunk_textures[i] = texture;
     }
@@ -119,7 +130,7 @@ void run_game(GLFWwindow *window)
     {
         for (int x = 0; x < game::CHUNKS_WIDTH; x++)
         {
-            if(x != 0 || y != 0)
+            if (x != 0 || y != 0)
                 chunk_outlines.push_back(world_sys->create_outlines(x, y));
             entity chunk_entity = eng.create_entity();
             float top_left_x = game::CHUNK_SIZE * x * 1.0;
@@ -138,14 +149,15 @@ void run_game(GLFWwindow *window)
         }
     }
 
-    for(std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines) {
-        for(std::vector<std::pair<float, float>> &outline : chunk_outline) {
+    for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
+    {
+        for (std::vector<std::pair<float, float>> &outline : chunk_outline)
+        {
             entity outline_entity = eng.create_entity();
             box2d_sys->create_static_body(outline_entity, outline);
         }
     }
 
-    
     // create player
     entity player_entity = eng.create_entity();
     GLuint player_texture;
@@ -164,9 +176,19 @@ void run_game(GLFWwindow *window)
         // {0.1f, 0.1f}
     };
     box2d_sys->create_dynamic_body(player_entity, player_shape);
-    
 
-
+    // generic shader
+    GLuint generic_shader = load_shaders(glsl_helper::vert_1(), glsl_helper::frag_1())[0];
+    glUseProgram(generic_shader);
+    // GLuint projection_location = glGetUniformLocation(shader_programs[0], "projection");
+    // glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix);
+    // GLuint view_location = glGetUniformLocation(shader_programs[0], "view");
+    // glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
+    // do this ^^ but with generic shader
+    GLuint projection_location = glGetUniformLocation(generic_shader, "projection");
+    glUniformMatrix4fv(projection_location, 1, GL_FALSE, game_engine::projection_matrix);
+    GLuint view_location = glGetUniformLocation(generic_shader, "view");
+    glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
 
     // Run the game loop
     while (!glfwWindowShouldClose(window))
@@ -176,16 +198,19 @@ void run_game(GLFWwindow *window)
         box2d_sys->update();
         // Update the engine
         render_sys->update();
-        uint16_t chunk_num = 0;
-        uint64_t line_number = 0;
         // printf("Rendering\n");
+        // glUseProgram(0);
+        glUseProgram(generic_shader);
+        GLuint projection_location = glGetUniformLocation(generic_shader, "projection");
+        glUniformMatrix4fv(projection_location, 1, GL_FALSE, game_engine::projection_matrix);
+        GLuint view_location = glGetUniformLocation(generic_shader, "view");
+        glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
         for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
         {
-            uint16_t chunk_x = chunk_num % game::CHUNKS_WIDTH;
-            uint16_t chunk_y = chunk_num / game::CHUNKS_WIDTH;
-            // printf("Chunk: %d, %d\n", chunk_x, chunk_y);
+            // printf("rendering outlines for a chunk\n");
             for (std::vector<std::pair<float, float>> &outline : chunk_outline)
             {
+                // printf("Rendering an outline\n");
                 // for (int i = 0; i < outline.size() - 2; i+=3)
                 // {
                 //     // printf("Line: %d\n", i);
@@ -197,21 +222,19 @@ void run_game(GLFWwindow *window)
                 //     game_engine::draw_line(p3.first, p3.second, -2.0f, p1.first, p1.second, -2.0f);
                 // }
 
-                for (int i = 0; i < outline.size() - 1; i+=1)
+                for (int i = 0; i < outline.size() - 1; i += 1)
                 {
                     // Non-triangulated outlines
                     std::pair<float, float> p1 = outline[i];
                     std::pair<float, float> p2 = outline[i + 1];
                     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
                 }
+                game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
             }
-            chunk_num++;
         }
-        // printf("Number of lines: %d\n", line_number);
+        glUseProgram(0);
         glfwSwapBuffers(window);
     }
-
-
 
     // Learn how to do audio
     // Learn how to do chunk switching
@@ -233,8 +256,6 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     //     printf("W pressed\n");
     // }
 }
-
-
 
 int main()
 {
@@ -264,7 +285,7 @@ int main()
 
     // glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, game_engine::window_width, game_engine::window_height, GLFW_DONT_CARE);
 
-    glfwSwapInterval( 1 );
+    glfwSwapInterval(1);
 
     // Init glew
     err = glewInit();
@@ -299,7 +320,7 @@ int main()
         }
     }
     printf("\n");
-    
+
     game_engine::projection_matrix[0] *= 8.0f;
     game_engine::projection_matrix[5] *= 8.0f;
     // game_engine::projection_matrix[10] = -1.f;
@@ -329,12 +350,8 @@ int main()
     glfwSetErrorCallback(error_callback);
     // glfwSetKeyCallback(window, key_callback);
 
-
     // do_tests();
     // return 0;
-
-
-
 
     // Run the game
     run_game(window);

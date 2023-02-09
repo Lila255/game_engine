@@ -235,7 +235,7 @@ namespace game
             outlines[i] = new_outline;
         }
 
-        int decimation = 4;
+        int decimation = 8;
         // remove points to keep only one every decimation value
         for (int i = 0; i < outlines.size(); i++)
         {

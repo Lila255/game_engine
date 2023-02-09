@@ -297,7 +297,7 @@ namespace game_engine
             // printf("Rendfering %d entities\n", entities->size());
             for (std::vector<uint32_t>::iterator it = entities->begin(); it != entities->end(); it++)
             {
-                glUseProgram(shader_programs[0]);
+                // glUseProgram(shader_programs[0]);
                 texture &t = m_sprite_textures.get(*it);
                 GLuint vbo = texture_vbo_system_pointer->get_vbo(*it);
                 glBindVertexArray(texture_vbo_system_pointer->get_vao(*it));
@@ -330,7 +330,7 @@ namespace game_engine
                 // Draw the VBO
                 glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
-            // glUseProgram(0);
+            glUseProgram(0);
 
             // glfwSwapBuffers(m_window);
             glfwPollEvents();

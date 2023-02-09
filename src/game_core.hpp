@@ -22,8 +22,8 @@
 
 namespace game
 {
-    const uint16_t NUM_CHUNKS = 9; // 3x3 chunks in world
-    const uint16_t CHUNKS_WIDTH = 3;
+    const uint16_t NUM_CHUNKS = 16; // 3x3 chunks in world
+    const uint16_t CHUNKS_WIDTH = 4;
     // const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
     // siv::PerlinNoise perlin_noise(0.0);
@@ -101,7 +101,7 @@ namespace game
         // box2d_system() = default;
         box2d_system()
         {
-            gravity = b2Vec2(0.0f, 109.8f);
+            gravity = b2Vec2(0.0f, 199.8f);
             world = new b2World(gravity);
         }
 
@@ -168,10 +168,11 @@ namespace game
             body_def.position.Set(110.0f, 100.0f);
             b2Body *body = world->CreateBody(&body_def);
             b2PolygonShape dynamic_box;
-            dynamic_box.SetAsBox(1.0f, 1.0f);
+            // dynamic_box.SetAsBox(2,2);
+            dynamic_box.SetAsBox(glsl_helper::character_width/2.0f, glsl_helper::character_height/2.0f);
             b2FixtureDef fixture_def;
             fixture_def.shape = &dynamic_box;
-            fixture_def.density = 10.0f;
+            fixture_def.density = 5.4f;
             fixture_def.friction = 0.3f;
             body->CreateFixture(&fixture_def);
             dynamic_bodies.add(ent, body);
@@ -199,8 +200,8 @@ namespace game
             // // get box position
             game_engine::box_system *bo_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
             game_engine::box b = bo_system_pointer->get(game_engine::game_engine_pointer->player_entitiy);
-            b.x = position.x;
-            b.y = position.y;
+            b.x = position.x - glsl_helper::character_width/2.0f;
+            b.y = position.y - glsl_helper::character_height/2.0f;
             bo_system_pointer->update_box(game_engine::game_engine_pointer->player_entitiy, b);
             game_engine::texture_vbo_system *tex_vbo_system_pointer = ((game_engine::texture_vbo_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
             tex_vbo_system_pointer->update(game_engine::game_engine_pointer->player_entitiy);
