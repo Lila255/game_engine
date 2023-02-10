@@ -107,6 +107,7 @@ namespace game_engine
 
         entity player_entitiy; // player entity
         std::unordered_set<int> pressed_keys;
+        std::unordered_set<int> pressed_mouse_buttons;
 
         void update_physics()
         {
@@ -183,9 +184,29 @@ namespace game_engine
                     pressed_keys.erase(key);
             }
         }
+
+        void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
+        {
+            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+            {
+                // std::cout << "Left mouse button pressed" << std::endl;
+                pressed_mouse_buttons.insert(button);
+            }
+            else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+            {
+                // std::cout << "Left mouse button released" << std::endl;
+                if (pressed_mouse_buttons.count(button) > 0)
+                    pressed_mouse_buttons.erase(button);
+            }
+        }
     };
     void static static_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
     {
         game_engine_pointer->key_callback(window, key, scancode, action, mods);
+    }
+    void static static_mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
+    {
+        printf("Mouse button callback called %d \n", button);
+        game_engine_pointer->mouse_button_callback(window, button, action, mods);
     }
 }

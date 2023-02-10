@@ -230,6 +230,7 @@ namespace game_engine
 
         // function pointer for key callback
         void (*key_callback)(std::unordered_set<int> &keys_pressed);
+        void (*mouse_callback)(GLFWwindow * window, std::unordered_set<int> &mouse_buttons_pressed);
 
         GLFWwindow *m_window;
         uint32_t m_frame_count = 0;
@@ -249,11 +250,17 @@ namespace game_engine
             // void (engine::*ptr)(GLFWwindow *window, int key, int scancode, int action, int mods) = &(engine::key_callback);
             // glfwSetKeyCallback(window, (game_engine_pointer->*ptr));
             glfwSetKeyCallback(window, game_engine::static_key_callback);
+            glfwSetMouseButtonCallback(window, game_engine::static_mouse_button_callback);
+
         }
 
         void set_key_callback(void (*key_callback)(std::unordered_set<int> &keys_pressed))
         {
             this->key_callback = key_callback;
+        }
+        void set_mouse_callback(void (*mouse_callback)(GLFWwindow * window, std::unordered_set<int> &mouse_buttons_pressed))
+        {
+            this->mouse_callback = mouse_callback;
         }
 
         void update() override
@@ -262,6 +269,12 @@ namespace game_engine
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             update_keys();
+
+            if(mouse_callback && game_engine_pointer->pressed_mouse_buttons.size() > 0)
+            {
+                mouse_callback(m_window, game_engine_pointer->pressed_mouse_buttons);
+                return;
+            }
 
             texture_vbo_system *texture_vbo_system_pointer = ((texture_vbo_system *)game_engine_pointer->get_system(family::type<texture_vbo_system>()));
             box_system *bo_system_pointer = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()));
@@ -347,6 +360,13 @@ namespace game_engine
             m_sprite_textures.remove(ent);
         }
 
+        void update_texture(entity ent, uint8_t *data, int width, int height)
+        {
+            texture &t = m_sprite_textures.get(ent);
+            glBindTexture(GL_TEXTURE_2D, t.id);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+        }
+
         void update_keys()
         {
             if (!game_engine_pointer->game_engine::engine::pressed_keys.size())
@@ -358,6 +378,7 @@ namespace game_engine
                 key_callback(game_engine_pointer->pressed_keys);
                 return;
             }
+            
 
             box_system *b_system = (game_engine::box_system *)(game_engine_pointer->get_system(family::type<game_engine::box_system>()));
             texture_vbo_system *vbo_system = (game_engine::texture_vbo_system *)(game_engine_pointer->get_system(family::type<game_engine::texture_vbo_system>()));

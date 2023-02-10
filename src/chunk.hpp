@@ -57,5 +57,7 @@ namespace game
         // }
 
         std::vector<std::vector<std::pair<float, float>>> create_outlines_centers();
+
+        bool delete_circle(int x, int y, int radius);
     };
 }

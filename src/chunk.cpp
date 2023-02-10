@@ -6,7 +6,6 @@ namespace game
 {
     siv::PerlinNoise perlin_noise(10.0);
 
-
     void chunk::create_chunk()
     {
         for (int y = 0; y < CHUNK_SIZE; y++)
@@ -57,7 +56,7 @@ namespace game
     //     glBindTexture(GL_TEXTURE_2D, 0);
     // }
 
-    std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> * chunk::get_data()
+    std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *chunk::get_data()
     {
         return &data;
     }
@@ -280,88 +279,118 @@ namespace game
         //     // outlines_triangles.push_back(outline_triangles);
         // }
 
-        // std::vector<std::vector<std::pair<float, float>>> outlines_triangles;
-        // for (int i = 0; i < outlines.size(); i++)
-        // {
-        //     std::vector<std::pair<float, float>> &outline = outlines[i];
-        //     std::vector<p2t::Point *> outline_points;
-        //     std::vector<std::pair<float, float>> connected_triangles;
-        //     for (int j = 0; j < outline.size(); j++)
-        //     {
-        //         outline_points.push_back(new p2t::Point(outline[j].first, outline[j].second));
-        //     }
-        //     // printf("Points size: %d\n", outline_points.size());
-        //     if (outline_points.size() < 3)
-        //         continue;
+        std::vector<std::vector<std::pair<float, float>>> outlines_triangles;
+        for (int i = 0; i < outlines.size(); i++)
+        {
+            std::vector<std::pair<float, float>> &outline = outlines[i];
+            std::vector<p2t::Point *> outline_points;
+            std::vector<std::pair<float, float>> connected_triangles;
+            for (int j = 0; j < outline.size(); j++)
+            {
+                outline_points.push_back(new p2t::Point(outline[j].first, outline[j].second));
+            }
+            // printf("Points size: %d\n", outline_points.size());
+            if (outline_points.size() < 3)
+                continue;
 
-        //     p2t::CDT *cdt = new p2t::CDT(outline_points);
-        //     cdt->Triangulate();
+            p2t::CDT *cdt = new p2t::CDT(outline_points);
+            cdt->Triangulate();
 
-        //     const float MAX_ASPECT_RATIO = 4.0f; // Adjust as desired
-        //     // add steiner points
-        //     std::vector<p2t::Triangle *> triangles = cdt->GetTriangles();
+            const float MAX_ASPECT_RATIO = 4.0f; // Adjust as desired
+            // add steiner points
+            std::vector<p2t::Triangle *> triangles = cdt->GetTriangles();
 
-        //     // Check each triangle for aspect ratio
-        //     // uint16_t max_points = 16;
-        //     // uint16_t points_added = 0;
-        //     // for(p2t::Triangle * t : triangles)
-        //     // {
-        //     //     float ab = square_distance_between_points(t->GetPoint(0), t->GetPoint(1));
-        //     //     float bc = square_distance_between_points(t->GetPoint(1), t->GetPoint(2));
-        //     //     float ca = square_distance_between_points(t->GetPoint(2), t->GetPoint(0));
-        //     //     float max = std::max(ab, std::max(bc, ca));
-        //     //     float min = std::min(ab, std::min(bc, ca));
-        //     //     int largest_length = -1;
-        //     //     if (max == ab)
-        //     //         largest_length = 0;
-        //     //     else if (max == bc)
-        //     //         largest_length = 1;
-        //     //     else if (max == ca)
-        //     //         largest_length = 2;
-        //     //     float aspect_ratio = max / min;
-        //     //     printf("aspect_ratio: %f\n", aspect_ratio);
-        //     //     if (aspect_ratio > MAX_ASPECT_RATIO && points_added < max_points)
-        //     //     {
-        //     //         points_added++;
-        //     //         // Add a new point in the middle of the longest edge
-        //     //         p2t::Point *p = new p2t::Point((t->GetPoint(largest_length)->x + t->GetPoint((largest_length + 1) % 3)->x) / 2.0f,
-        //     //                                        (t->GetPoint(largest_length)->y + t->GetPoint((largest_length + 1) % 3)->y) / 2.0f);
-        //     //         printf("Adding point between (%f, %f) and (%f, %f) at (%f, %f)\n",
-        //     //                t->GetPoint(largest_length)->x, t->GetPoint(largest_length)->y,
-        //     //                t->GetPoint((largest_length + 1) % 3)->x, t->GetPoint((largest_length + 1) % 3)->y,
-        //     //                p->x, p->y);
-        //     //         // outline_points.push_back(p);
-        //     //         cdt->AddPoint(p);
-        //     //         // cdt->Triangulate();
-        //     //         // break;
-        //     //     }
-        //     // }
-        //     // cdt->Triangulate();
-        //     // triangles = cdt->GetTriangles();
+            // Check each triangle for aspect ratio
+            // uint16_t max_points = 16;
+            // uint16_t points_added = 0;
+            // for(p2t::Triangle * t : triangles)
+            // {
+            //     float ab = square_distance_between_points(t->GetPoint(0), t->GetPoint(1));
+            //     float bc = square_distance_between_points(t->GetPoint(1), t->GetPoint(2));
+            //     float ca = square_distance_between_points(t->GetPoint(2), t->GetPoint(0));
+            //     float max = std::max(ab, std::max(bc, ca));
+            //     float min = std::min(ab, std::min(bc, ca));
+            //     int largest_length = -1;
+            //     if (max == ab)
+            //         largest_length = 0;
+            //     else if (max == bc)
+            //         largest_length = 1;
+            //     else if (max == ca)
+            //         largest_length = 2;
+            //     float aspect_ratio = max / min;
+            //     printf("aspect_ratio: %f\n", aspect_ratio);
+            //     if (aspect_ratio > MAX_ASPECT_RATIO && points_added < max_points)
+            //     {
+            //         points_added++;
+            //         // Add a new point in the middle of the longest edge
+            //         p2t::Point *p = new p2t::Point((t->GetPoint(largest_length)->x + t->GetPoint((largest_length + 1) % 3)->x) / 2.0f,
+            //                                        (t->GetPoint(largest_length)->y + t->GetPoint((largest_length + 1) % 3)->y) / 2.0f);
+            //         printf("Adding point between (%f, %f) and (%f, %f) at (%f, %f)\n",
+            //                t->GetPoint(largest_length)->x, t->GetPoint(largest_length)->y,
+            //                t->GetPoint((largest_length + 1) % 3)->x, t->GetPoint((largest_length + 1) % 3)->y,
+            //                p->x, p->y);
+            //         // outline_points.push_back(p);
+            //         cdt->AddPoint(p);
+            //         // cdt->Triangulate();
+            //         // break;
+            //     }
+            // }
+            // cdt->Triangulate();
+            // triangles = cdt->GetTriangles();
 
-        //     for (p2t::Triangle *triangle : triangles)
-        //     {
-        //         for (int j = 0; j < 3; j++)
-        //         {
-        //             p2t::Point *point = triangle->GetPoint(j);
-        //             connected_triangles.push_back(std::make_pair(point->x, point->y));
-        //         }
-        //     }
+            for (p2t::Triangle *triangle : triangles)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    p2t::Point *point = triangle->GetPoint(j);
+                    connected_triangles.push_back(std::make_pair(point->x, point->y));
+                }
+            }
 
-        //     outlines_triangles.push_back(connected_triangles);
+            outlines_triangles.push_back(connected_triangles);
 
-        //     for (p2t::Point *point : outline_points)
-        //     {
-        //         delete point;
-        //     }
+            for (p2t::Point *point : outline_points)
+            {
+                delete point;
+            }
 
-        //     delete cdt;
-        // }
+            delete cdt;
+        }
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         printf("Time taken by function: %d\n", duration.count());
-        return outlines;
-        // return outlines_triangles;
+        // return outlines;
+        return outlines_triangles;
+    }
+
+    bool chunk::delete_circle(int x, int y, int radius)
+    {
+        if(radius == 0)
+            return false;
+
+        int local_x = x - chunk_x * CHUNK_SIZE;
+        int local_y = y - chunk_y * CHUNK_SIZE;
+
+        int x0 = local_x - radius;
+        int x1 = local_x + radius;
+        int y0 = local_y - radius;
+        int y1 = local_y + radius;
+        if(x0 > CHUNK_SIZE || y0 > CHUNK_SIZE || x1 < 0 || y1 < 0)
+            return false;
+        
+        for(int y = y0; y <= y1; y++)
+        {
+            for(int x = x0; x <= x1; x++)
+            {
+                if(x < 0 || y < 0 || x >= CHUNK_SIZE || y >= CHUNK_SIZE)
+                    continue;
+                if((x - local_x) * (x - local_x) + (y - local_y) * (y - local_y) <= radius * radius)
+                {
+                    data[y][x] = 0;
+                }
+            }
+        }
+        return true;
     }
 }
