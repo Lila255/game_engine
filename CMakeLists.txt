@@ -9,7 +9,7 @@ set(VCPKG_ROOT "$ENV{VCPKG_ROOT}")
 
 # Set vcpkg toolchain file
 if(DEFINED ENV{VCPKG_ROOT})
-    set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+		set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 endif()
 
 set(VCPKG_TARGET_TRIPLET "x64-windows")
@@ -53,23 +53,23 @@ target_link_libraries(game PRIVATE glfw GLEW::glew opengl32 poly2tri::poly2tri b
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 # if in debug mode, copy debug dlls
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  add_custom_command(TARGET game POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     "${VCPKG_ROOT}/installed/x64-windows/debug/bin/glew32d.dll"
-                     "$<TARGET_FILE_DIR:game>")
-  add_custom_command(TARGET game POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     "${VCPKG_ROOT}/installed/x64-windows/debug/bin/glfw3.dll"
-                     "$<TARGET_FILE_DIR:game>")
+	add_custom_command(TARGET game POST_BUILD
+										 COMMAND ${CMAKE_COMMAND} -E copy_if_different
+										 "${VCPKG_ROOT}/installed/x64-windows/debug/bin/glew32d.dll"
+										 "$<TARGET_FILE_DIR:game>")
+	add_custom_command(TARGET game POST_BUILD
+										 COMMAND ${CMAKE_COMMAND} -E copy_if_different
+										 "${VCPKG_ROOT}/installed/x64-windows/debug/bin/glfw3.dll"
+										 "$<TARGET_FILE_DIR:game>")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-  add_custom_command(TARGET game POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     "${VCPKG_ROOT}/installed/x64-windows/bin/glew32.dll"
-                     "$<TARGET_FILE_DIR:game>")
-  add_custom_command(TARGET game POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     "${VCPKG_ROOT}/installed/x64-windows/bin/glfw3.dll"
-                     "$<TARGET_FILE_DIR:game>")
+	add_custom_command(TARGET game POST_BUILD
+										 COMMAND ${CMAKE_COMMAND} -E copy_if_different
+										 "${VCPKG_ROOT}/installed/x64-windows/bin/glew32.dll"
+										 "$<TARGET_FILE_DIR:game>")
+	add_custom_command(TARGET game POST_BUILD
+										 COMMAND ${CMAKE_COMMAND} -E copy_if_different
+										 "${VCPKG_ROOT}/installed/x64-windows/bin/glfw3.dll"
+										 "$<TARGET_FILE_DIR:game>")
 endif()
 
 
