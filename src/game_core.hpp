@@ -7,7 +7,7 @@
 #include <utility>
 #include <poly2tri/poly2tri.h>
 // box2d
-#define b2_maxPolygonVertices 128
+#define b2_maxPolygonVertices 8
 #include <box2d/box2d.h>
 
 #include "engine_comp.hpp"
@@ -44,7 +44,7 @@ namespace game
         // box2d_system() = default;
         box2d_system()
         {
-            gravity = b2Vec2(0.0f, 199.8f);
+            gravity = b2Vec2(0.0f, 9.8f);
             world = new b2World(gravity);
         }
 
@@ -111,13 +111,11 @@ namespace game
             b2BodyDef bodyDef;
             bodyDef.type = b2_staticBody;
             b2Body *body = world->CreateBody(&bodyDef);
-            printf("Mesh count: %d\n", meshes.size());
             // add mesh
             for (int i = 0; i < meshes.size(); i++)
             {
                 if (meshes[i].size() == 0 || meshes[i].size() % 3 != 0)
                     continue;
-                printf("Mesh size: %d\n", meshes[i].size());
                 // if (meshes[i].size() < 3)
                 //     continue;
                 for(int j = 0; j < meshes[i].size(); j+=3)
@@ -140,7 +138,6 @@ namespace game
                     fixtureDef.density = 0.0f;
                     fixtureDef.friction = 0.73f;
                     body->CreateFixture(&fixtureDef);
-                    printf("here\n");
                     delete[] vertices;
                 }
             }
@@ -166,7 +163,6 @@ namespace game
             {
                 if (meshes[i].size() == 0 || meshes[i].size() % 3 != 0)
                     continue;
-                printf("Mesh size: %d\n", meshes[i].size());
                 // if (meshes[i].size() < 3)
                 //     continue;
                 for(int j = 0; j < meshes[i].size(); j+=3)
@@ -189,7 +185,6 @@ namespace game
                     fixtureDef.density = 0.0f;
                     fixtureDef.friction = 0.73f;
                     body->CreateFixture(&fixtureDef);
-                    printf("here\n");
                     delete[] vertices;
                 }
             }
@@ -245,11 +240,12 @@ namespace game
             world->DestroyBody(dynamic_bodies.get(ent));
             dynamic_bodies.remove(ent);
         }
-
-        void update() override
+        void update(){}     
+        void update(uint64_t time_to_step)
         {
 
-            world->Step(1.0f / 60.0f, 6, 2);
+            world->Step((double)time_to_step / 1000000.0, 6, 2);
+            // world->Step(1.0f / 60.0f, 6, 2);
 
             b2Body *body = dynamic_bodies.get(game_engine::game_engine_pointer->player_entitiy);
             b2Vec2 position = body->GetPosition();

@@ -24,7 +24,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
                 // if the normal is pointing up
                 if (ce->contact->GetManifold()->localNormal.y < 0)
                 {
-                    b2Vec2 impulse = b2Vec2(0.0f, -2500.1f);
+                    b2Vec2 impulse = b2Vec2(0.0f, -5.1f);
                     body->ApplyLinearImpulseToCenter(impulse, true);
                     break;
                 }
@@ -41,7 +41,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
         game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
         entity player = game_engine::game_engine_pointer->player_entitiy;
         b2Body *body = b2d_sys->get_dynamic_body(player);
-        b2Vec2 impulse = b2Vec2(-250.1f, 0.0f);
+        b2Vec2 impulse = b2Vec2(-2.1f, 0.0f);
         body->ApplyLinearImpulseToCenter(impulse, true);
     }
     // s
@@ -56,10 +56,10 @@ void custom_key_callback(std::unordered_set<int> &keys)
         game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
         entity player = game_engine::game_engine_pointer->player_entitiy;
         b2Body *body = b2d_sys->get_dynamic_body(player);
-        b2Vec2 impulse = b2Vec2(250.1f, 0.0f);
+        b2Vec2 impulse = b2Vec2(2.1f, 0.0f);
         body->ApplyLinearImpulseToCenter(impulse, true);
     }
-
+    
     // shift
     if (keys.count(GLFW_KEY_LEFT_SHIFT) > 0)
     {
@@ -79,14 +79,13 @@ void custom_key_callback(std::unordered_set<int> &keys)
         game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
         entity player = game_engine::game_engine_pointer->player_entitiy;
         b2Body *body = b2d_sys->get_dynamic_body(player);
-        b2Vec2 impulse = b2Vec2(direction * 1000.f, 0.f);
+        b2Vec2 impulse = b2Vec2(direction * 3.f, 0.f);
         body->ApplyLinearImpulseToCenter(impulse, true);
     }
 }
 
 void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 {
-
     // if mouse click
     if (buttons.count(GLFW_MOUSE_BUTTON_LEFT) > 0)
     {
@@ -236,13 +235,14 @@ void run_game(GLFWwindow *window)
     glUniformMatrix4fv(projection_location, 1, GL_FALSE, game_engine::projection_matrix);
     GLuint view_location = glGetUniformLocation(generic_shader, "view");
     glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
-
+    
+    uint64_t last_time_taken = 0;
     // Run the game loop
     while (!glfwWindowShouldClose(window))
     {
-
+        uint64_t start_time = glfwGetTimerValue();
         // draw lines for chunk outlines
-        box2d_sys->update();
+        box2d_sys->update(last_time_taken);
         // Update the engine
         render_sys->update();
         // printf("Rendering\n");
@@ -281,6 +281,7 @@ void run_game(GLFWwindow *window)
         // }
         glUseProgram(0);
         glfwSwapBuffers(window);
+        last_time_taken = glfwGetTimerValue() - start_time;
     }
 
     // Learn how to do audio
@@ -332,7 +333,7 @@ int main()
 
     // glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, game_engine::window_width, game_engine::window_height, GLFW_DONT_CARE);
 
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
 
     // Init glew
     err = glewInit();

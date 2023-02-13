@@ -359,7 +359,7 @@ namespace game
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        printf("Time taken by function: %d\n", duration.count());
+        printf("Time taken by collision creations: %d\n", duration.count());
         // return outlines;
         return outlines_triangles;
     }
