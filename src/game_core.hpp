@@ -183,7 +183,7 @@ namespace game
 					b2FixtureDef fixtureDef;
 					fixtureDef.shape = &chain;
 					fixtureDef.density = 0.0f;
-					fixtureDef.friction = 0.73f;
+					fixtureDef.friction = 1.f;
 					body->CreateFixture(&fixtureDef);
 					delete[] vertices;
 				}
@@ -220,19 +220,51 @@ namespace game
 			// dynamic_bodies.add(ent, body);
 
 			// create rectangle shape and add
+			// b2BodyDef body_def;
+			// body_def.type = b2_dynamicBody;
+			// body_def.position.Set(110.0f, 100.0f);
+			// b2Body *body = world->CreateBody(&body_def);
+			// b2PolygonShape dynamic_box;
+			// // dynamic_box.SetAsBox(2,2);
+			// dynamic_box.SetAsBox(glsl_helper::character_width / 2.0f, glsl_helper::character_height / 2.0f);
+			// b2FixtureDef fixture_def;
+			// fixture_def.shape = &dynamic_box;
+			// fixture_def.density = 5.4f;
+			// fixture_def.friction = 0.3f;
+			// body->CreateFixture(&fixture_def);
+			// dynamic_bodies.add(ent, body);
+
+			// do this ^^^ but get the shape from the mesh paramater
 			b2BodyDef body_def;
 			body_def.type = b2_dynamicBody;
 			body_def.position.Set(110.0f, 100.0f);
 			b2Body *body = world->CreateBody(&body_def);
 			b2PolygonShape dynamic_box;
-			// dynamic_box.SetAsBox(2,2);
-			dynamic_box.SetAsBox(glsl_helper::character_width / 2.0f, glsl_helper::character_height / 2.0f);
-			b2FixtureDef fixture_def;
-			fixture_def.shape = &dynamic_box;
-			fixture_def.density = 5.4f;
-			fixture_def.friction = 0.3f;
-			body->CreateFixture(&fixture_def);
+			// use mesh
+			
+			for(int i = 0; i < mesh.size(); i+=3)
+			{
+				b2Vec2 *vertices = new b2Vec2[3];
+				for (int j = 0; j < 3; j++)
+				{
+					vertices[j].Set(mesh[i+j].first, mesh[i+j].second);
+				}
+				// if straight line, skip (poor check, only works for axis aligned lines)
+				if(vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
+					continue;
+				if(vertices[0].y == vertices[1].y && vertices[0].y == vertices[2].y)
+					continue;
+				dynamic_box.Set(vertices, 3);
+				b2FixtureDef fixture_def;
+				fixture_def.shape = &dynamic_box;
+				fixture_def.density = 5.4f;
+				fixture_def.friction = 0.3f;
+				fixture_def.restitution = 0.20f;
+				body->CreateFixture(&fixture_def);
+				delete[] vertices;
+			}
 			dynamic_bodies.add(ent, body);
+
 		}
 
 		void remove_dynamic_body(entity ent)
@@ -343,7 +375,7 @@ namespace game
 			return chunk_data[x + y * CHUNKS_WIDTH]->create_outlines_centers();
 		}
 
-		void delete_circle(int x, int y, int radius)
+		void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
 		{
 			// get texture system
 			auto texture_system = (game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>());
@@ -359,7 +391,11 @@ namespace game
 					entity ent = chunk_entities[i];
 					texture_system->update_texture(ent, (uint8_t *)tile_data->data(), CHUNK_SIZE, CHUNK_SIZE);
 					std::vector<std::vector<std::pair<float, float>>> outlines = chunk_data[i]->create_outlines_centers();
+					(*chunk_outlines)[i] = outlines;
+					// chunk_outlines->at(i) = outlines;
+
 					b2d_system->update_static_outlines(ent, outlines);
+
 				}
 			}
 			//

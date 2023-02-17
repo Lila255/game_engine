@@ -4,7 +4,7 @@
 
 namespace game
 {
-	siv::PerlinNoise perlin_noise(10.0);
+	static siv::PerlinNoise perlin_noise(0.0);
 
 	void chunk::create_chunk()
 	{
@@ -12,15 +12,18 @@ namespace game
 		{
 			for (int x = 0; x < CHUNK_SIZE; x++)
 			{
-				double noise = perlin_noise.noise2D_01((x + chunk_x * game::CHUNK_SIZE) / 50.0, (y + chunk_y * game::CHUNK_SIZE) / 50.0);
-				if (noise > 0.6)
-				{
-					data[y][x] = 1;
-				}
-				else
-				{
-					data[y][x] = 0;
-				}
+				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 50.0;
+				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 50.0;
+				double noise = perlin_noise.noise2D_01(n_x, n_y);
+				// if (noise > 0.6)
+				// {
+				// 	data[y][x] = 1;
+				// }
+				// else
+				// {
+				// 	data[y][x] = 0;
+				// }
+				data[y][x] = noise > 0.45 ? 1 : 0;
 			}
 		}
 	}
@@ -366,7 +369,7 @@ namespace game
 
 	bool chunk::delete_circle(int x, int y, int radius)
 	{
-		if(radius == 0)
+		if (radius == 0)
 			return false;
 
 		int local_x = x - chunk_x * CHUNK_SIZE;
@@ -376,16 +379,16 @@ namespace game
 		int x1 = local_x + radius;
 		int y0 = local_y - radius;
 		int y1 = local_y + radius;
-		if(x0 > CHUNK_SIZE || y0 > CHUNK_SIZE || x1 < 0 || y1 < 0)
+		if (x0 > CHUNK_SIZE || y0 > CHUNK_SIZE || x1 < 0 || y1 < 0)
 			return false;
-		
-		for(int y = y0; y <= y1; y++)
+
+		for (int y = y0; y <= y1; y++)
 		{
-			for(int x = x0; x <= x1; x++)
+			for (int x = x0; x <= x1; x++)
 			{
-				if(x < 0 || y < 0 || x >= CHUNK_SIZE || y >= CHUNK_SIZE)
+				if (x < 0 || y < 0 || x >= CHUNK_SIZE || y >= CHUNK_SIZE)
 					continue;
-				if((x - local_x) * (x - local_x) + (y - local_y) * (y - local_y) <= radius * radius)
+				if ((x - local_x) * (x - local_x) + (y - local_y) * (y - local_y) <= radius * radius)
 				{
 					data[y][x] = 0;
 				}

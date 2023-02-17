@@ -405,22 +405,44 @@ namespace game_engine
 			}
 			vbo_system->update(game_engine_pointer->player_entitiy);
 		}
+		void draw_line(float x1, float y1, float z1, float x2, float y2, float z2)
+		{
+			// float vertices[] = {
+			// 	x1, y1, z1,
+			// 	x2, y2, z2};
+			// GLuint vbo;
+			// glGenBuffers(1, &vbo);
+			// glBindBuffer(GL_ARRAY_BUFFER, vbo);
+			// glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+			// glEnableVertexAttribArray(0);
+			// glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			// glDrawArrays(GL_LINES, 0, 2);
+			// glDisableVertexAttribArray(0);
+			// glDeleteBuffers(1, &vbo);
+
+			// do in instant mode
+			glBegin(GL_LINES);
+			glVertex3f(x1, y1, z1);
+			glVertex3f(x2, y2, z2);
+			glEnd();
+			
+		}
 	};
 
-	void draw_line(float x1, float y1, float z1, float x2, float y2, float z2)
-	{
-		float vertices[] = {
-			x1, y1, z1,
-			x2, y2, z2};
-		GLuint vbo;
-		glGenBuffers(1, &vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-		glDrawArrays(GL_LINES, 0, 2);
-		glDisableVertexAttribArray(0);
-		glDeleteBuffers(1, &vbo);
-	}
+	// static void draw_line(float x1, float y1, float z1, float x2, float y2, float z2)
+	// {
+	// 	float vertices[] = {
+	// 		x1, y1, z1,
+	// 		x2, y2, z2};
+	// 	GLuint vbo;
+	// 	glGenBuffers(1, &vbo);
+	// 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	// 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	// 	glEnableVertexAttribArray(0);
+	// 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	// 	glDrawArrays(GL_LINES, 0, 2);
+	// 	glDisableVertexAttribArray(0);
+	// 	glDeleteBuffers(1, &vbo);
+	// }
 
 }

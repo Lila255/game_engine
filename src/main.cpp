@@ -4,6 +4,8 @@
 #include "engine_comp.hpp"
 #include "game_core.hpp"
 
+static std::vector<std::vector<std::vector<std::pair<float, float>>>> chunk_outlines;
+
 void custom_key_callback(std::unordered_set<int> &keys)
 {
 	if (keys.find(GLFW_KEY_ESCAPE) != keys.end())
@@ -22,10 +24,13 @@ void custom_key_callback(std::unordered_set<int> &keys)
 			for (b2ContactEdge *ce = body->GetContactList(); ce != NULL; ce = ce->next)
 			{
 				// if the normal is pointing up
-				if (ce->contact->GetManifold()->localNormal.y < 0)
+				if (ce->contact->GetManifold()->localNormal.y < -0.5)
 				{
-					b2Vec2 impulse = b2Vec2(0.0f, -5.1f);
-					body->ApplyLinearImpulseToCenter(impulse, true);
+					printf("normal: %f, %f\n", ce->contact->GetManifold()->localNormal.x, ce->contact->GetManifold()->localNormal.y);
+					b2Vec2 impulse = b2Vec2(0.0f, -25000.1f);
+					// body->ApplyLinearImpulseToCenter(impulse, true);
+					// apply force
+					body->ApplyForceToCenter(impulse, true);
 					break;
 				}
 			}
@@ -41,7 +46,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(-2.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(-2000.1f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 	// s
@@ -56,7 +61,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(2.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(2000.1f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 	
@@ -119,7 +124,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		//     chunks->at(i) -> delete_circle(world_x, world_y, 8);
 		//     entity e = world_sys->get_chunk_entity(i);
 		// }
-		world_sys->delete_circle(world_x, world_y, 8);
+		world_sys->delete_circle(world_x, world_y, 8, &chunk_outlines);
 
 		buttons.erase(GLFW_MOUSE_BUTTON_LEFT);
 	}
@@ -167,7 +172,6 @@ void run_game(GLFWwindow *window)
 		chunk_textures[i] = texture;
 	}
 	// for(int i = 0; i < game::NUM_CHUNKS; i++) {
-	// std::vector<std::vector<std::vector<std::pair<float, float>>>> chunk_outlines;
 	for (int y = 0; y < game::CHUNKS_WIDTH; y++)
 	{
 		for (int x = 0; x < game::CHUNKS_WIDTH; x++)
@@ -177,6 +181,7 @@ void run_game(GLFWwindow *window)
 				entity chunk_entity = world_sys->get_chunk_entity(x, y);
 				std::vector<std::vector<std::pair<float, float>>> outlines = world_sys->create_outlines(x, y);
 				box2d_sys->create_static_bodies(chunk_entity, outlines);
+				chunk_outlines.push_back(outlines);
 				// chunk_outlines.push_back(world_sys->create_outlines(x, y));
 				float top_left_x = game::CHUNK_SIZE * x * 1.0;
 				float top_left_y = game::CHUNK_SIZE * y * 1.0;
@@ -195,33 +200,34 @@ void run_game(GLFWwindow *window)
 		}
 	}
 
-	// for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
-	// {
-	//     // for (std::vector<std::pair<float, float>> &outline : chunk_outline)
-	//     // {
-	//     //     entity outline_entity = eng.create_entity();
-	//     //     box2d_sys->create_static_body(outline_entity, outline);
-	//     // }
-	// }
-
 	// create player
 	entity player_entity = eng.create_entity();
 	GLuint player_texture;
 	glsl_helper::create_character_texture(player_texture);
 	render_sys->add(player_entity, {player_texture});
 	// box_sys->add(player_entity, {0.f, 0.f, -1.f, 4 * 8.f, 1 * 85.333333333f});
-	box_sys->add(player_entity, {8.f, 8.f, -1.f, glsl_helper::character_width, glsl_helper::character_height});
+	box_sys->add(player_entity, {0.f, 0.f, -4.f, glsl_helper::character_width, glsl_helper::character_height});
 	texture_vbo_sys->add(player_entity);
 	eng.player_entitiy = player_entity;
 	// create box2d body
+	// std::vector<std::pair<float, float>> player_shape = {
+	// 	{0.f, 0.f},
+	// 	{glsl_helper::character_width, 0.f},
+	// 	{glsl_helper::character_width, glsl_helper::character_height},
+	// 	{0.f, glsl_helper::character_height},
+	// 	// {0.1f, 0.1f}
+	// };
 	std::vector<std::pair<float, float>> player_shape = {
 		{0.f, 0.f},
 		{glsl_helper::character_width, 0.f},
 		{glsl_helper::character_width, glsl_helper::character_height},
+		{glsl_helper::character_width, glsl_helper::character_height},
 		{0.f, glsl_helper::character_height},
-		// {0.1f, 0.1f}
+		{0.f, 0.f}
 	};
+	chunk_outlines.push_back({player_shape});
 	box2d_sys->create_dynamic_body(player_entity, player_shape);
+	b2Body* player_body = box2d_sys->get_dynamic_body(player_entity);
 
 	// generic shader
 	GLuint generic_shader = load_shaders(glsl_helper::vert_1(), glsl_helper::frag_1())[0];
@@ -243,6 +249,18 @@ void run_game(GLFWwindow *window)
 		uint64_t start_time = glfwGetTimerValue();
 		// draw lines for chunk outlines
 		box2d_sys->update(last_time_taken);
+		// update the player's outlines
+		b2Vec2 player_position = player_body->GetPosition();
+		std::vector<std::pair<float, float>> player_outline = {
+			{player_position.x, player_position.y},
+			{player_position.x + glsl_helper::character_width, player_position.y},
+			{player_position.x + glsl_helper::character_width, player_position.y + glsl_helper::character_height},
+			{player_position.x + glsl_helper::character_width, player_position.y + glsl_helper::character_height},
+			{player_position.x, player_position.y + glsl_helper::character_height},
+			{player_position.x, player_position.y}
+		};
+		chunk_outlines[game::NUM_CHUNKS] = {player_outline};
+
 		// Update the engine
 		render_sys->update();
 		// printf("Rendering\n");
@@ -252,33 +270,33 @@ void run_game(GLFWwindow *window)
 		glUniformMatrix4fv(projection_location, 1, GL_FALSE, game_engine::projection_matrix);
 		GLuint view_location = glGetUniformLocation(generic_shader, "view");
 		glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
-		// for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
-		// {
-		//     // printf("rendering outlines for a chunk\n");
-		//     for (std::vector<std::pair<float, float>> &outline : chunk_outline)
-		//     {
-		//         // printf("Rendering an outline\n");
-		//         // for (int i = 0; i < outline.size() - 2; i+=3)
-		//         // {
-		//         //     // printf("Line: %d\n", i);
-		//         //     std::pair<float, float> p1 = outline[i];
-		//         //     std::pair<float, float> p2 = outline[i + 1];
-		//         //     std::pair<float, float> p3 = outline[i + 2];
-		//         //     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
-		//         //     game_engine::draw_line(p2.first, p2.second, -2.0f, p3.first, p3.second, -2.0f);
-		//         //     game_engine::draw_line(p3.first, p3.second, -2.0f, p1.first, p1.second, -2.0f);
-		//         // }
+		for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
+		{
+		    // printf("rendering outlines for a chunk\n");
+		    for (std::vector<std::pair<float, float>> &outline : chunk_outline)
+		    {
+		        for (int i = 0; i < outline.size() - 2; i+=3)
+		        {
+		            // printf("Line: %d\n", i);
+		            std::pair<float, float> p1 = outline[i];
+		            std::pair<float, float> p2 = outline[i + 1];
+		            std::pair<float, float> p3 = outline[i + 2];
+		            render_sys->draw_line(p1.first, p1.second, -3.0f, p2.first, p2.second, -3.0f);
+		            render_sys->draw_line(p2.first, p2.second, -3.0f, p3.first, p3.second, -3.0f);
+		            render_sys->draw_line(p3.first, p3.second, -3.0f, p1.first, p1.second, -3.0f);
+		        }
 
-		//         for (int i = 0; i < outline.size() - 1; i += 1)
-		//         {
-		//             // Non-triangulated outlines
-		//             std::pair<float, float> p1 = outline[i];
-		//             std::pair<float, float> p2 = outline[i + 1];
-		//             game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
-		//         }
-		//         game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
-		//     }
-		// }
+		        // for (int i = 0; i < outline.size() - 1; i += 1)
+		        // {
+		        //     // Non-triangulated outlines
+		        //     std::pair<float, float> p1 = outline[i];
+		        //     std::pair<float, float> p2 = outline[i + 1];
+		        //     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
+		        // }
+		        // game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
+		    }
+		}
+
 		glUseProgram(0);
 		glfwSwapBuffers(window);
 		last_time_taken = glfwGetTimerValue() - start_time;
@@ -333,7 +351,7 @@ int main()
 
 	// glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, game_engine::window_width, game_engine::window_height, GLFW_DONT_CARE);
 
-	glfwSwapInterval(0);
+	// glfwSwapInterval(0);
 
 	// Init glew
 	err = glewInit();
