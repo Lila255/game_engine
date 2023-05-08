@@ -24,6 +24,7 @@ include_directories(${POLY2TRI_INCLUDE_DIRS})
 find_package(box2d CONFIG REQUIRED)
 
 
+
 # Set compiler options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest /Zi /EHsc /nologo")
 
@@ -35,20 +36,6 @@ add_executable(game ${SOURCES})
 target_link_libraries(game PRIVATE glfw GLEW::glew opengl32 poly2tri::poly2tri box2d::box2d)
 # target_link_libraries(game glfw3 glew opengl32)
 
-# Find all dependencies
-# get_property(GLEW_DLL TARGET GLEW::glew PROPERTY IMPORTED_LOC_IMPLIB)
-# get_property(GLFW_DLL TARGET glfw PROPERTY IMPORTED_LOC_IMPLIB)
-
-# Copy all dependencies to the build directory
-# add_custom_command(TARGET game POST_BUILD
-#                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#                    "${GLEW_DLL}"
-#                    "$<TARGET_FILE_DIR:game>")
-# add_custom_command(TARGET game POST_BUILD
-#                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#                    "${GLFW_DLL}"
-#                    "$<TARGET_FILE_DIR:game>")
-
 # print the build type
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 # if in debug mode, copy debug dlls
@@ -56,32 +43,23 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_custom_command(TARGET game POST_BUILD
 										 COMMAND ${CMAKE_COMMAND} -E copy_if_different
 										 "${VCPKG_ROOT}/installed/x64-windows/debug/bin/glew32d.dll"
-										 "$<TARGET_FILE_DIR:game>")
+										 "$<TARGET_FILE_DIR:game>"
+										 DEPENDS game)
 	add_custom_command(TARGET game POST_BUILD
 										 COMMAND ${CMAKE_COMMAND} -E copy_if_different
 										 "${VCPKG_ROOT}/installed/x64-windows/debug/bin/glfw3.dll"
-										 "$<TARGET_FILE_DIR:game>")
+										 "$<TARGET_FILE_DIR:game>"
+										 DEPENDS game)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 	add_custom_command(TARGET game POST_BUILD
 										 COMMAND ${CMAKE_COMMAND} -E copy_if_different
 										 "${VCPKG_ROOT}/installed/x64-windows/bin/glew32.dll"
-										 "$<TARGET_FILE_DIR:game>")
+										 "$<TARGET_FILE_DIR:game>"
+										 DEPENDS game)
 	add_custom_command(TARGET game POST_BUILD
 										 COMMAND ${CMAKE_COMMAND} -E copy_if_different
 										 "${VCPKG_ROOT}/installed/x64-windows/bin/glfw3.dll"
-										 "$<TARGET_FILE_DIR:game>")
+										 "$<TARGET_FILE_DIR:game>"
+										 DEPENDS game)
 endif()
 
-
-# add_custom_command(TARGET game POST_BUILD
-#                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#                    "${VCPKG_ROOT}/installed/x64-windows/bin/glew32.dll"
-#                    "$<TARGET_FILE_DIR:game>")
-# add_custom_command(TARGET game POST_BUILD
-#                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#                      "${VCPKG_ROOT}/installed/x64-windows/bin/glfw3.dll"
-#                      "")
-
-
-# Create a custom target to copy all dependencies
-# add_custom_target(copy_game_dlls ALL DEPENDS game)

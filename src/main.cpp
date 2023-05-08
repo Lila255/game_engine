@@ -10,6 +10,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 {
 	if (keys.find(GLFW_KEY_ESCAPE) != keys.end())
 	{
+
 		glfwSetWindowShouldClose(glfwGetCurrentContext(), true);
 	}
 	// w
@@ -23,14 +24,17 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		{
 			for (b2ContactEdge *ce = body->GetContactList(); ce != NULL; ce = ce->next)
 			{
+				if (!ce->contact->IsTouching())
+					continue;
+				printf("normal: %f, %f\n", ce->contact->GetManifold()->localNormal.x, ce->contact->GetManifold()->localNormal.y);
 				// if the normal is pointing up
-				if (ce->contact->GetManifold()->localNormal.y < -0.5)
+				if (ce->contact->GetManifold()->localNormal.y <= 0)
 				{
-					printf("normal: %f, %f\n", ce->contact->GetManifold()->localNormal.x, ce->contact->GetManifold()->localNormal.y);
-					b2Vec2 impulse = b2Vec2(0.0f, -25000.1f);
-					// body->ApplyLinearImpulseToCenter(impulse, true);
+					b2Vec2 impulse = b2Vec2(0.0f, -1000.1f);
+					body->ApplyLinearImpulseToCenter(impulse, true);
 					// apply force
-					body->ApplyForceToCenter(impulse, true);
+					keys.erase(GLFW_KEY_W);
+					// body->ApplyForceToCenter(impulse, true);
 					break;
 				}
 			}
@@ -46,13 +50,20 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(-2000.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(-15.1f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 	// s
 	if (keys.count(GLFW_KEY_S) > 0)
 	{
 		// if in water or something, idk
+
+
+		// add angular velocity
+		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+		entity player = game_engine::game_engine_pointer->player_entitiy;
+		b2Body *body = b2d_sys->get_dynamic_body(player);
+		body->ApplyAngularImpulse(50.f, true);
 	}
 
 	// d
@@ -61,10 +72,10 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(2000.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(15.1f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
-	
+
 	// shift
 	if (keys.count(GLFW_KEY_LEFT_SHIFT) > 0)
 	{
@@ -136,6 +147,13 @@ void run_game(GLFWwindow *window)
 	game_engine::engine eng;
 	game_engine::shader_programs = load_shaders(glsl_helper::vert_0(), glsl_helper::frag_0());
 
+	// generic shader
+	game_engine::shader_programs.push_back(load_shaders(glsl_helper::vert_1(), glsl_helper::frag_1())[0]);
+
+	// generic texture shader
+	game_engine::shader_programs.push_back(load_shaders(glsl_helper::vert_2(), glsl_helper::frag_2())[0]);
+
+
 	game_engine::box_system *box_sys = new game_engine::box_system();
 	eng.add_system(game_engine::family::type<game_engine::box_system>(), box_sys);
 
@@ -157,6 +175,7 @@ void run_game(GLFWwindow *window)
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
 	std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
 	std::array<GLuint, game::NUM_CHUNKS> chunk_textures;
+	
 	for (int i = 0; i < game::NUM_CHUNKS; i++)
 	{
 		GLuint texture;
@@ -171,77 +190,97 @@ void run_game(GLFWwindow *window)
 		glBindTexture(GL_TEXTURE_2D, 0);
 		chunk_textures[i] = texture;
 	}
+
+	GLuint light_texture;
+	glGenTextures(1, &light_texture);
+	glBindTexture(GL_TEXTURE_2D, light_texture);
+	// set data and size
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, game::CHUNK_SIZE * 3, game::CHUNK_SIZE * 3, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	// for(int i = 0; i < game::NUM_CHUNKS; i++) {
 	for (int y = 0; y < game::CHUNKS_WIDTH; y++)
 	{
 		for (int x = 0; x < game::CHUNKS_WIDTH; x++)
 		{
-			//if (x != 0 || y != 0)
-		   // {
-				entity chunk_entity = world_sys->get_chunk_entity(x, y);
-				std::vector<std::vector<std::pair<float, float>>> outlines = world_sys->create_outlines(x, y);
-				box2d_sys->create_static_bodies(chunk_entity, outlines);
-				chunk_outlines.push_back(outlines);
-				// chunk_outlines.push_back(world_sys->create_outlines(x, y));
-				float top_left_x = game::CHUNK_SIZE * x * 1.0;
-				float top_left_y = game::CHUNK_SIZE * y * 1.0;
-				// float top_left_x = 2 * x * game::CHUNK_SIZE;
-				// float top_left_y = 2 * y * game::CHUNK_SIZE;
+			// if (x != 0 || y != 0)
+			// {
+			entity chunk_entity = world_sys->get_chunk_entity(x, y);
+			std::vector<std::vector<std::pair<float, float>>> outlines = world_sys->create_outlines(x, y);
+			box2d_sys->create_static_bodies(chunk_entity, outlines);
+			chunk_outlines.push_back(outlines);
+			// chunk_outlines.push_back(world_sys->create_outlines(x, y));
+			float top_left_x = game::CHUNK_SIZE * x * 1.0;
+			float top_left_y = game::CHUNK_SIZE * y * 1.0;
+			// float top_left_x = 2 * x * game::CHUNK_SIZE;
+			// float top_left_y = 2 * y * game::CHUNK_SIZE;
 
-				box_sys->add(chunk_entity, {top_left_x * 1.0f, top_left_y * 1.0f, -5.0, game::CHUNK_SIZE * 1.0, game::CHUNK_SIZE * 1.0});
-				// box_sys->add(chunk_entity, { top_left_x, top_left_y, 0.0, 1.0/3.0, 1.0/3.0});
-				// box_sys->add(chunk_entity, { top_left_x, top_left_y, 1.0f, 1.0/3.0, 1.0/3.0});
-				// box_sys->add(chunk_entity, { top_left_x, top_left_y, 1.0f, 8 * game::CHUNK_SIZE, 8 * game::CHUNK_SIZE});
+			box_sys->add(chunk_entity, {top_left_x * 1.0f, top_left_y * 1.0f, -5.0, game::CHUNK_SIZE * 1.0, game::CHUNK_SIZE * 1.0});
+			// box_sys->add(chunk_entity, { top_left_x, top_left_y, 0.0, 1.0/3.0, 1.0/3.0});
+			// box_sys->add(chunk_entity, { top_left_x, top_left_y, 1.0f, 1.0/3.0, 1.0/3.0});
+			// box_sys->add(chunk_entity, { top_left_x, top_left_y, 1.0f, 8 * game::CHUNK_SIZE, 8 * game::CHUNK_SIZE});
 
-				// box_sys->add(chunk_entity, { top_left_x, top_left_y, 0.50f, 8 * game::CHUNK_SIZE, 8 * game::CHUNK_SIZE});
-				texture_vbo_sys->add(chunk_entity);
-				render_sys->add(chunk_entity, {chunk_textures[y * game::CHUNKS_WIDTH + x]});
-		   // }
+			// box_sys->add(chunk_entity, { top_left_x, top_left_y, 0.50f, 8 * game::CHUNK_SIZE, 8 * game::CHUNK_SIZE});
+			texture_vbo_sys->add(chunk_entity);
+			render_sys->add(chunk_entity, {chunk_textures[y * game::CHUNKS_WIDTH + x]}, game_engine::shader_programs[0]);
+			// }
 		}
 	}
+
+	// create light components
+	entity light_entity = eng.create_entity();
+	box_sys->add(light_entity, {0.f, 0.f, -4.f, game::CHUNK_SIZE * 3.0, game::CHUNK_SIZE * 3.0});
+	texture_vbo_sys->add(light_entity);
+	render_sys->add(light_entity, {light_texture}, game_engine::shader_programs[2]);
+
 
 	// create player
 	entity player_entity = eng.create_entity();
 	GLuint player_texture;
 	glsl_helper::create_character_texture(player_texture);
-	render_sys->add(player_entity, {player_texture});
+	render_sys->add(player_entity, {player_texture}, game_engine::shader_programs[0]);
 	// box_sys->add(player_entity, {0.f, 0.f, -1.f, 4 * 8.f, 1 * 85.333333333f});
 	box_sys->add(player_entity, {0.f, 0.f, -4.f, glsl_helper::character_width, glsl_helper::character_height});
 	texture_vbo_sys->add(player_entity);
 	eng.player_entitiy = player_entity;
-	// create box2d body
+	// // create box2d body
 	// std::vector<std::pair<float, float>> player_shape = {
 	// 	{0.f, 0.f},
+	// 	{glsl_helper::character_width, glsl_helper::character_height},
 	// 	{glsl_helper::character_width, 0.f},
 	// 	{glsl_helper::character_width, glsl_helper::character_height},
-	// 	{0.f, glsl_helper::character_height},
-	// 	// {0.1f, 0.1f}
-	// };
+	// 	{0.f, 0.f},
+	// 	{0.f, glsl_helper::character_height}};
 	std::vector<std::pair<float, float>> player_shape = {
 		{0.f, 0.f},
+		{glsl_helper::character_width, glsl_helper::character_height},
 		{glsl_helper::character_width, 0.f},
 		{glsl_helper::character_width, glsl_helper::character_height},
-		{glsl_helper::character_width, glsl_helper::character_height},
-		{0.f, glsl_helper::character_height},
-		{0.f, 0.f}
-	};
+		{0.f, 0.f},
+		{0.f, glsl_helper::character_height}
+		};
+
 	chunk_outlines.push_back({player_shape});
 	box2d_sys->create_dynamic_body(player_entity, player_shape);
-	b2Body* player_body = box2d_sys->get_dynamic_body(player_entity);
+	b2Body *player_body = box2d_sys->get_dynamic_body(player_entity);
 
-	// generic shader
-	GLuint generic_shader = load_shaders(glsl_helper::vert_1(), glsl_helper::frag_1())[0];
-	glUseProgram(generic_shader);
+
+	printf("Error_before_loading_compute_shader: %d\n", glGetError());
+	GLuint compute_shader = load_compute_shader(glsl_helper::light_compute_shader());
+	printf("Error_after: %d\n", glGetError());
 	// GLuint projection_location = glGetUniformLocation(shader_programs[0], "projection");
 	// glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix);
 	// GLuint view_location = glGetUniformLocation(shader_programs[0], "view");
 	// glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
 	// do this ^^ but with generic shader
-	GLuint projection_location = glGetUniformLocation(generic_shader, "projection");
-	glUniformMatrix4fv(projection_location, 1, GL_FALSE, game_engine::projection_matrix);
-	GLuint view_location = glGetUniformLocation(generic_shader, "view");
-	glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
-	
+	// GLuint projection_location = glGetUniformLocation(game_engine::shader_programs[1], "projection");
+	// glUniformMatrix4fv(projection_location, 1, GL_FALSE, game_engine::projection_matrix);
+	// GLuint view_location = glGetUniformLocation(game_engine::shader_programs[1], "view");
+	// glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
+
 	uint64_t last_time_taken = 0;
 	// Run the game loop
 	while (!glfwWindowShouldClose(window))
@@ -249,59 +288,93 @@ void run_game(GLFWwindow *window)
 		uint64_t start_time = glfwGetTimerValue();
 		// draw lines for chunk outlines
 		box2d_sys->update(last_time_taken);
+		
+
 		// update the player's outlines
-		b2Vec2 player_position = player_body->GetPosition();
-		std::vector<std::pair<float, float>> player_outline = {
-			{player_position.x, player_position.y},
-			{player_position.x + glsl_helper::character_width, player_position.y},
-			{player_position.x + glsl_helper::character_width, player_position.y + glsl_helper::character_height},
-			{player_position.x + glsl_helper::character_width, player_position.y + glsl_helper::character_height},
-			{player_position.x, player_position.y + glsl_helper::character_height},
-			{player_position.x, player_position.y}
-		};
+		std::vector<std::pair<float, float>> player_outline;
+		b2Fixture *fixture = player_body->GetFixtureList();
+		while (fixture != NULL)
+		{
+			b2PolygonShape *shape = (b2PolygonShape *)fixture->GetShape();
+			for (int i = 0; i < shape->m_count; i++)
+			{
+				b2Vec2 vertex = player_body->GetWorldPoint(shape->m_vertices[i]);
+				// b2Vec2 vertex = shape->m_vertices[i] + player_body->GetPosition() - b2Vec2(glsl_helper::character_width / 2.0f, glsl_helper::character_height / 2.0f);
+				player_outline.push_back({vertex.x, vertex.y});
+			}
+			fixture = fixture->GetNext();
+		}
 		chunk_outlines[game::NUM_CHUNKS] = {player_outline};
 
 		// Update the engine
 		render_sys->update();
 		// printf("Rendering\n");
 		// glUseProgram(0);
-		glUseProgram(generic_shader);
-		GLuint projection_location = glGetUniformLocation(generic_shader, "projection");
+		glUseProgram(game_engine::shader_programs[1]);
+		GLuint projection_location = glGetUniformLocation(game_engine::shader_programs[1], "projection");
 		glUniformMatrix4fv(projection_location, 1, GL_FALSE, game_engine::projection_matrix);
-		GLuint view_location = glGetUniformLocation(generic_shader, "view");
+		GLuint view_location = glGetUniformLocation(game_engine::shader_programs[1], "view");
 		glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
 		for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
 		{
-		    // printf("rendering outlines for a chunk\n");
-		    for (std::vector<std::pair<float, float>> &outline : chunk_outline)
-		    {
-		        for (int i = 0; i < outline.size() - 2; i+=3)
-		        {
-		            // printf("Line: %d\n", i);
-		            std::pair<float, float> p1 = outline[i];
-		            std::pair<float, float> p2 = outline[i + 1];
-		            std::pair<float, float> p3 = outline[i + 2];
-		            render_sys->draw_line(p1.first, p1.second, -3.0f, p2.first, p2.second, -3.0f);
-		            render_sys->draw_line(p2.first, p2.second, -3.0f, p3.first, p3.second, -3.0f);
-		            render_sys->draw_line(p3.first, p3.second, -3.0f, p1.first, p1.second, -3.0f);
-		        }
+			// printf("rendering outlines for a chunk\n");
+			for (std::vector<std::pair<float, float>> &outline : chunk_outline)
+			{
+				for (int i = 0; i < outline.size() - 2; i += 3)
+				{
+					// printf("Line: %d\n", i);
+					std::pair<float, float> p1 = outline[i];
+					std::pair<float, float> p2 = outline[i + 1];
+					std::pair<float, float> p3 = outline[i + 2];
+					render_sys->draw_line(p1.first, p1.second, -3.0f, p2.first, p2.second, -3.0f);
+					render_sys->draw_line(p2.first, p2.second, -3.0f, p3.first, p3.second, -3.0f);
+					render_sys->draw_line(p3.first, p3.second, -3.0f, p1.first, p1.second, -3.0f);
+				}
 
-		        // for (int i = 0; i < outline.size() - 1; i += 1)
-		        // {
-		        //     // Non-triangulated outlines
-		        //     std::pair<float, float> p1 = outline[i];
-		        //     std::pair<float, float> p2 = outline[i + 1];
-		        //     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
-		        // }
-		        // game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
-		    }
+				// for (int i = 0; i < outline.size() - 1; i += 1)
+				// {
+				//     // Non-triangulated outlines
+				//     std::pair<float, float> p1 = outline[i];
+				//     std::pair<float, float> p2 = outline[i + 1];
+				//     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
+				// }
+				// game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
+			}
 		}
+
+		printf("before_comute: %d\n", glGetError());
+		// trace lights with compute shader
+		glUseProgram(compute_shader);
+		printf("before_after_use_prog: %d\n", glGetError());
+		// bind world textures
+    	glBindImageTexture(0, light_texture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R8);
+		for(int chunk = 0; chunk < game::NUM_CHUNKS; chunk++)
+		{
+			// glBindTextureUnit(chunk + 1, chunk_textures[chunk]);
+    		glBindImageTexture(chunk+1, chunk_textures[chunk], 0, GL_TRUE, 0, GL_READ_ONLY, GL_R8);
+		}
+		printf("before_after_binding_c_textures: %d\n", glGetError());
+		// clear light texture with (0, 0, 0, 0)
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, light_texture);
+		glClearTexImage(light_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		printf("before_after_binding_l_texture: %d\n", glGetError());
+
+		GLint player_pos = glGetUniformLocation(compute_shader, "player_pos");
+		glUniform2f(player_pos, player_body->GetPosition().x, player_body->GetPosition().y);
+		printf("before_after_setting_player_pos: %d\n", glGetError());
+		
+		
+		glDispatchCompute(360, 1, 1);
+		printf("before_after_dispatch: %d\n", glGetError());
+
+		glUseProgram(0);
+
 
 		glUseProgram(0);
 		glfwSwapBuffers(window);
 		last_time_taken = glfwGetTimerValue() - start_time;
 	}
-
 	// Learn how to do audio
 	// Learn how to do chunk switching
 }

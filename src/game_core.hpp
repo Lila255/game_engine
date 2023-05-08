@@ -13,7 +13,7 @@
 #include "engine_comp.hpp"
 #include "chunk.hpp"
 
-#define M_PI 3.14159265358979323846   /* pi */
+#define M_PI 3.14159265358979323846	  /* pi */
 #define radians(x) ((x)*M_PI / 180.0) // degrees to radians
 
 // typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
@@ -23,8 +23,8 @@
 
 namespace game
 {
-	const uint16_t NUM_CHUNKS = 16; // 3x3 chunks in world
-	const uint16_t CHUNKS_WIDTH = 4;
+	const uint16_t NUM_CHUNKS = 9; // 3x3 chunks in world
+	const uint16_t CHUNKS_WIDTH = 3;
 	// const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
 	// siv::PerlinNoise perlin_noise(0.0);
@@ -44,7 +44,7 @@ namespace game
 		// box2d_system() = default;
 		box2d_system()
 		{
-			gravity = b2Vec2(0.0f, 9.8f);
+			gravity = b2Vec2(0.0f, 51.8f);
 			world = new b2World(gravity);
 		}
 
@@ -118,18 +118,18 @@ namespace game
 					continue;
 				// if (meshes[i].size() < 3)
 				//     continue;
-				for(int j = 0; j < meshes[i].size(); j+=3)
+				for (int j = 0; j < meshes[i].size(); j += 3)
 				{
 					b2PolygonShape chain;
 					b2Vec2 *vertices = new b2Vec2[3];
 					for (int k = 0; k < 3; k++)
 					{
-						vertices[k].Set(meshes[i][j+k].first, meshes[i][j+k].second);
+						vertices[k].Set(meshes[i][j + k].first, meshes[i][j + k].second);
 					}
 					// if straight line, skip (poor check, only works for axis aligned lines)
-					if(vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
+					if (vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
 						continue;
-					if(vertices[0].y == vertices[1].y && vertices[0].y == vertices[2].y)
+					if (vertices[0].y == vertices[1].y && vertices[0].y == vertices[2].y)
 						continue;
 
 					chain.Set(vertices, 3);
@@ -142,7 +142,6 @@ namespace game
 				}
 			}
 			static_bodies.add(ent, body);
-
 		}
 
 		void update_static_outlines(entity ent, std::vector<std::vector<std::pair<float, float>>> meshes)
@@ -165,25 +164,25 @@ namespace game
 					continue;
 				// if (meshes[i].size() < 3)
 				//     continue;
-				for(int j = 0; j < meshes[i].size(); j+=3)
+				for (int j = 0; j < meshes[i].size(); j += 3)
 				{
 					b2PolygonShape chain;
 					b2Vec2 *vertices = new b2Vec2[3];
 					for (int k = 0; k < 3; k++)
 					{
-						vertices[k].Set(meshes[i][j+k].first, meshes[i][j+k].second);
+						vertices[k].Set(meshes[i][j + k].first, meshes[i][j + k].second);
 					}
 					// if straight line, skip (poor check, only works for axis aligned lines)
-					if(vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
+					if (vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
 						continue;
-					if(vertices[0].y == vertices[1].y && vertices[0].y == vertices[2].y)
+					if (vertices[0].y == vertices[1].y && vertices[0].y == vertices[2].y)
 						continue;
 
 					chain.Set(vertices, 3);
 					b2FixtureDef fixtureDef;
 					fixtureDef.shape = &chain;
 					fixtureDef.density = 0.0f;
-					fixtureDef.friction = 1.f;
+					fixtureDef.friction = 0.9f;
 					body->CreateFixture(&fixtureDef);
 					delete[] vertices;
 				}
@@ -234,37 +233,87 @@ namespace game
 			// body->CreateFixture(&fixture_def);
 			// dynamic_bodies.add(ent, body);
 
-			// do this ^^^ but get the shape from the mesh paramater
+			// // do this ^^^ but get the shape from the mesh paramater
 			b2BodyDef body_def;
 			body_def.type = b2_dynamicBody;
-			body_def.position.Set(110.0f, 100.0f);
+			body_def.position.Set(60.0f, -20.0f);
+			body_def.fixedRotation = true;
 			b2Body *body = world->CreateBody(&body_def);
-			b2PolygonShape dynamic_box;
 			// use mesh
-			
-			for(int i = 0; i < mesh.size(); i+=3)
+
+			for (int i = 0; i < mesh.size(); i += 3)
 			{
+				b2PolygonShape dynamic_box;
 				b2Vec2 *vertices = new b2Vec2[3];
 				for (int j = 0; j < 3; j++)
 				{
-					vertices[j].Set(mesh[i+j].first, mesh[i+j].second);
+					vertices[j].Set(mesh[i + j].first, mesh[i + j].second);
 				}
 				// if straight line, skip (poor check, only works for axis aligned lines)
-				if(vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
+				if (vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
 					continue;
-				if(vertices[0].y == vertices[1].y && vertices[0].y == vertices[2].y)
+				if (vertices[0].y == vertices[1].y && vertices[0].y == vertices[2].y)
 					continue;
 				dynamic_box.Set(vertices, 3);
 				b2FixtureDef fixture_def;
 				fixture_def.shape = &dynamic_box;
-				fixture_def.density = 5.4f;
-				fixture_def.friction = 0.3f;
-				fixture_def.restitution = 0.20f;
+				fixture_def.density = 1.f;
+				fixture_def.friction = 0.5f;
+				fixture_def.restitution = .20f;
 				body->CreateFixture(&fixture_def);
 				delete[] vertices;
 			}
 			dynamic_bodies.add(ent, body);
 
+			// do this ^^^ but get the shape from the mesh paramater
+			// b2BodyDef body_def;
+			// body_def.type = b2_dynamicBody;
+			// body_def.position.Set(60.0f, -20.0f);
+			// b2Body *body = world->CreateBody(&body_def);
+			// b2FixtureDef fixture_def;
+
+			// for (int i = 0; i < mesh.size(); i += 3)
+			// {
+			// 	b2PolygonShape triangle_shape;
+			// 	// triangle_shape.Set((const b2Vec2 *)&mesh[i], 3);
+			// 	b2Vec2 *vertices = new b2Vec2[3];
+			// 	for (int j = 0; j < 3; j++)
+			// 	{
+			// 		vertices[j].Set(mesh[i + j].first, mesh[i + j].second);
+			// 	}
+			// 	// if straight line, skip (poor check, only works for axis aligned lines)
+			// 	if (vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x || vertices[0].y == vertices[1].y && vertices[0].y == vertices[2].y)
+			// 		continue;
+			// 	triangle_shape.Set(vertices, 3);
+			// 	fixture_def.shape = &triangle_shape;
+			// 	body->CreateFixture(&fixture_def);
+			// }
+			// fixture_def.density = 1.f;
+			// fixture_def.friction = 0.5f;
+			// fixture_def.restitution = 0.10f;
+
+			// dynamic_bodies.add(ent, body);
+
+			// Do this ^^ but do not use triangles
+			// b2BodyDef body_def;
+			// body_def.type = b2_dynamicBody;
+			// body_def.position.Set(60.0f, -20.0f);
+			// b2Body *body = world->CreateBody(&body_def);
+			// b2PolygonShape dynamic_box;
+			// b2Vec2 * verts = new b2Vec2[mesh.size()];
+			// for (int i = 0; i < mesh.size(); i++)
+			// {
+			// 	verts[i].Set(mesh[i].first, mesh[i].second);
+			// }
+			// dynamic_box.Set(verts, mesh.size());
+			// b2FixtureDef fixture_def;
+			// fixture_def.shape = &dynamic_box;
+			// fixture_def.density = 1.f;
+			// fixture_def.friction = 0.25f;
+			// fixture_def.restitution = 0.10f;
+			// body->CreateFixture(&fixture_def);
+			// delete[] verts;
+			// dynamic_bodies.add(ent, body);
 		}
 
 		void remove_dynamic_body(entity ent)
@@ -272,12 +321,12 @@ namespace game
 			world->DestroyBody(dynamic_bodies.get(ent));
 			dynamic_bodies.remove(ent);
 		}
-		void update(){}     
+		void update() {}
 		void update(uint64_t time_to_step)
 		{
 
-			world->Step((double)time_to_step / 1000000.0, 6, 2);
-			// world->Step(1.0f / 60.0f, 6, 2);
+			// world->Step((double)time_to_step / 1000.0, 6, 2);
+			world->Step(1.0f / 144.0f, 6, 2);
 
 			b2Body *body = dynamic_bodies.get(game_engine::game_engine_pointer->player_entitiy);
 			b2Vec2 position = body->GetPosition();
@@ -289,8 +338,8 @@ namespace game
 			// // get box position
 			game_engine::box_system *bo_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
 			game_engine::box b = bo_system_pointer->get(game_engine::game_engine_pointer->player_entitiy);
-			b.x = position.x - glsl_helper::character_width / 2.0f;
-			b.y = position.y - glsl_helper::character_height / 2.0f;
+			b.x = position.x;// - glsl_helper::character_width / 2.0f;
+			b.y = position.y;// - glsl_helper::character_height / 2.0f;
 			bo_system_pointer->update_box(game_engine::game_engine_pointer->player_entitiy, b);
 			game_engine::texture_vbo_system *tex_vbo_system_pointer = ((game_engine::texture_vbo_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
 			tex_vbo_system_pointer->update(game_engine::game_engine_pointer->player_entitiy);
@@ -372,7 +421,7 @@ namespace game
 
 		std::vector<std::vector<std::pair<float, float>>> create_outlines(int x, int y)
 		{
-			return chunk_data[x + y * CHUNKS_WIDTH]->create_outlines_centers();
+			return chunk_data[x + y * CHUNKS_WIDTH]->create_outlines();
 		}
 
 		void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
@@ -389,13 +438,12 @@ namespace game
 				{
 					std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *tile_data = chunk_data[i]->get_data();
 					entity ent = chunk_entities[i];
-					texture_system->update_texture(ent, (uint8_t *)tile_data->data(), CHUNK_SIZE, CHUNK_SIZE);
-					std::vector<std::vector<std::pair<float, float>>> outlines = chunk_data[i]->create_outlines_centers();
+					texture_system->update_texture(ent, (uint8_t *)tile_data->data(), CHUNK_SIZE, CHUNK_SIZE, game_engine::shader_programs[0]);
+					std::vector<std::vector<std::pair<float, float>>> outlines = chunk_data[i]->create_outlines();
 					(*chunk_outlines)[i] = outlines;
 					// chunk_outlines->at(i) = outlines;
 
 					b2d_system->update_static_outlines(ent, outlines);
-
 				}
 			}
 			//

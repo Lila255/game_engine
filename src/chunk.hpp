@@ -15,7 +15,51 @@ namespace game
 {
 
 	const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
+	
+	struct linef
+	{
+		float x1, y1, x2, y2;
+	};
+	struct linef_hash
+	{
+		std::size_t operator()(const linef &l) const
+		{
+			return std::hash<float>()(l.x1) ^ std::hash<float>()(l.y1) ^ std::hash<float>()(l.x2) ^ std::hash<float>()(l.y2);
+		}
+	};
+	struct tile_line
+	{
+		int x1, y1, x2, y2;
+		// define != operator
+		bool operator!=(const tile_line &other) const
+		{
+			// return x1 != other.x1 || y1 != other.y1 || x2 != other.x2 || y2 != other.y2;
+			return (x1 + y1 * CHUNK_SIZE) != (other.x1 + other.y1 * CHUNK_SIZE) || (x2 + y2 * CHUNK_SIZE) != (other.x2 + other.y2 * CHUNK_SIZE);
+		}
+		// define == operator
+		bool operator==(const tile_line &other) const
+		{
+			// return x1 == other.x1 && y1 == other.y1 && x2 == other.x2 && y2 == other.y2;
+			// return (x1 == other.x1 && y1 == other.y1 && x2 == other.x2 && y2 == other.y2) || (x1 == other.x2 && y1 == other.y2 && x2 == other.x1 && y2 == other.y1);
+			// return (x1 + y1 * CHUNK_SIZE) == (other.x1 + other.y1 * CHUNK_SIZE) && (x2 + y2 * CHUNK_SIZE) == (other.x2 + other.y2 * CHUNK_SIZE);
+			if(x1 == other.x1 && y1 == other.y1 && x2 == other.x2 && y2 == other.y2) {
+				return true;
+			} else if(x1 == other.x2 && y1 == other.y2 && x2 == other.x1 && y2 == other.y1) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+	};
 
+	struct tile_line_hash
+	{
+		std::size_t operator()(const tile_line &l) const
+		{
+			// return std::hash<int>()(l.x1) ^ std::hash<int>()(l.y1) ^ std::hash<int>()(l.x2) ^ std::hash<int>()(l.y2);
+			return (l.x1 * 1 + l.y1 * CHUNK_SIZE) ^ (l.x2 * 1 + l.y2 * CHUNK_SIZE);
+		}
+	};
 
 	struct chunk
 	{
@@ -55,8 +99,12 @@ namespace game
 		//     float y = p1->y - p2->y;
 		//     return x * x + y * y;
 		// }
-
+		std::vector<std::vector<std::pair<float, float>>> create_outlines();
+		bool is_outline(tile_line l);
+		bool is_edge(int, int);
+		std::vector<std::pair<int, int>> trace_outline(tile_line start_line, std::unordered_set<tile_line, tile_line_hash> &visited_lines);
 		std::vector<std::vector<std::pair<float, float>>> create_outlines_centers();
+
 
 		bool delete_circle(int x, int y, int radius);
 	};

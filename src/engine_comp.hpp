@@ -224,13 +224,13 @@ namespace game_engine
 	{
 	private:
 		sparse_component_set<texture> m_sprite_textures;
-		// texture background_texture;
-		// texture foreground_texture;
-		// texture light_texture;
+		sparse_component_set<GLuint> m_sprite_programs;
+		// std::vector<sparse_component_set<texture> *> m_texture_groups;
+		// std::unordered_map<GLuint, uint16_t> m_program_groups;
 
 		// function pointer for key callback
 		void (*key_callback)(std::unordered_set<int> &keys_pressed);
-		void (*mouse_callback)(GLFWwindow * window, std::unordered_set<int> &mouse_buttons_pressed);
+		void (*mouse_callback)(GLFWwindow *window, std::unordered_set<int> &mouse_buttons_pressed);
 
 		GLFWwindow *m_window;
 		uint32_t m_frame_count = 0;
@@ -251,14 +251,13 @@ namespace game_engine
 			// glfwSetKeyCallback(window, (game_engine_pointer->*ptr));
 			glfwSetKeyCallback(window, game_engine::static_key_callback);
 			glfwSetMouseButtonCallback(window, game_engine::static_mouse_button_callback);
-
 		}
 
 		void set_key_callback(void (*key_callback)(std::unordered_set<int> &keys_pressed))
 		{
 			this->key_callback = key_callback;
 		}
-		void set_mouse_callback(void (*mouse_callback)(GLFWwindow * window, std::unordered_set<int> &mouse_buttons_pressed))
+		void set_mouse_callback(void (*mouse_callback)(GLFWwindow *window, std::unordered_set<int> &mouse_buttons_pressed))
 		{
 			this->mouse_callback = mouse_callback;
 		}
@@ -270,7 +269,7 @@ namespace game_engine
 
 			update_keys();
 
-			if(mouse_callback && game_engine_pointer->pressed_mouse_buttons.size() > 0)
+			if (mouse_callback && game_engine_pointer->pressed_mouse_buttons.size() > 0)
 			{
 				mouse_callback(m_window, game_engine_pointer->pressed_mouse_buttons);
 				return;
@@ -295,22 +294,40 @@ namespace game_engine
 
 			// draw stuff
 			// glBindVertexArray(texture_vbo_system_pointer -> get_vao());
-			std::vector<uint32_t> *entities = m_sprite_textures.get_entities();
+			// for (auto shader_program : m_program_groups)
+			// {
+			// 	std::vector<uint32_t> *entities = m_texture_groups[shader_program.second]->get_entities();
 
-			glUseProgram(shader_programs[0]);
-			glUniform1i(glGetUniformLocation(shader_programs[0], "tex"), 0);
+			std::vector<uint32_t> *entities = m_sprite_textures.get_entities();
+			// glUseProgram(m_);
+
+
+			// glUniform1i(glGetUniformLocation(shader_program.first, "tex"), 0);
 
 			glActiveTexture(GL_TEXTURE0);
 
-			GLuint projection_location = glGetUniformLocation(shader_programs[0], "projection");
-			glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix);
-			GLuint view_location = glGetUniformLocation(shader_programs[0], "view");
-			glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
+			// GLuint projection_location = glGetUniformLocation(shader_program.first, "projection");
+			// glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix);
+			// GLuint view_location = glGetUniformLocation(shader_program.first, "view");
+			// glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
 
 			// printf("Rendfering %d entities\n", entities->size());
+			int index = 0;
 			for (std::vector<uint32_t>::iterator it = entities->begin(); it != entities->end(); it++)
 			{
-				// glUseProgram(shader_programs[0]);
+				GLuint program = m_sprite_programs.get(*it);
+				
+				glUniform1i(glGetUniformLocation(program, "tex"), 0);
+
+				
+				GLuint projection_location = glGetUniformLocation(program, "projection");
+				glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix);
+				GLuint view_location = glGetUniformLocation(program, "view");
+				glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
+
+
+				glUseProgram(m_sprite_programs.get(*it));
+				// texture &t = m_texture_groups[shader_program.second]->get(*it);
 				texture &t = m_sprite_textures.get(*it);
 				GLuint vbo = texture_vbo_system_pointer->get_vbo(*it);
 				glBindVertexArray(texture_vbo_system_pointer->get_vao(*it));
@@ -319,49 +336,48 @@ namespace game_engine
 				glBindTexture(GL_TEXTURE_2D, t.id);
 				// Bind the VBO
 				glBindBuffer(GL_ARRAY_BUFFER, vbo);
-				// printf("Texture: %d\n", t.id);
-				// GLint active_texture;
-				// glGetIntegerv(GL_ACTIVE_TEXTURE, &active_texture);
-				// printf("Error_1.5: x%d\n", glGetError());
-				// printf("active_texture: %d\n", active_texture);
-				// printf("real texture: %d\n", t.id);
-				// printf("GL_TEXTURE0: %d\n", GL_TEXTURE0);
-
-				// GLint vao2;
-				// glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &vao2);
-				// printf("vao2: %d\n", vao2);
-				// printf("vao: %d\n", texture_vbo_system_pointer -> get_vao());
-
-				// // GL_ARRAY_BUFFER_BINDING
-				// GLint vbo2;
-				// glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &vbo2);
-				// printf("Error_1.5: x%d\n", glGetError());
-				// printf("vbo2: %d\n", vbo2);
-				// printf("vbo: %d\n", vbo);
-				// set the texture uniform
-				// glUniform1i(glGetUniformLocation(shader_programs[0], "tex"), 0);
-				// Draw the VBO
 				glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+				index++;
 			}
 			glUseProgram(0);
-
+			// }
 			// glfwSwapBuffers(m_window);
 			glfwPollEvents();
 			m_frame_count++;
 		}
 
-		void add(uint32_t ent, texture &&t)
+		void add(uint32_t ent, texture &&t) = delete;
+
+		void add(entity ent, texture &&t, GLuint program)
 		{
+			// if (!m_program_groups.contains(program))
+			// {
+			// 	m_program_groups[program] = m_texture_groups.size();
+			// 	m_texture_groups.push_back(new sparse_component_set<texture>());
+			// }
+			// m_texture_groups[m_program_groups[program]]->add(ent, t);
 			m_sprite_textures.add(ent, t);
+			m_sprite_programs.add(ent, program);
 		}
 
 		void remove(uint32_t ent)
 		{
+			// m_sprite_textures.remove(ent);
+			// for (auto &group : m_texture_groups)
+			// {
+			// 	if (group->contains(ent))
+			// 	{
+			// 		group->remove(ent);
+			// 		return;
+			// 	}
+			// }
 			m_sprite_textures.remove(ent);
+			m_sprite_programs.remove(ent);
 		}
 
-		void update_texture(entity ent, uint8_t *data, int width, int height)
+		void update_texture(entity ent, uint8_t *data, int width, int height, GLuint program)
 		{
+			// texture &t = m_texture_groups[m_program_groups[program]] -> get(ent);
 			texture &t = m_sprite_textures.get(ent);
 			glBindTexture(GL_TEXTURE_2D, t.id);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
@@ -378,7 +394,6 @@ namespace game_engine
 				key_callback(game_engine_pointer->pressed_keys);
 				return;
 			}
-			
 
 			box_system *b_system = (game_engine::box_system *)(game_engine_pointer->get_system(family::type<game_engine::box_system>()));
 			texture_vbo_system *vbo_system = (game_engine::texture_vbo_system *)(game_engine_pointer->get_system(family::type<game_engine::texture_vbo_system>()));
@@ -425,7 +440,6 @@ namespace game_engine
 			glVertex3f(x1, y1, z1);
 			glVertex3f(x2, y2, z2);
 			glEnd();
-			
 		}
 	};
 
