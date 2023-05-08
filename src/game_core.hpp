@@ -236,7 +236,7 @@ namespace game
 			// // do this ^^^ but get the shape from the mesh paramater
 			b2BodyDef body_def;
 			body_def.type = b2_dynamicBody;
-			body_def.position.Set(60.0f, -20.0f);
+			body_def.position.Set(260.0f, -20.0f);
 			body_def.fixedRotation = true;
 			b2Body *body = world->CreateBody(&body_def);
 			// use mesh
@@ -438,7 +438,10 @@ namespace game
 				{
 					std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *tile_data = chunk_data[i]->get_data();
 					entity ent = chunk_entities[i];
-					texture_system->update_texture(ent, (uint8_t *)tile_data->data(), CHUNK_SIZE, CHUNK_SIZE, game_engine::shader_programs[0]);
+					// texture_system->update_texture(ent, (uint8_t *)tile_data->data(), CHUNK_SIZE, CHUNK_SIZE, game_engine::shader_programs[0]);
+					int chunkx = i % CHUNKS_WIDTH;
+					int chunky = i / CHUNKS_WIDTH;
+					texture_system->update_texture_section(ent, (uint8_t *)tile_data->data(), chunkx * CHUNK_SIZE, chunky * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE, game_engine::shader_programs[0]);
 					std::vector<std::vector<std::pair<float, float>>> outlines = chunk_data[i]->create_outlines();
 					(*chunk_outlines)[i] = outlines;
 					// chunk_outlines->at(i) = outlines;

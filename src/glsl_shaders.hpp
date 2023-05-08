@@ -143,7 +143,7 @@ namespace glsl_helper
 		return frag_1.str();
 	}
 
-	// generic shader that renders a texture to the screen using the projection and view matrix uniforms
+	// shader that renders a r32ui texture as a rgba8 texture to the screen using the projection and view matrix uniforms
 	std::string vert_2()
 	{
 		return
@@ -166,11 +166,12 @@ namespace glsl_helper
 			R"(
 			#version 430
 			in vec2 v_TexCoord;
-			uniform sampler2D tex;
+			uniform usampler2D tex;
 			out vec4 out_Color;
 			void main()
 			{
-				out_Color = texture(tex, v_TexCoord);
+				uint val = texture(tex, TexCoords).r;
+				out_Color = vec4(val >> 24, (val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF) / 255.0;
 			}
 		)";
 	}
@@ -180,7 +181,7 @@ namespace glsl_helper
 		return R"(
 			#version 430
 
-			layout(binding = 0, rgba8) uniform image2D lightingTex; // 3x3 grid of 128x128 textures, lays on top of worldChunkTex textures
+			layout(binding = 0, r32ui) uniform uimage2D lightingTex; // 3x3 grid of 128x128 textures, lays on top of worldChunkTex textures
 			layout(binding = 1, R8) uniform readonly image2D world_chunks;  // 3x3 grid of 128x128 textures, lays on top of worldChunkTex textures
 
 			const int CHUNK_SIZE = 128;  // width and height of a chunk
@@ -203,6 +204,11 @@ namespace glsl_helper
 				int value = int(imageLoad(world_chunks, ivec2(texCoord)).r);
 				return value;
 			}
+
+			// GLuint rgba_to_r32ui(GLubyte r, GLubyte g, GLubyte b, GLubyte a)
+			// {
+			// 	 return (r << 24) | (g << 16) | (b << 8) | a;
+			// }
 
 			uniform vec2 player_pos;    // relative to the lighting texture, center of the screen but not center of lighting texture
 			const int max_ray_length = 128;
@@ -234,7 +240,7 @@ namespace glsl_helper
 					}
 
 					// imageStore(lightingTex, ivec2(ray_pos), imageLoad(lightingTex, ivec2(ray_pos)) + vec4(32, 32, 32, 255));
-					imageAtomicAdd(lightingTex, ivec2(ray_pos), vec4(32, 32, 32, 255));
+					imageAtomicAdd(lightingTex, ivec2(ray_pos), 0x20202080);
 				}
 			};
 		)";
@@ -266,7 +272,7 @@ namespace glsl_helper
 
 			// Print error log
 			std::printf("Failed to compile shader: %s\n", &errorLog[0]);
-			
+
 			return 0;
 		}
 		return shader;
@@ -395,21 +401,39 @@ std::vector<GLuint> load_shaders(std::string vert, std::string frag)
 
 GLuint load_compute_shader(std::string shader_src)
 {
-	int max_image_units;
-	glGetIntegerv(GL_MAX_IMAGE_UNITS, &max_image_units);
-	printf("Max image units: %d\n", max_image_units);
+	printf("load_compute_shader 0: %d\n", glGetError());
 
 	GLuint compute_shader = glsl_helper::load_shader(shader_src, GL_COMPUTE_SHADER);
+	printf("load_compute_shader 1: %d\n", glGetError());
 	GLuint program = glCreateProgram();
 	if (program == 0)
 	{
 		std::printf("Failed to create shader program with error %d\n", glGetError());
 	}
-	printf("Error_1: %d\n", glGetError());
+	printf("load_compute_shader 2: %d\n", glGetError());
+
 	glAttachShader(program, compute_shader);
-	printf("Error_0: %d\n", glGetError());
+	printf("load_compute_shader 3: %d\n", glGetError());
 	glLinkProgram(program);
-	printf("Error_2: %d\n", glGetError());
+	printf("load_compute_shader 4: %d\n", glGetError());
+
+	GLint linkStatus;
+	glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
+	if (linkStatus == GL_FALSE)
+	{
+		printf("Failed to link shader program\n");
+		GLint logLength;
+		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLength);
+		char *log = (char *)malloc(logLength);
+		glGetProgramInfoLog(program, logLength, NULL, log);
+		printf("Error log: %s\n", log);
+		free(log);
+		// return -1;
+	}
+	else
+	{
+		printf("Shader program linked\n");
+	}
 
 	glDeleteShader(compute_shader);
 

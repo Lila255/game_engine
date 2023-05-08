@@ -383,6 +383,14 @@ namespace game_engine
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 		}
 
+		void update_texture_section(entity ent, uint8_t * data, int x, int y, int width, int height, GLuint program)
+		{
+			// texture &t = m_texture_groups[m_program_groups[program]] -> get(ent);
+			texture &t = m_sprite_textures.get(ent);
+			glBindTexture(GL_TEXTURE_2D, t.id);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_RED, GL_UNSIGNED_BYTE, data);
+		}
+
 		void update_keys()
 		{
 			if (!game_engine_pointer->game_engine::engine::pressed_keys.size())

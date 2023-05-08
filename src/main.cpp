@@ -58,7 +58,6 @@ void custom_key_callback(std::unordered_set<int> &keys)
 	{
 		// if in water or something, idk
 
-
 		// add angular velocity
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
@@ -153,7 +152,6 @@ void run_game(GLFWwindow *window)
 	// generic texture shader
 	game_engine::shader_programs.push_back(load_shaders(glsl_helper::vert_2(), glsl_helper::frag_2())[0]);
 
-
 	game_engine::box_system *box_sys = new game_engine::box_system();
 	eng.add_system(game_engine::family::type<game_engine::box_system>(), box_sys);
 
@@ -174,22 +172,32 @@ void run_game(GLFWwindow *window)
 	world_sys->generate_world();
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
 	std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
-	std::array<GLuint, game::NUM_CHUNKS> chunk_textures;
+
+	GLuint chunk_texture;
+	glGenTextures(1, &chunk_texture);
+	glBindTexture(GL_TEXTURE_2D, chunk_texture);
+	// set data and size
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
 	
-	for (int i = 0; i < game::NUM_CHUNKS; i++)
+	for(int i = 0; i < game::NUM_CHUNKS; i++)
 	{
-		GLuint texture;
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		// set data and size
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, game::CHUNK_SIZE, game::CHUNK_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, chunks_data[i]->data());
-		glBindTexture(GL_TEXTURE_2D, 0);
-		chunk_textures[i] = texture;
+		int x = i % game::CHUNKS_WIDTH;
+		int y = i / game::CHUNKS_WIDTH;
+
+		glTexSubImage2D(GL_TEXTURE_2D, 0, x * game::CHUNK_SIZE, y * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE, GL_RED, GL_UNSIGNED_BYTE, chunks_data[i]);
 	}
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	
+	entity all_chunks_entity = eng.create_entity();
+	box_sys->add(all_chunks_entity, {0.f, 0.f, -5.0, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	texture_vbo_sys->add(all_chunks_entity);
+	render_sys->add(all_chunks_entity, {chunk_texture}, game_engine::shader_programs[0]);
+
 
 	GLuint light_texture;
 	glGenTextures(1, &light_texture);
@@ -198,8 +206,9 @@ void run_game(GLFWwindow *window)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, game::CHUNK_SIZE * 3, game::CHUNK_SIZE * 3, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
+
 
 	// for(int i = 0; i < game::NUM_CHUNKS; i++) {
 	for (int y = 0; y < game::CHUNKS_WIDTH; y++)
@@ -224,8 +233,8 @@ void run_game(GLFWwindow *window)
 			// box_sys->add(chunk_entity, { top_left_x, top_left_y, 1.0f, 8 * game::CHUNK_SIZE, 8 * game::CHUNK_SIZE});
 
 			// box_sys->add(chunk_entity, { top_left_x, top_left_y, 0.50f, 8 * game::CHUNK_SIZE, 8 * game::CHUNK_SIZE});
-			texture_vbo_sys->add(chunk_entity);
-			render_sys->add(chunk_entity, {chunk_textures[y * game::CHUNKS_WIDTH + x]}, game_engine::shader_programs[0]);
+			// texture_vbo_sys->add(chunk_entity);
+			// render_sys->add(chunk_entity, {chunk_textures[y * game::CHUNKS_WIDTH + x]}, game_engine::shader_programs[0]);
 			// }
 		}
 	}
@@ -235,7 +244,6 @@ void run_game(GLFWwindow *window)
 	box_sys->add(light_entity, {0.f, 0.f, -4.f, game::CHUNK_SIZE * 3.0, game::CHUNK_SIZE * 3.0});
 	texture_vbo_sys->add(light_entity);
 	render_sys->add(light_entity, {light_texture}, game_engine::shader_programs[2]);
-
 
 	// create player
 	entity player_entity = eng.create_entity();
@@ -260,13 +268,11 @@ void run_game(GLFWwindow *window)
 		{glsl_helper::character_width, 0.f},
 		{glsl_helper::character_width, glsl_helper::character_height},
 		{0.f, 0.f},
-		{0.f, glsl_helper::character_height}
-		};
+		{0.f, glsl_helper::character_height}};
 
 	chunk_outlines.push_back({player_shape});
 	box2d_sys->create_dynamic_body(player_entity, player_shape);
 	b2Body *player_body = box2d_sys->get_dynamic_body(player_entity);
-
 
 	printf("Error_before_loading_compute_shader: %d\n", glGetError());
 	GLuint compute_shader = load_compute_shader(glsl_helper::light_compute_shader());
@@ -288,7 +294,6 @@ void run_game(GLFWwindow *window)
 		uint64_t start_time = glfwGetTimerValue();
 		// draw lines for chunk outlines
 		box2d_sys->update(last_time_taken);
-		
 
 		// update the player's outlines
 		std::vector<std::pair<float, float>> player_outline;
@@ -345,31 +350,26 @@ void run_game(GLFWwindow *window)
 		printf("before_comute: %d\n", glGetError());
 		// trace lights with compute shader
 		glUseProgram(compute_shader);
-		printf("before_after_use_prog: %d\n", glGetError());
+		printf("after_use_prog: %d\n", glGetError());
 		// bind world textures
-    	glBindImageTexture(0, light_texture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R8);
-		for(int chunk = 0; chunk < game::NUM_CHUNKS; chunk++)
-		{
-			// glBindTextureUnit(chunk + 1, chunk_textures[chunk]);
-    		glBindImageTexture(chunk+1, chunk_textures[chunk], 0, GL_TRUE, 0, GL_READ_ONLY, GL_R8);
-		}
-		printf("before_after_binding_c_textures: %d\n", glGetError());
+		glBindImageTexture(0, light_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+		glBindImageTexture(1, chunk_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+		
+		printf("after_binding_textures: %d\n", glGetError());
 		// clear light texture with (0, 0, 0, 0)
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, light_texture);
-		glClearTexImage(light_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-		printf("before_after_binding_l_texture: %d\n", glGetError());
+		// glActiveTexture(GL_TEXTURE0);
+		// glBindTexture(GL_TEXTURE_2D, light_texture);
+		// glClearTexImage(light_texture, 0, GL_R32UI, GL_UNSIGNED_INT, NULL);
+		// printf("after_clearing_l_texture: %d\n", glGetError());
 
 		GLint player_pos = glGetUniformLocation(compute_shader, "player_pos");
-		glUniform2f(player_pos, player_body->GetPosition().x, player_body->GetPosition().y);
-		printf("before_after_setting_player_pos: %d\n", glGetError());
-		
-		
+		glUniform2f(player_pos, (float)(player_body->GetPosition().x), (float)(player_body->GetPosition().y));
+		printf("after_setting_player_pos: %d\n", glGetError());
+
 		glDispatchCompute(360, 1, 1);
-		printf("before_after_dispatch: %d\n", glGetError());
+		printf("after_dispatch: %d\n", glGetError());
 
 		glUseProgram(0);
-
 
 		glUseProgram(0);
 		glfwSwapBuffers(window);
