@@ -153,6 +153,7 @@ namespace glsl_helper
 			layout (location = 1) in vec2 texCoord;
 			uniform mat4 projection;
 			uniform mat4 view;
+			out vec2 v_TexCoord;
 			void main()
 			{
     			v_TexCoord = texCoord;
@@ -170,8 +171,14 @@ namespace glsl_helper
 			out vec4 out_Color;
 			void main()
 			{
-				uint val = texture(tex, TexCoords).r;
-				out_Color = vec4(val >> 24, (val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF) / 255.0;
+				uint val = uint(texture(tex, v_TexCoord).r * 255.0 / 4);
+				// out_Color = vec4(val >> 24, (val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF) / 255.0;
+				
+				// ivec2 tex_coord = ivec2(v_TexCoord.xy);
+				// uint val = texelFetch(tex, tex_coord, 0).r;
+				out_Color = vec4(val >> 24, (val >> 16) & 0xFF, (val >> 8) & 0xFF, 255 - (val & 0xFF)) / 255.0;
+				
+				// out_Color = vec4(val >> 24, (val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF) / 255.0;
 			}
 		)";
 	}
@@ -201,7 +208,10 @@ namespace glsl_helper
 				// vec2 offset = vec2(chunkX, chunkY);
 				// vec2 chunkTexCoord = vec2(mod(texCoord.x, CHUNK_SIZE), mod(texCoord.y, CHUNK_SIZE));
 				// int value = int(imageLoad(worldChunkTex[index], ivec2(chunkTexCoord)).r);
+
 				int value = int(imageLoad(world_chunks, ivec2(texCoord)).r);
+
+				// int value = int(texture(world_chunks, ivec2(texCoord)).r * 255.0);
 				return value;
 			}
 
@@ -239,8 +249,9 @@ namespace glsl_helper
 						break;
 					}
 
-					// imageStore(lightingTex, ivec2(ray_pos), imageLoad(lightingTex, ivec2(ray_pos)) + vec4(32, 32, 32, 255));
-					imageAtomicAdd(lightingTex, ivec2(ray_pos), 0x20202080);
+					// imageStore(lightingTex, ivec2(ray_pos), imageLoad(lightingTex, ivec2(ray_pos)) + vec4(0, 0, 0, 255));
+					imageAtomicAdd(lightingTex, ivec2(ray_pos), 0x00000001);
+					// imageAtomicExchange(lightingTex, ivec2(ray_pos), 0x202020ff);
 				}
 			};
 		)";

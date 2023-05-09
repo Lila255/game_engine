@@ -347,29 +347,25 @@ void run_game(GLFWwindow *window)
 			}
 		}
 
-		printf("before_comute: %d\n", glGetError());
+		// glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, light_texture);
+		glClearTexImage(light_texture, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		// printf("after_clearing_l_texture: %d\n", glGetError());
+
 		// trace lights with compute shader
 		glUseProgram(compute_shader);
-		printf("after_use_prog: %d\n", glGetError());
 		// bind world textures
 		glBindImageTexture(0, light_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		glBindImageTexture(1, chunk_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
 		
-		printf("after_binding_textures: %d\n", glGetError());
 		// clear light texture with (0, 0, 0, 0)
-		// glActiveTexture(GL_TEXTURE0);
-		// glBindTexture(GL_TEXTURE_2D, light_texture);
-		// glClearTexImage(light_texture, 0, GL_R32UI, GL_UNSIGNED_INT, NULL);
-		// printf("after_clearing_l_texture: %d\n", glGetError());
+		
 
 		GLint player_pos = glGetUniformLocation(compute_shader, "player_pos");
 		glUniform2f(player_pos, (float)(player_body->GetPosition().x), (float)(player_body->GetPosition().y));
-		printf("after_setting_player_pos: %d\n", glGetError());
 
 		glDispatchCompute(360, 1, 1);
-		printf("after_dispatch: %d\n", glGetError());
-
-		glUseProgram(0);
 
 		glUseProgram(0);
 		glfwSwapBuffers(window);

@@ -312,12 +312,13 @@ namespace game_engine
 			// glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
 
 			// printf("Rendfering %d entities\n", entities->size());
-			int index = 0;
 			for (std::vector<uint32_t>::iterator it = entities->begin(); it != entities->end(); it++)
 			{
 				GLuint program = m_sprite_programs.get(*it);
+				glUseProgram(m_sprite_programs.get(*it));
 				
-				glUniform1i(glGetUniformLocation(program, "tex"), 0);
+				GLuint texture_loc = glGetUniformLocation(program, "tex");
+				glUniform1i(texture_loc, 0);
 
 				
 				GLuint projection_location = glGetUniformLocation(program, "projection");
@@ -326,7 +327,6 @@ namespace game_engine
 				glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
 
 
-				glUseProgram(m_sprite_programs.get(*it));
 				// texture &t = m_texture_groups[shader_program.second]->get(*it);
 				texture &t = m_sprite_textures.get(*it);
 				GLuint vbo = texture_vbo_system_pointer->get_vbo(*it);
@@ -337,7 +337,6 @@ namespace game_engine
 				// Bind the VBO
 				glBindBuffer(GL_ARRAY_BUFFER, vbo);
 				glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-				index++;
 			}
 			glUseProgram(0);
 			// }
