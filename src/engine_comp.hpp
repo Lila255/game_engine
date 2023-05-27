@@ -32,8 +32,14 @@ namespace game_engine
 	struct texture : public component
 	{
 		GLuint id;
+		GLuint program = 0;
+		GLuint format = GL_RGBA;
+		uint32_t width = 0;
+		uint32_t height = 0;
+
 		texture() = default;
 		texture(GLuint id) : id(id) {}
+		texture(GLuint id, GLuint program, GLuint format, uint32_t width, uint32_t height) : id(id), program(program), format(format), width(width), height(height) {}
 	};
 
 	/// @brief A Box2D component that stores a body
@@ -224,7 +230,7 @@ namespace game_engine
 	{
 	private:
 		sparse_component_set<texture> m_sprite_textures;
-		sparse_component_set<GLuint> m_sprite_programs;
+		// sparse_component_set<GLuint> m_sprite_programs;
 		// std::vector<sparse_component_set<texture> *> m_texture_groups;
 		// std::unordered_map<GLuint, uint16_t> m_program_groups;
 
@@ -242,9 +248,10 @@ namespace game_engine
 			// Do some initialization stuff
 			// glClearColor(0.8392f, 0.0078f, 0.4392f, 1.0f);
 			// glClearColor(0.2902, 0.0118, 0.2118, 1.0f);
-			glClearColor(0.02, 0.5118, 0.7118, 1.0f);
+			glClearColor(0.7, 0.8, 1.0, 1.0f);
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			// glBlendEquation(GL_FUNC_ADD);
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LESS);
 			// void (engine::*ptr)(GLFWwindow *window, int key, int scancode, int action, int mods) = &(engine::key_callback);
@@ -286,8 +293,8 @@ namespace game_engine
 			//     0.0f, 0.0f, 1.0f, 0.0f,
 			//     -b.x, -b.y, 0.0f, 1.0f};
 			// };
-			view_matrix[12] = -b.x - 0.5 * glsl_helper::character_width + window_width * 0.0625f;
-			view_matrix[13] = -b.y - 0.5 * glsl_helper::character_height + window_height * 0.0625f;
+			// view_matrix[12] = -b.x - 0.5 * glsl_helper::character_width + window_width * (1.0 / (2 * PIXEL_SCALE));
+			// view_matrix[13] = -b.y - 0.5 * glsl_helper::character_height + window_height * (1.0 / (2 * PIXEL_SCALE));
 
 			// projection_matrix[0] += 0.001 / window_width;
 			// projection_matrix[5] += 0.001 / window_height;
@@ -314,26 +321,32 @@ namespace game_engine
 			// printf("Rendfering %d entities\n", entities->size());
 			for (std::vector<uint32_t>::iterator it = entities->begin(); it != entities->end(); it++)
 			{
-				GLuint program = m_sprite_programs.get(*it);
-				glUseProgram(m_sprite_programs.get(*it));
+				// GLuint program = m_sprite_programs.get(*it);
+				texture &t = m_sprite_textures.get(*it);
+				GLuint program = t.program;
+				glUseProgram(program);
 				
-				GLuint texture_loc = glGetUniformLocation(program, "tex");
-				glUniform1i(texture_loc, 0);
-
+				// GLuint texture_loc = glGetUniformLocation(program, "tex");
+				// glUniform1i(texture_loc, 0);
 				
 				GLuint projection_location = glGetUniformLocation(program, "projection");
 				glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix);
 				GLuint view_location = glGetUniformLocation(program, "view");
 				glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
+				GLuint texture_size = glGetUniformLocation(program, "texture_size");
+				glUniform2i(texture_size, t.width, t.height);
 
 
 				// texture &t = m_texture_groups[shader_program.second]->get(*it);
-				texture &t = m_sprite_textures.get(*it);
 				GLuint vbo = texture_vbo_system_pointer->get_vbo(*it);
 				glBindVertexArray(texture_vbo_system_pointer->get_vao(*it));
 
 				// Bind the texture
+				// glBindTexture(GL_TEXTURE_2D, t.id);
+				// glBindTextureUnit(0, t.id);
 				glBindTexture(GL_TEXTURE_2D, t.id);
+				glBindImageTexture(0, t.id, 0, GL_FALSE, 0, GL_READ_ONLY, t.format);
+
 				// Bind the VBO
 				glBindBuffer(GL_ARRAY_BUFFER, vbo);
 				glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -345,9 +358,9 @@ namespace game_engine
 			m_frame_count++;
 		}
 
-		void add(uint32_t ent, texture &&t) = delete;
+		// void add(uint32_t ent, texture &&t) = delete;
 
-		void add(entity ent, texture &&t, GLuint program)
+		void add(entity ent, texture &&t)
 		{
 			// if (!m_program_groups.contains(program))
 			// {
@@ -356,7 +369,7 @@ namespace game_engine
 			// }
 			// m_texture_groups[m_program_groups[program]]->add(ent, t);
 			m_sprite_textures.add(ent, t);
-			m_sprite_programs.add(ent, program);
+			// m_sprite_programs.add(ent, program);
 		}
 
 		void remove(uint32_t ent)
@@ -371,7 +384,7 @@ namespace game_engine
 			// 	}
 			// }
 			m_sprite_textures.remove(ent);
-			m_sprite_programs.remove(ent);
+			// m_sprite_programs.remove(ent);
 		}
 
 		void update_texture(entity ent, uint8_t *data, int width, int height, GLuint program)
