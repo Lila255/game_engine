@@ -197,7 +197,7 @@ void run_game(GLFWwindow *window)
 	entity background_entity = eng.create_entity();
 	box_sys->add(background_entity, {0.f, 0.f, -6.0, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
 	texture_vbo_sys->add(background_entity);
-	// render_sys->add(background_entity, {background_texture, game_engine::shader_programs[0], GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	render_sys->add(background_entity, {background_texture, game_engine::shader_programs[0], GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
 	
 	glBindTexture(GL_TEXTURE_2D, 0);
 

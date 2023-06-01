@@ -15,15 +15,13 @@ namespace game
 				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 50.0;
 				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 50.0;
 				double noise = perlin_noise.noise2D_01(n_x, n_y);
-				// if (noise > 0.6)
-				// {
-				// 	data[y][x] = 1;
-				// }
-				// else
-				// {
-				// 	data[y][x] = 0;
-				// }
+				
 				data[y][x] = noise > 0.45 ? 1 : 0;
+
+				// if((x / 16) % 2 == 0 && (y / 16) % 2 == 0)
+				// 	data[y][x] = 1;
+				// else
+				// 	data[y][x] = 0;
 			}
 		}
 	}

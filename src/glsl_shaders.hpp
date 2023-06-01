@@ -201,7 +201,7 @@ namespace glsl_helper
 				// out_Color  = vec4(0.0, 0.0, 0.0, 1 - (blurredColor.r / 100.0));
 
 				uint value = imageLoad(tex, ivec2(v_TexCoord * texture_size)).r;
-				out_Color = vec4(0.0, 0.0, 0.0, 1 - (value / 128.0));
+				out_Color = vec4(0.0, 0.0, 0.0, 1 - (value / 256.0));
 
 
 			}
@@ -268,16 +268,30 @@ namespace glsl_helper
 					if (sample_v > 0.0) {     // hit something, bounce
 
 						uint surround_values = 0;
-						for(int j = 0; j < 9; j++)
+						// for(int j = 0; j < 9; j++)
+						// {
+						// 	if(j == 4) continue; // skip center
+						// 	int x = j % 3;
+						// 	int y = j / 3;
+						// 	uint world_sample = sampleWorld(ray_pos + vec2(x - 1, y - 1));
+						// 	if(world_sample > 0) {
+						// 		uint bit_to_shift_by = j;
+						// 		if(j > 4) bit_to_shift_by--;
+						// 		surround_values |= 1 << (8-bit_to_shift_by);
+						// 	}
+						// }
+						uint counter = 0;
+						for(int y = 0; y < 3; y++)
 						{
-							if(j == 4) continue; // skip center
-							int x = j % 3;
-							int y = j / 3;
-							uint world_sample = sampleWorld(ray_pos + vec2(x - 1, y - 1));
-							if(world_sample > 0) {
-								uint bit_to_shift_by = j;
-								if(j > 4) bit_to_shift_by--;
-								surround_values |= 1 << (8-bit_to_shift_by);
+							for(int x = 0; x < 3; x++)
+							{
+								if(x == 1 && y == 1) continue;
+								counter++;
+								uint world_sample = sampleWorld(ray_pos + vec2(x - 1, y - 1));
+								if(world_sample > 0) {
+									surround_values |= 1 << (8-counter);
+								}
+
 							}
 						}
 
@@ -297,15 +311,16 @@ namespace glsl_helper
 						
 						ray_dir = reflection;
 						ray_pos += ray_dir;
-						if(sampleWorld(ray_pos) > 0) {
-							break;
-						}
+						// if(sampleWorld(ray_pos) > 0) {
+						// 	break;
+						// }
 						bounces++;
 						i++;
 					}
 
 					// imageStore(lightingTex, ivec2(ray_pos), imageLoad(lightingTex, ivec2(ray_pos)) + vec4(0, 0, 0, 255));
-					imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), bounces);
+					imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 1);
+					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), int(bounces > 0));
 					// imageAtomicExchange(lightingTex, ivec3(ray_pos), 0x202020ff);
 
 					// uint rgb_val = uint(texelFetch(tex, ivec2(ray_pos.xy), 1).r * 4294967295);
