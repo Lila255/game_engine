@@ -478,5 +478,9 @@ namespace game_engine
 	// 	glDisableVertexAttribArray(0);
 	// 	glDeleteBuffers(1, &vbo);
 	// }
-
+	struct vec2 {
+		float x;
+		float y;
+	};
+	
 }

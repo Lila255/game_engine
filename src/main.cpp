@@ -33,7 +33,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 					b2Vec2 impulse = b2Vec2(0.0f, -1000.1f);
 					body->ApplyLinearImpulseToCenter(impulse, true);
 					// apply force
-					keys.erase(GLFW_KEY_W);
+					// keys.erase(GLFW_KEY_W);
 					// body->ApplyForceToCenter(impulse, true);
 					break;
 				}
@@ -173,6 +173,34 @@ void run_game(GLFWwindow *window)
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
 	std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
 
+	GLuint background_texture;
+	glGenTextures(1, &background_texture);
+	glBindTexture(GL_TEXTURE_2D, background_texture);
+	// set data and size
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	std::array<uint8_t, game::CHUNK_SIZE * game::CHUNKS_WIDTH * game::CHUNK_SIZE * game::CHUNKS_WIDTH> *background_data = new std::array<uint8_t, game::CHUNK_SIZE * game::CHUNKS_WIDTH * game::CHUNK_SIZE * game::CHUNKS_WIDTH>();
+	for(int y = 0; y < game::CHUNK_SIZE * game::CHUNKS_WIDTH; y++)
+	{
+		for(int x = 0; x < game::CHUNK_SIZE * game::CHUNKS_WIDTH; x++)
+		{
+			if((x % 8) == 0 || (y % 3) == 0) {
+				(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = 102;
+			} else {
+				(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = 103;
+			}
+		}
+	}
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED, GL_UNSIGNED_BYTE, background_data->data());
+	delete background_data;
+	
+	entity background_entity = eng.create_entity();
+	box_sys->add(background_entity, {0.f, 0.f, -6.0, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	texture_vbo_sys->add(background_entity);
+	// render_sys->add(background_entity, {background_texture, game_engine::shader_programs[0], GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	GLuint chunk_texture;
 	glGenTextures(1, &chunk_texture);
 	glBindTexture(GL_TEXTURE_2D, chunk_texture);
@@ -276,7 +304,7 @@ void run_game(GLFWwindow *window)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RG_INTEGER, GL_UNSIGNED_INT, light_data.data());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RG_INTEGER, GL_UNSIGNED_INT, light_data.data());
 		glBindTexture(GL_TEXTURE_2D, 0);
 		light_textures.push_back(light_texture);
 		// render_sys->add(light_entity, {light_texture, game_engine::shader_programs[2], GL_RG32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
@@ -289,18 +317,29 @@ void run_game(GLFWwindow *window)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RG_INTEGER, GL_UNSIGNED_INT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RG_INTEGER, GL_UNSIGNED_INT, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
 	entity mater_light_entity = eng.create_entity();
 
 	box_sys->add(mater_light_entity, {0.f, 0.f, -4.5f, game::CHUNK_SIZE * 3.0, game::CHUNK_SIZE * 3.0});
 	texture_vbo_sys->add(mater_light_entity);
-	render_sys->add(mater_light_entity, {master_light_texture, game_engine::shader_programs[2], GL_RG32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	render_sys->add(mater_light_entity, {master_light_texture, game_engine::shader_programs[2], GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
 
 	printf("Error_before_loading_compute_shader: %d\n", glGetError());
 	GLuint compute_shader = load_compute_shader(glsl_helper::light_compute_shader());
 	printf("Error_after: %d\n", glGetError());
+	std::vector<game_engine::vec2> normal_vectors(256);
+	for(int i = 0; i < normal_vectors.size(); i+=1){
+		normal_vectors[i] = {0.f, 1.f};
+	}
+	
+	// GLuint ssbo;
+	// glGenBuffers(1, &ssbo);
+	// glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	// glBufferData(GL_SHADER_STORAGE_BUFFER, 256 * sizeof(game_engine::vec2), normal_vectors.data(), GL_STATIC_DRAW );
+	// glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssbo);
+
 
 	printf("Error_before_loading_compute_shader_2: %d\n", glGetError());
 	GLuint blend_shader = load_compute_shader(glsl_helper::light_blending_compute_shader());
@@ -351,7 +390,9 @@ void run_game(GLFWwindow *window)
 		printf("before_update_call: %d\n", glGetError());
 
 		// Update the engine
+		// glFinish();
 		render_sys->update();
+		glFinish();
 		printf("after_update_call: %d\n", glGetError());
 		// printf("Rendering\n");
 		// glUseProgram(0);
@@ -398,7 +439,7 @@ void run_game(GLFWwindow *window)
 		glUseProgram(compute_shader);
 		// bind world textures
 		printf("before_binding_textures: %d\n", glGetError());
-		glBindImageTexture(0, light_textures[light_texture_index], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RG32UI);
+		glBindImageTexture(0, light_textures[light_texture_index], 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		printf("after_binding_l_texture: %d\n", glGetError());
 		glBindImageTexture(1, chunk_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
 		printf("after_binding_c_texture: %d\n", glGetError());
@@ -408,14 +449,17 @@ void run_game(GLFWwindow *window)
 		GLint player_pos = glGetUniformLocation(compute_shader, "player_pos");
 		glUniform2f(player_pos, (float)(player_body->GetPosition().x + glsl_helper::character_width / 2.0), (float)(player_body->GetPosition().y + glsl_helper::character_width / 2.0));
 
+		GLint vector_location = glGetUniformLocation(compute_shader, "normal_vectors");
+		glUniform2fv(vector_location, 256, (GLfloat*)game::noramal_vectors.data());
+
 		printf("before_dispatching_compute: %d\n", glGetError());
 		glDispatchCompute(360, 1, 1);
 		printf("after_dispatching_compute: %d\n", glGetError());
 		glFinish();
 
 		glUseProgram(blend_shader);
-		glBindImageTexture(0, master_light_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RG32UI);
-		glBindImageTexture(1, light_textures[light_texture_index], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG32UI);
+		glBindImageTexture(0, master_light_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+		glBindImageTexture(1, light_textures[light_texture_index], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
 
 		GLint total_frames = glGetUniformLocation(compute_shader, "total_frames");
 		glUniform1i(total_frames, light_texture_count);
@@ -424,7 +468,7 @@ void run_game(GLFWwindow *window)
 		// if (saved_light_textures > light_texture_count)
 		// {
 			// glUniform1i(subtract_frame, 1);
-		glBindImageTexture(2, light_textures[(light_texture_index + 1) % light_texture_count], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG32UI);
+		glBindImageTexture(2, light_textures[(light_texture_index + 1) % light_texture_count], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
 		// }
 		// else
 		// {
@@ -559,6 +603,7 @@ int main()
 	// glfwSetKeyCallback(window, key_callback);
 	// do_tests();
 	// return 0;
+	printf("Error_1: %d\n", glGetError());
 
 	// Run the game
 	run_game(window);

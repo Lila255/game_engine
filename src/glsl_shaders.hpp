@@ -59,9 +59,9 @@ namespace glsl_helper
 		return
 			R"(
 			#version 430
-			in vec2 gl_FragCoord;
+			in vec2 v_TexCoord;
 			// uniform sampler2D tex;
-			layout(binding = 0, r8ui) readonly uniform uimage2D tex;
+			layout(binding = 0, r8ui) uniform readonly uimage2D tex;
 			uniform ivec2 texture_size; 
 			out vec4 out_Color;
 
@@ -70,7 +70,7 @@ namespace glsl_helper
 				// float intensity = texture(tex, gl_FragCoord).r;
 				// uint value = imageLoad(tex, ivec2(2, 2)).r;
 				// uint value = imageLoad(tex, ivec2(gl_FragCoord.xy * vec2(128 * 3, 128 * 3))).r;
-				uint value = imageLoad(tex, ivec2(gl_FragCoord.xy * texture_size)).r;
+				uint value = imageLoad(tex, ivec2(v_TexCoord.xy * vec2(texture_size))).r;
 				// uint value = uint(texture(tex, gl_FragCoord).r * 255);
 
 				if(value == 0) {
@@ -83,6 +83,10 @@ namespace glsl_helper
 					out_Color = vec4(0.9, 0.7, 0.4, 1.0);
 				} else if(value == 101) {
 					out_Color = vec4(0.19, 0.09, 0.197, 1.0);
+				} else if(value == 102) {
+					out_Color = vec4(.7, .7, .7, 1.0);
+				} else if(value == 103) {
+					out_Color = vec4(0.760, 0.139, 0.0152, 1.0);
 				} else {
 					out_Color = vec4(1.0, 0.41, 0.71, 1.0);
 				}
@@ -105,22 +109,21 @@ namespace glsl_helper
 	// }
 	std::string vert_0()
 	{
-		std::stringstream vert_0;
-		vert_0
-			<< "#version 430\n"
-			<< "layout (location = 0) in vec3 in_Position;\n"
-			<< "layout (location = 1) in vec2 in_TexCoord;\n"
-			<< "uniform mat4 projection;\n"
-			<< "uniform mat4 view;\n"
-			<< "out vec2 v_TexCoord;\n"
-			<< "void main()\n"
-			<< "{\n"
-			<< "v_TexCoord = in_TexCoord;\n"
-			<< "gl_Position = projection * view * vec4(in_Position, 1.0);\n"
-			// << "gl_Position = vec4(in_Position, 1.0);\n"
-			// << "gl_Position = projection * vec4(in_Position, 1.0);\n"
-			<< "}\n";
-		return vert_0.str();
+		return R"(
+			#version 430
+			layout (location = 0) in vec3 in_Position;
+			layout (location = 1) in vec2 in_TexCoord;
+			uniform mat4 projection;
+			uniform mat4 view;
+			out vec2 v_TexCoord;
+			void main()
+			{
+				v_TexCoord = in_TexCoord;
+				gl_Position = projection * view * vec4(in_Position, 1.0);
+				// gl_Position = vec4(in_Position, 1.0);
+				// gl_Position = projection * vec4(in_Position, 1.0);
+			}
+		)";
 	}
 
 	// generic shader program for drawing lines and points using the projection and view matrix uniforms
@@ -176,7 +179,7 @@ namespace glsl_helper
 			#version 430
 			in vec2 v_TexCoord;
 			// uniform usampler2D tex;
-			layout(binding = 0, rg32ui) uniform readonly uimage2D tex;
+			layout(binding = 0, r32ui) uniform readonly uimage2D tex;
 			uniform ivec2 texture_size; 
 			out vec4 out_Color;
 
@@ -192,14 +195,13 @@ namespace glsl_helper
 				// for (int i = -2; i <= 2; i++)
 				// {
 				// 	vec2 offset = vec2(float(i) * texelSize.x, 0.0);
-				// 	uint value = imageLoad(tex, ivec2((v_TexCoord + offset) * texture_size)).g;
+				// 	uint value = imageLoad(tex, ivec2((v_TexCoord + offset) * texture_size)).r;
 				// 	blurredColor += vec4(vec3(value), 1.0) * weights[i + 2];
 				// }
-				// out_Color  = vec4(0.0, 0.0, 0.0, 1 - blurredColor / 4294967295.0);
+				// out_Color  = vec4(0.0, 0.0, 0.0, 1 - (blurredColor.r / 100.0));
 
-				uint value = imageLoad(tex, ivec2(v_TexCoord * texture_size)).g;
-				// out_Color = vec4(0.0, 0.0, 0.0, 1 - (value / 4294967295.0));
-				out_Color = vec4(0.0, 0.0, 0.0, 1 - (value / 420.0));
+				uint value = imageLoad(tex, ivec2(v_TexCoord * texture_size)).r;
+				out_Color = vec4(0.0, 0.0, 0.0, 1 - (value / 128.0));
 
 
 			}
@@ -210,9 +212,9 @@ namespace glsl_helper
 	{
 		return R"(
 			#version 430
-			// layout(binding = 0, r32ui) uniform uimage2D lightingTex; // 3x3 grid of 128x128 textures, lays on top of worldChunkTex textures
-			// layout(binding = 0, r32ui) uniform uimage2D lightingTex;
-			layout(binding = 0, rg32ui) uniform uimage2D lightingTex;
+			layout(binding = 0, r32ui) uniform uimage2D lightingTex; // 3x3 grid of 128x128 textures, lays on top of worldChunkTex textures
+			
+			// layout(binding = 0, rg32ui) uniform coherent uimage2D lightingTex;
 			layout(binding = 1, r8ui) uniform readonly uimage2D world_chunks;  // 3x3 grid of 128x128 textures, lays on top of worldChunkTex textures
 
 			const int CHUNK_SIZE = 128;  // width and height of a chunk
@@ -220,10 +222,15 @@ namespace glsl_helper
 
 			uniform ivec2 texture_size; // size of the lighting texture
 
+			// layout(binding = 2) uniform NormalVectors {
+    		// 	vec2 data[256];
+			// } normal_vectors;
+			uniform vec2 normal_vectors[256];
+
 			// texCoord is position in lightingTex
 			uint sampleWorld(vec2 texCoord) {
 				if (texCoord.x < 0.0 || texCoord.x >= texture_size.x || texCoord.y < 0.0 || texCoord.y >= texture_size.y) {
-					return 0;
+					return -1;	// -1 is out of bounds, uint max value so doing value > 0 will work
 				}
 				// vec2 chunkTexCoord = vec2(mod(texCoord.x, CHUNK_SIZE), mod(texCoord.y, CHUNK_SIZE));
 				// int value = int(imageLoad(worldChunkTex[index], ivec2(chunkTexCoord)).r);
@@ -249,8 +256,8 @@ namespace glsl_helper
 				vec2 ray_dir = vec2(cos(ray_angle), sin(ray_angle));
 
 				vec2 ray_pos = player_pos;
-
-				float ray_dist = 0.0;
+				
+				uint bounces = 0;
 
 				// loop until we hit something or we reach max_ray_length
 				for (int i = 0; i < max_ray_length;) {
@@ -264,21 +271,56 @@ namespace glsl_helper
 
 					uint sample_v = sampleWorld(ray_pos);
 
-					if (sample_v > 0.0) {     // hit something, stop
-						ray_dist = float(i);
-						break;
+					if (sample_v > 0.0) {     // hit something, bounce
+
+						uint surround_values = 0;
+						for(int j = 0; j < 9; j++)
+						{
+							if(j == 4) continue; // skip center
+
+							int x = j % 3;
+							int y = j / 3;
+
+							uint world_sample = sampleWorld(ray_pos + vec2(x - 1, y - 1));
+							if(world_sample > 0) {
+								uint bit_to_shift_by = j;
+								if(j > 4) bit_to_shift_by--;
+								surround_values |= 1 << (8-bit_to_shift_by);
+							}
+						}
+
+						vec2 normal_vec = normal_vectors[surround_values];
+						// vec2 normal_vec = normal_vectors.data[surround_values % 256];
+						// vec2 normal_vec = vec2(0.0, 1.0);
+
+
+						float dot_val = dot(normal_vec, ray_dir);
+
+						if(dot_val < 0.0) {
+							normal_vec = -normal_vec;
+							dot_val = -dot_val;
+						}
+						vec2 reflection = ray_dir - 2.0 * dot_val * normal_vec;
+						
+						ray_dir = reflection;
+						ray_pos += ray_dir;
+						if(sampleWorld(ray_pos) > 0) {
+							break;
+						}
+						bounces++;
+						i++;
 					}
 
 					// imageStore(lightingTex, ivec2(ray_pos), imageLoad(lightingTex, ivec2(ray_pos)) + vec4(0, 0, 0, 255));
-					// imageAtomicAdd(lightingTex,  ivec2(ray_pos), 1);
+					imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), bounces);
 					// imageAtomicExchange(lightingTex, ivec3(ray_pos), 0x202020ff);
 
 					// uint rgb_val = uint(texelFetch(tex, ivec2(ray_pos.xy), 1).r * 4294967295);
 
 					//uint texelValue = uint(texture(lightingTex, vec3(ray_pos.xy, 0)).r * 4294967295);
-					uint texelValue = imageLoad(lightingTex, ivec2(ray_pos.xy)).g;
+					// uint texelValue = imageLoad(lightingTex, ivec2(ray_pos.xy)).g;
 
-					imageStore(lightingTex, ivec2(ray_pos.xy), uvec4(0, texelValue + 20, 0, 0));
+					// imageStore(lightingTex, ivec2(ray_pos.xy), uvec4(0, texelValue + 1, 0, 0));
 				}
 			};
 		)";
@@ -292,9 +334,9 @@ namespace glsl_helper
 	{
 		return R"(
 			#version 430
-			layout(binding = 0, rg32ui) uniform uimage2D blended_lights;
-			layout(binding = 1, rg32ui) uniform uimage2D new_lights;
-			layout(binding = 2, rg32ui) uniform uimage2D old_lights;
+			layout(binding = 0, r32ui) uniform uimage2D blended_lights;
+			layout(binding = 1, r32ui) uniform uimage2D new_lights;
+			layout(binding = 2, r32ui) uniform uimage2D old_lights;
 			uniform int subtract_frame;
 			uniform int total_frames;
 
