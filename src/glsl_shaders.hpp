@@ -225,19 +225,15 @@ namespace glsl_helper
 			// layout(binding = 2) uniform NormalVectors {
     		// 	vec2 data[256];
 			// } normal_vectors;
-			uniform vec2 normal_vectors[256];
+			//uniform vec2 normal_vectors[256];
+			layout(binding = 2, rg32f) uniform readonly image1D normal_vectors;
 
 			// texCoord is position in lightingTex
 			uint sampleWorld(vec2 texCoord) {
 				if (texCoord.x < 0.0 || texCoord.x >= texture_size.x || texCoord.y < 0.0 || texCoord.y >= texture_size.y) {
 					return -1;	// -1 is out of bounds, uint max value so doing value > 0 will work
 				}
-				// vec2 chunkTexCoord = vec2(mod(texCoord.x, CHUNK_SIZE), mod(texCoord.y, CHUNK_SIZE));
-				// int value = int(imageLoad(worldChunkTex[index], ivec2(chunkTexCoord)).r);
-
 				uint value = imageLoad(world_chunks, ivec2(texCoord.xy)).r;
-				// int value = int(texture(world_chunks, ivec2(texCoord)).r * 255.0);
-				// return 0;
 				return value;
 			}
 
@@ -268,19 +264,15 @@ namespace glsl_helper
 					}
 
 					// ray_pos += ray_dir;
-
 					uint sample_v = sampleWorld(ray_pos);
-
 					if (sample_v > 0.0) {     // hit something, bounce
 
 						uint surround_values = 0;
 						for(int j = 0; j < 9; j++)
 						{
 							if(j == 4) continue; // skip center
-
 							int x = j % 3;
 							int y = j / 3;
-
 							uint world_sample = sampleWorld(ray_pos + vec2(x - 1, y - 1));
 							if(world_sample > 0) {
 								uint bit_to_shift_by = j;
@@ -289,7 +281,8 @@ namespace glsl_helper
 							}
 						}
 
-						vec2 normal_vec = normal_vectors[surround_values];
+						vec2 normal_vec = imageLoad(normal_vectors, int(surround_values)).rg;
+						// vec2 normal_vec = normal_vectors[surround_values];
 						// vec2 normal_vec = normal_vectors.data[surround_values % 256];
 						// vec2 normal_vec = vec2(0.0, 1.0);
 
@@ -337,7 +330,6 @@ namespace glsl_helper
 			layout(binding = 0, r32ui) uniform uimage2D blended_lights;
 			layout(binding = 1, r32ui) uniform uimage2D new_lights;
 			layout(binding = 2, r32ui) uniform uimage2D old_lights;
-			uniform int subtract_frame;
 			uniform int total_frames;
 
 			layout(local_size_x = 1, local_size_y = 1) in;

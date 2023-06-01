@@ -328,12 +328,22 @@ void run_game(GLFWwindow *window)
 
 	printf("Error_before_loading_compute_shader: %d\n", glGetError());
 	GLuint compute_shader = load_compute_shader(glsl_helper::light_compute_shader());
-	printf("Error_after: %d\n", glGetError());
-	std::vector<game_engine::vec2> normal_vectors(256);
-	for(int i = 0; i < normal_vectors.size(); i+=1){
-		normal_vectors[i] = {0.f, 1.f};
-	}
 	
+	// printf("Error_after: %d\n", glGetError());
+	// std::vector<game_engine::vec2> normal_vectors(256);
+	// for(int i = 0; i < normal_vectors.size(); i+=1){
+	// 	normal_vectors[i] = {0.f, 1.f};
+	// }
+	printf("Error_before_normals_texture_creation: %d\n", glGetError());
+	GLuint normal_vectors_texture;
+	glGenTextures(1, &normal_vectors_texture);
+	glBindTexture(GL_TEXTURE_1D, normal_vectors_texture);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_RG32F, 256, 0, GL_RG, GL_FLOAT, game::noramal_vectors.data());
+	printf("Error_after_normals_texture_creation: %d\n", glGetError());
+	glBindTexture(GL_TEXTURE_1D, 0);
+
 	// GLuint ssbo;
 	// glGenBuffers(1, &ssbo);
 	// glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
@@ -416,7 +426,6 @@ void run_game(GLFWwindow *window)
 		// 			render_sys->draw_line(p2.first, p2.second, -3.0f, p3.first, p3.second, -3.0f);
 		// 			render_sys->draw_line(p3.first, p3.second, -3.0f, p1.first, p1.second, -3.0f);
 		// 		}
-
 		// 		// for (int i = 0; i < outline.size() - 1; i += 1)
 		// 		// {
 		// 		//     // Non-triangulated outlines
@@ -449,8 +458,9 @@ void run_game(GLFWwindow *window)
 		GLint player_pos = glGetUniformLocation(compute_shader, "player_pos");
 		glUniform2f(player_pos, (float)(player_body->GetPosition().x + glsl_helper::character_width / 2.0), (float)(player_body->GetPosition().y + glsl_helper::character_width / 2.0));
 
-		GLint vector_location = glGetUniformLocation(compute_shader, "normal_vectors");
-		glUniform2fv(vector_location, 256, (GLfloat*)game::noramal_vectors.data());
+		// GLint vector_location = glGetUniformLocation(compute_shader, "normal_vectors");
+		// glUniform2fv(vector_location, 256, (GLfloat*)game::noramal_vectors.data());
+		glBindImageTexture(2, normal_vectors_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
 
 		printf("before_dispatching_compute: %d\n", glGetError());
 		glDispatchCompute(360, 1, 1);
@@ -463,7 +473,7 @@ void run_game(GLFWwindow *window)
 
 		GLint total_frames = glGetUniformLocation(compute_shader, "total_frames");
 		glUniform1i(total_frames, light_texture_count);
-		GLint subtract_frame = glGetUniformLocation(compute_shader, "subtract_frame");
+		// GLint subtract_frame = glGetUniformLocation(compute_shader, "subtract_frame");
 
 		// if (saved_light_textures > light_texture_count)
 		// {
