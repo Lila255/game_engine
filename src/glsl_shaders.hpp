@@ -201,7 +201,7 @@ namespace glsl_helper
 				// out_Color  = vec4(0.0, 0.0, 0.0, 1 - (blurredColor.r / 100.0));
 
 				uint value = imageLoad(tex, ivec2(v_TexCoord * texture_size)).r;
-				out_Color = vec4(0.0, 0.0, 0.0, 1 - (value / 256.0));
+				out_Color = vec4(0.0, 0.0, 0.0, 1 - (value / 128.0));
 
 
 			}
@@ -311,9 +311,9 @@ namespace glsl_helper
 						
 						ray_dir = reflection;
 						ray_pos += ray_dir;
-						// if(sampleWorld(ray_pos) > 0) {
-						// 	break;
-						// }
+						if(sampleWorld(ray_pos) > 0) {
+							break;
+						}
 						bounces++;
 						i++;
 					}
