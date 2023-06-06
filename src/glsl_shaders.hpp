@@ -180,30 +180,58 @@ namespace glsl_helper
 			in vec2 v_TexCoord;
 			// uniform usampler2D tex;
 			layout(binding = 0, r32ui) uniform readonly uimage2D tex;
+			layout(binding = 1, r32ui) uniform readonly uimage2D blurred_tex;
+			// layout(binding = 2, r32ui) uniform uimage2D colour_tex;
 			uniform ivec2 texture_size; 
 			out vec4 out_Color;
 
-			const float weights[5] = float[](0.1201, 0.2339, 0.2931, 0.2339, 0.1201);
+			vec3 hsv2rgb(float h) {
+				float c = 1.0;
+				float x = c * (1.0 - abs(mod(h / 60.0, 2.0) - 1.0));
+				float m = 0.0;
+
+				vec3 rgb;
+				if (h < 60.0) {
+					rgb = vec3(c, x, 0.0);
+				} else if (h < 120.0) {
+					rgb = vec3(x, c, 0.0);
+				} else if (h < 180.0) {
+					rgb = vec3(0.0, c, x);
+				} else if (h < 240.0) {
+					rgb = vec3(0.0, x, c);
+				} else if (h < 300.0) {
+					rgb = vec3(x, 0.0, c);
+				} else {
+					rgb = vec3(c, 0.0, x);
+				}
+
+				return rgb + m;
+			}
 
 			void main()
 			{
 				// out_Color = vec4(val >> 24, (val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF) / 255.0;
-				
-				// vec2 texelSize = 1.0 / vec2(texture_size);
-				// vec4 blurredColor = vec4(0.0);
-				
-				// for (int i = -2; i <= 2; i++)
-				// {
-				// 	vec2 offset = vec2(float(i) * texelSize.x, 0.0);
-				// 	uint value = imageLoad(tex, ivec2((v_TexCoord + offset) * texture_size)).r;
-				// 	blurredColor += vec4(vec3(value), 1.0) * weights[i + 2];
-				// }
-				// out_Color  = vec4(0.0, 0.0, 0.0, 1 - (blurredColor.r / 100.0));
 
 				uint value = imageLoad(tex, ivec2(v_TexCoord * texture_size)).r;
-				out_Color = vec4(0.0, 0.0, 0.0, 1 - (value / 128.0));
+				uint blurred_value = imageLoad(blurred_tex, ivec2(v_TexCoord * texture_size)).r;
 
+				// uint hue_value = imageLoad(colour_tex, ivec2(v_TexCoord * texture_size)).r;
+				// float hue = (float(hue_value) / 4294967295.0) * 360.0;
+				// vec3 rgb = hsv2rgb(hue);
+				float inverse_alpha = 0.0;
+				if(value > 50) {
+					inverse_alpha = value / 1000.0;
+				} else {
+					inverse_alpha = blurred_value / 1000.0;
+				}
+				
+				if(inverse_alpha > 1.0)
+					inverse_alpha = 1.0;
 
+				// rgb *= inverse_alpha;
+
+				// out_Color = vec4(rgb.r, rgb.g, rgb.b, 1.0 - inverse_alpha);
+				out_Color = vec4(0, 0, 0, 1.0 - inverse_alpha);
 			}
 		)";
 	}
@@ -227,6 +255,8 @@ namespace glsl_helper
 			// } normal_vectors;
 			//uniform vec2 normal_vectors[256];
 			layout(binding = 2, rg32f) uniform readonly image1D normal_vectors;
+			
+			// layout(binding = 3, r32ui) uniform uimage2D lighting_colour_tex;
 
 			// texCoord is position in lightingTex
 			uint sampleWorld(vec2 texCoord) {
@@ -240,15 +270,15 @@ namespace glsl_helper
 			uniform vec2 player_pos;    // relative to the lighting texture, center of the screen but not center of lighting texture
 			const int max_ray_length = 128;
 
-			// raycast from player_pos to the edge of the screen, 360 invocations
+			// raycast from player_pos to the edge of the screen, 720 invocations
 			layout(local_size_x = 1, local_size_y = 1) in;
 			void main() {
 				if(player_pos.x < 0.0 || player_pos.x > texture_size.x || player_pos.y < 0.0 || player_pos.y > texture_size.y) {
 					return;
 				}
 				int ray_index = int(gl_GlobalInvocationID.x);
-				float ray_angle = float(ray_index) / float(360) * 2.0 * 3.1415926535897932384626433832795;
-
+				float ray_angle = (float(ray_index) / float(720)) * 2.0 * 3.1415926535897932384626433832795;
+				// uint hue_val = uint((float(ray_index) / 720.0) * 4294967295.0);
 				vec2 ray_dir = vec2(cos(ray_angle), sin(ray_angle));
 
 				vec2 ray_pos = player_pos;
@@ -317,24 +347,21 @@ namespace glsl_helper
 						bounces++;
 						i++;
 					}
+					// if(bounces > 8) {
+					// 	break;
+					// }
 
-					// imageStore(lightingTex, ivec2(ray_pos), imageLoad(lightingTex, ivec2(ray_pos)) + vec4(0, 0, 0, 255));
-					imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 1);
-					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), int(bounces > 0));
-					// imageAtomicExchange(lightingTex, ivec3(ray_pos), 0x202020ff);
-
-					// uint rgb_val = uint(texelFetch(tex, ivec2(ray_pos.xy), 1).r * 4294967295);
-
-					//uint texelValue = uint(texture(lightingTex, vec3(ray_pos.xy, 0)).r * 4294967295);
-					// uint texelValue = imageLoad(lightingTex, ivec2(ray_pos.xy)).g;
-
-					// imageStore(lightingTex, ivec2(ray_pos.xy), uvec4(0, texelValue + 1, 0, 0));
+					// imageAtomicExchange(lighting_colour_tex, ivec2(ray_pos.xy), hue_val);
+					
+					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  6 * int(bounces > 0)); 
+					imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  uint(8.0 / (bounces / 2.0 + 2))); 
+					
 				}
 			};
 		)";
 	}
 
-	// Average the light textures over the last 15 frames
+	// Average the light textures over the last n frames
 	// Take in three textures, one to add, one to minus, and the result
 	// each frame, minus the last frame and add the new frame
 	// uniform to keep track of how many frames have been added, only minus if equal to 15
@@ -362,6 +389,67 @@ namespace glsl_helper
 				blended_light += new_light;
 				
 				imageStore(blended_lights, texel, blended_light);
+			}
+
+		)";
+	}
+	
+	// std::string colour_blending_compute_shader()
+	// {
+	// 	return R"(
+	// 		#version 430
+	// 		layout(binding = 0, r32ui) uniform uimage2D blended_lights;
+	// 		layout(binding = 1, r32ui) uniform uimage2D new_lights;
+	// 		layout(binding = 2, r32ui) uniform uimage2D old_lights;
+	// 		uniform int total_frames;
+
+	// 		layout(local_size_x = 1, local_size_y = 1) in;
+
+	// 		void main() {
+	// 			ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
+	// 			uvec4 new_light = imageLoad(new_lights, texel);
+	// 			uvec4 blended_light = imageLoad(blended_lights, texel);
+
+	// 			uvec4 old_light = imageLoad(old_lights, texel);
+
+	// 			blended_light -= uvec4(vec4(old_light) / float(total_frames));
+	// 			blended_light += uvec4(vec4(new_light) / float(total_frames));
+	// 			// blended_light -= old_light;
+	// 			// blended_light += new_light;
+				
+	// 			imageStore(blended_lights, texel, blended_light);
+	// 		}
+
+	// 	)";
+	// }
+
+	std::string light_blurring_compute_shader()
+	{
+		return R"(
+			#version 430
+			layout(binding = 0, r32ui) uniform uimage2D blurred_lights;
+			layout(binding = 1, r32ui) uniform uimage2D og_lights;
+
+			#define KERNEL_SIZE 9
+			const float kernel[KERNEL_SIZE] = float[KERNEL_SIZE](
+				0.0625, 0.125, 0.0625,
+				0.125,  0.25,  0.125,
+				0.0625, 0.125, 0.0625
+			);
+
+			layout(local_size_x = 1, local_size_y = 1) in;
+			void main() {
+				ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
+				vec4 result = vec4(0.0);
+				
+				for(int i = 0; i < KERNEL_SIZE; i++) {
+					for(int j = 0; j < KERNEL_SIZE; j++) {
+						ivec2 offset = ivec2(i - KERNEL_SIZE / 2, j - KERNEL_SIZE / 2);
+						result += imageLoad(og_lights, texel + offset) * kernel[i] * kernel[j];
+					}
+				}
+				
+				imageStore(blurred_lights, texel, uvec4(result));
 			}
 
 		)";

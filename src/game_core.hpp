@@ -2,6 +2,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <fstream>
 // #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 // #include <CGAL/Delaunay_triangulation_2.h>
 #include <utility>
@@ -16,7 +17,7 @@
 #define M_PI 3.14159265358979323846	  /* pi */
 #define radians(x) ((x)*M_PI / 180.0) // degrees to radians
 
-#define PIXEL_SCALE 8
+#define PIXEL_SCALE 6
 
 // typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 // typedef K::Point_2 point_2;
@@ -29,8 +30,25 @@ namespace game
 	const uint16_t CHUNKS_WIDTH = 3;
 	// const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
-	// siv::PerlinNoise perlin_noise(0.0);
-	// struct box2d_system;
+	// enum for tile types
+	enum tile_type
+	{
+		AIR,	// 0
+		SMOKE,	// 1
+		WATER,	// 2
+		GLASS,	// 3
+		SAND,	// 4
+		DIRT,	// 5
+		STONE,	// 6
+		WOOD,	// 7
+		LEAF,	// 8
+		GRASS,	// 9
+		
+		BRICK_1,
+		BRICK_2,
+		MORTAR,
+
+	};
 
 	// box2d system
 	struct box2d_system : public game_engine::system
@@ -362,6 +380,7 @@ namespace game
 	private:
 		std::array<chunk *, NUM_CHUNKS> chunk_data{};
 		std::array<entity, NUM_CHUNKS> chunk_entities;
+		entity all_chunk_ent;
 
 	public:
 		world_tile_system()
@@ -383,6 +402,11 @@ namespace game
 			{
 				delete chunk_data[i];
 			}
+		}
+
+		void set_all_chunk_ent(entity ent)
+		{
+			all_chunk_ent = ent;
 		}
 
 		void update() override
@@ -443,7 +467,7 @@ namespace game
 					// texture_system->update_texture(ent, (uint8_t *)tile_data->data(), CHUNK_SIZE, CHUNK_SIZE, game_engine::shader_programs[0]);
 					int chunkx = i % CHUNKS_WIDTH;
 					int chunky = i / CHUNKS_WIDTH;
-					texture_system->update_texture_section(ent, (uint8_t *)tile_data->data(), chunkx * CHUNK_SIZE, chunky * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE, game_engine::shader_programs[0]);
+					texture_system->update_texture_section(all_chunk_ent, (uint8_t *)tile_data->data(), chunkx * CHUNK_SIZE, chunky * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE, game_engine::shader_programs[0]);
 					std::vector<std::vector<std::pair<float, float>>> outlines = chunk_data[i]->create_outlines();
 					(*chunk_outlines)[i] = outlines;
 					// chunk_outlines->at(i) = outlines;
@@ -716,4 +740,28 @@ namespace game
 		{1.0f, 1.0f},	//	254	11111110
 		{0.0f, 0.0f} 	//	255	11111111
 	};
+
+	std::vector<game_engine::vec2> load_normal_vectors()
+	{
+		std::string path = "normal_vectors.txt";
+		// stored in csv format: float, float,\n
+		std::vector<game_engine::vec2> normal_vectors;
+
+		std::fstream newfile;
+		newfile.open(path, std::ios::in); //open a file to perform read operation using file object
+		if (newfile.is_open()) { //checking whether the file is open
+			std::string tp;
+			while (getline(newfile, tp)) { //read data from file object and put it into string.
+				std::stringstream ss(tp);
+				std::string token;
+				std::vector<std::string> tokens;
+				while (getline(ss, token, ',')) {
+					tokens.push_back(token);
+				}
+				normal_vectors.push_back(game_engine::vec2(std::stof(tokens[0]), std::stof(tokens[1])));
+			}
+			newfile.close(); //close the file object.
+		}
+		return normal_vectors;
+	}
 } // namespace game

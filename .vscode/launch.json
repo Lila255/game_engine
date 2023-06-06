@@ -25,7 +25,7 @@
             "program": "${workspaceFolder}/build/Debug/game.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/build/Debug",
             "environment": [],
             "console": "integratedTerminal",
             "preLaunchTask": "Build Debug"

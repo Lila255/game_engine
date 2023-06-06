@@ -1,10 +1,9 @@
 #include "chunk.hpp"
-
 // #include "engine_comp.hpp"
 
 namespace game
 {
-	static siv::PerlinNoise perlin_noise(0.0);
+	static siv::PerlinNoise perlin_noise(10.0);
 
 	void chunk::create_chunk()
 	{
@@ -12,11 +11,11 @@ namespace game
 		{
 			for (int x = 0; x < CHUNK_SIZE; x++)
 			{
-				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 50.0;
-				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 50.0;
+				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 35.0;
+				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 35.0;
 				double noise = perlin_noise.noise2D_01(n_x, n_y);
 				
-				data[y][x] = noise > 0.45 ? 1 : 0;
+				data[y][x] = noise > 0.6 ? 1 : 0;
 
 				// if((x / 16) % 2 == 0 && (y / 16) % 2 == 0)
 				// 	data[y][x] = 1;

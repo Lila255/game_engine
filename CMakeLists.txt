@@ -61,5 +61,14 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 										 "${VCPKG_ROOT}/installed/x64-windows/bin/glfw3.dll"
 										 "$<TARGET_FILE_DIR:game>"
 										 DEPENDS game)
+
+	add_custom_command(TARGET game POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		# project root directory
+		"${CMAKE_SOURCE_DIR}/../../src/normal_vectors.txt"
+		# "../../src/normal_vectors.txt"
+		"$<TARGET_FILE_DIR:game>"
+		DEPENDS game)
+
 endif()
 
