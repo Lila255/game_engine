@@ -405,7 +405,7 @@ namespace game_engine
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 		}
 		
-		void update_texture_section(entity ent, uint8_t * data, int x, int y, int width, int height, GLuint program, int texture_index = 0)
+		void update_texture_section(entity ent, uint8_t * data, int x, int y, int width, int height, int texture_index = 0)
 		{
 			// texture &t = m_texture_groups[m_program_groups[program]] -> get(ent);
 			sprite &t = m_sprite_textures.get(ent);

@@ -75,10 +75,14 @@ namespace glsl_helper
 
 				if(value == 0) {
 					out_Color = vec4(0.0, 0.0, 0.0, 0.0);
-				} else if(value == 1) {
-					out_Color = vec4(0.4118, 0.7333, 0.0039, 1.0);
-				} else if(value == 2) {
-					out_Color = vec4(0.75, 0.8, 0.1, 1.0);
+				} else if(value == 3) {
+					out_Color = vec4(1.0, 1.0, 1.0, 0.2);
+				} else if(value == 5) {
+					out_Color = vec4(0.45, 0.157, 0.039, 1.0);
+				} else if(value == 6) {
+					out_Color = vec4(0.5, 0.446, 0.425, 1.0);
+				} else if(value == 9) {
+					out_Color = vec4(0.077, 0.66, 0.0, 1.0);
 				} else if(value == 100) {
 					out_Color = vec4(0.9, 0.7, 0.4, 1.0);
 				} else if(value == 101) {

@@ -428,6 +428,7 @@ void run_game(GLFWwindow *window)
 	uint16_t saved_light_textures = 0;
 	uint16_t light_texture_index = 0;
 	uint64_t last_time_taken = 0;
+	uint64_t counter = 0;
 	// Run the game loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -436,7 +437,7 @@ void run_game(GLFWwindow *window)
 		uint64_t start_time = glfwGetTimerValue();
 		// draw lines for chunk outlines
 		box2d_sys->update(last_time_taken);
-
+		world_sys->update();
 		// update the player's outlines
 		// std::vector<std::pair<float, float>> player_outline;
 		// b2Fixture *fixture = player_body->GetFixtureList();
@@ -554,17 +555,25 @@ void run_game(GLFWwindow *window)
 		glDispatchCompute(game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 1);
 		glFinish();
 
-		glUseProgram(light_blurring_compute_shader);
 		glBindImageTexture(0, blurred_light_texture_second, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		glBindImageTexture(1, blurred_light_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
 		glDispatchCompute(game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 1);
 		glFinish();
 
-		glUseProgram(light_blurring_compute_shader);
 		glBindImageTexture(0, blurred_light_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		glBindImageTexture(1, blurred_light_texture_second, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
 		glDispatchCompute(game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 1);
 		glFinish();
+
+		// glBindImageTexture(0, blurred_light_texture_second, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+		// glBindImageTexture(1, blurred_light_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+		// glDispatchCompute(game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 1);
+		// glFinish();
+
+		// glBindImageTexture(0, blurred_light_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+		// glBindImageTexture(1, blurred_light_texture_second, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+		// glDispatchCompute(game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 1);
+		// glFinish();
 
 		glUseProgram(0);
 
@@ -579,6 +588,7 @@ void run_game(GLFWwindow *window)
 			light_texture_index = 0;
 
 		last_time_taken = glfwGetTimerValue() - start_time;
+		counter++;
 	}
 	// Learn how to do audio
 	// Learn how to do chunk switching

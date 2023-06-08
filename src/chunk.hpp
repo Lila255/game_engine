@@ -13,9 +13,33 @@
 
 namespace game
 {
+	const double perlin_noise_seed = 10.0;
+	static siv::PerlinNoise perlin_noise_1(perlin_noise_seed);
+	static siv::PerlinNoise perlin_noise_2(perlin_noise_seed + 1);
+	static siv::PerlinNoise perlin_noise_3(perlin_noise_seed + 2);
 
 	const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 	
+	// enum for tile types
+	enum tile_type
+	{
+		AIR,	// 0
+		SMOKE,	// 1
+		WATER,	// 2
+		GLASS,	// 3
+		SAND,	// 4
+		DIRT,	// 5
+		STONE,	// 6
+		WOOD,	// 7
+		LEAF,	// 8
+		GRASS,	// 9
+		
+		BRICK_1,
+		BRICK_2,
+		MORTAR,
+
+	};
+
 	struct linef
 	{
 		float x1, y1, x2, y2;
@@ -88,6 +112,7 @@ namespace game
 		std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>* get_data();
 
 		void set_tile(int x, int y, uint8_t value);
+		uint8_t get_tile(int x, int y);
 
 		bool isBoundaryTile(int x, int y);
 

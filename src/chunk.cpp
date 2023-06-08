@@ -3,7 +3,6 @@
 
 namespace game
 {
-	static siv::PerlinNoise perlin_noise(10.0);
 
 	void chunk::create_chunk()
 	{
@@ -13,14 +12,45 @@ namespace game
 			{
 				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 35.0;
 				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 35.0;
-				double noise = perlin_noise.noise2D_01(n_x, n_y);
-				
-				data[y][x] = noise > 0.6 ? 1 : 0;
+				double noise_1 = perlin_noise_1.noise2D_01(n_x, n_y);
+				double noise_2 = perlin_noise_2.noise2D_01(n_x, n_y);
+				double noise_3 = perlin_noise_3.noise2D_01(n_x, n_y);
+
+				if (noise_1 > 0.525)
+				{ // solid
+					if (noise_2 > 0.5)
+					{ // dirt
+						data[y][x] = game::DIRT;
+					}
+					else
+					{ // stone
+						data[y][x] = game::STONE;
+					}
+				}
+				else
+				{
+					data[y][x] = game::AIR;
+				}
+
+				// data[y][x] = noise_1 > 0.6 ? 1 : 0;
 
 				// if((x / 16) % 2 == 0 && (y / 16) % 2 == 0)
 				// 	data[y][x] = 1;
 				// else
 				// 	data[y][x] = 0;
+			}
+		}
+		
+		// spawn some grass
+		for (int y = 1; y < CHUNK_SIZE; y++)
+		{
+			for (int x = 0; x < CHUNK_SIZE; x++)
+			{
+				if(data[y][x] == game::DIRT && data[y - 1][x] == game::AIR)
+				{
+					if(rand() % 100 < 10)
+						data[y][x] = game::GRASS;
+				}
 			}
 		}
 	}
@@ -66,6 +96,15 @@ namespace game
 		if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE)
 			data[y][x] = value;
 	}
+
+	uint8_t chunk::get_tile(int x, int y)
+	{
+		if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE)
+			return data[y][x];
+		else
+			return 0;
+	}
+	
 
 	bool chunk::isBoundaryTile(int x, int y)
 	{
@@ -785,7 +824,7 @@ namespace game
 
 			for (p2t::Triangle *triangle : triangles)
 			{
-				if(*(triangle->GetPoint(0)) == *(triangle->GetPoint(1)) || *(triangle->GetPoint(0)) == *(triangle->GetPoint(2)) || *(triangle->GetPoint(1)) == *(triangle->GetPoint(2)))
+				if (*(triangle->GetPoint(0)) == *(triangle->GetPoint(1)) || *(triangle->GetPoint(0)) == *(triangle->GetPoint(2)) || *(triangle->GetPoint(1)) == *(triangle->GetPoint(2)))
 					continue;
 				for (int j = 0; j < 3; j++)
 				{
@@ -806,7 +845,7 @@ namespace game
 		duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		printf("Time taken by entire function: %d\n", duration.count());
 		return outlines_triangles;
-		
+
 		// std::vector<std::vector<std::pair<float, float>>> outlines_triangles;
 		// // outlines_triangles.push_back({{chunk_x * CHUNK_SIZE,	// clockwise
 		// // 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE / 2.0},

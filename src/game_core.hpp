@@ -17,7 +17,7 @@
 #define M_PI 3.14159265358979323846	  /* pi */
 #define radians(x) ((x)*M_PI / 180.0) // degrees to radians
 
-#define PIXEL_SCALE 6
+#define PIXEL_SCALE 8
 
 // typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 // typedef K::Point_2 point_2;
@@ -29,26 +29,6 @@ namespace game
 	const uint16_t NUM_CHUNKS = 9; // 3x3 chunks in world
 	const uint16_t CHUNKS_WIDTH = 3;
 	// const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
-
-	// enum for tile types
-	enum tile_type
-	{
-		AIR,	// 0
-		SMOKE,	// 1
-		WATER,	// 2
-		GLASS,	// 3
-		SAND,	// 4
-		DIRT,	// 5
-		STONE,	// 6
-		WOOD,	// 7
-		LEAF,	// 8
-		GRASS,	// 9
-		
-		BRICK_1,
-		BRICK_2,
-		MORTAR,
-
-	};
 
 	// box2d system
 	struct box2d_system : public game_engine::system
@@ -409,9 +389,65 @@ namespace game
 			all_chunk_ent = ent;
 		}
 
+		uint8_t get_tile_at(int x, int y)
+		{
+			int chunk_x = x / CHUNK_SIZE;
+			int chunk_y = y / CHUNK_SIZE;
+			int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+			int tile_x = x % CHUNK_SIZE;
+			int tile_y = y % CHUNK_SIZE;
+			if(chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+				return (tile_type)0;
+			if(tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
+				return (tile_type)0;
+			return (chunk_data[chunk]) -> get_tile(tile_x, tile_y);
+		}
+
 		void update() override
 		{
-			throw std::runtime_error("world_tile_system::update() not implemented yet");
+			for (int y = 0; y < CHUNKS_WIDTH * CHUNK_SIZE; y++)
+			{
+				for (int x = 0; x < CHUNKS_WIDTH * CHUNK_SIZE; x++)
+				{
+					int chunk_x = x / CHUNK_SIZE;
+					int chunk_y = y / CHUNK_SIZE;
+					int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+					int tile_x = x % CHUNK_SIZE;
+					int tile_y = y % CHUNK_SIZE;
+
+					uint8_t tile_type = get_tile_at(x, y);
+					switch (tile_type)
+					{
+					case GRASS:
+						if (rand() % 100 == 0)
+						{
+							// spread grass right
+							if (get_tile_at(x + 1, y) == DIRT && get_tile_at(x + 1, y - 1) == AIR)
+							{
+								(chunk_data[chunk])->set_tile(tile_x + 1, tile_y,GRASS);
+							}
+						}
+						else if (rand() % 100 == 1)
+						{
+							// spread grass left
+							if (get_tile_at(x - 1, y) == DIRT && get_tile_at(x - 1, y - 1) == AIR)
+							{
+								(chunk_data[chunk])->set_tile(tile_x - 1, tile_y,GRASS);
+							}
+						}
+					}
+				}
+			}
+
+			// update textures
+			for (int chunk = 0; chunk < NUM_CHUNKS; chunk++)
+			{
+				entity chunk_ent = chunk_entities[chunk];
+				int chunk_x = chunk % CHUNKS_WIDTH;
+				int chunk_y	= chunk / CHUNKS_WIDTH;
+				game_engine::render_system *render_system_pointer = ((game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
+				render_system_pointer->update_texture_section(all_chunk_ent, (uint8_t *)(chunk_data[chunk]->get_data()), chunk_x * CHUNK_SIZE, chunk_y * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
+			}
 		}
 
 		void generate_world()
@@ -467,9 +503,9 @@ namespace game
 					// texture_system->update_texture(ent, (uint8_t *)tile_data->data(), CHUNK_SIZE, CHUNK_SIZE, game_engine::shader_programs[0]);
 					int chunkx = i % CHUNKS_WIDTH;
 					int chunky = i / CHUNKS_WIDTH;
-					texture_system->update_texture_section(all_chunk_ent, (uint8_t *)tile_data->data(), chunkx * CHUNK_SIZE, chunky * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE, game_engine::shader_programs[0]);
+					texture_system->update_texture_section(all_chunk_ent, (uint8_t *)tile_data->data(), chunkx * CHUNK_SIZE, chunky * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
 					std::vector<std::vector<std::pair<float, float>>> outlines = chunk_data[i]->create_outlines();
-					(*chunk_outlines)[i] = outlines;
+					// (*chunk_outlines)[i] = outlines;
 					// chunk_outlines->at(i) = outlines;
 
 					b2d_system->update_static_outlines(ent, outlines);
@@ -481,265 +517,6 @@ namespace game
 
 	// misc
 
-	// 256 vec2 values for each tile permutations normal
-	std::vector<game_engine::vec2> noramal_vectors = {
-		{0.0f, 0.0f},	//	0	00000000
-		{1.0f, -1.0f},	//	1	00000001
-		{1.0f, 0.0f},	//	2	00000010
-		{0.8f, -1.0f},	//	3	00000011
-		{-1.0f, -1.0f},	//	4	00000100
-		{0.0f, -1.0f},	//	5	00000101
-		{-0.8f, -1.0f},	//	6	00000110
-		{0.0f, -1.0f},	//	7	00000111
-		{0.0f, 1.0f},	//	8	00001000
-		{-0.8f, 1.0f},	//	9	00001001
-		{-1.0f, -1.0f},	//	10	00001010
-		{-1.0f, -1.0f},	//	11	00001011
-		{-0.2f, -1.0f},	//	12	00001100
-		{-0.2f, -1.0f},	//	13	00001101
-		{-0.2f, -1.0f},	//	14	00001110
-		{-0.2f, -1.0f},	//	15	00001111
-		{0.0f, 1.0f},	//	16	00010000
-		{0.2f, -1.0f},	//	17	00010001
-		{1.0f, -1.0f},	//	18	00010010
-		{1.0f, -0.2f},	//	19	00010011
-		{0.2f, 1.0f},	//	20	00010100
-		{0.2f, 1.0f},	//	21	00010101
-		{1.0f, -1.0f},	//	22	00010110
-		{0.2f, -1.0f},	//	23	00010111
-		{0.0f, 1.0f},	//	24	00011000
-		{0.0f, 1.0f},	//	25	00011001
-		{0.0f, 1.0f},	//	26	00011010
-		{0.0f, 1.0f},	//	27	00011011
-		{0.0f, -1.0f},	//	28	00011100
-		{0.0f, -1.0f},	//	29	00011101
-		{0.0f, -1.0f},	//	30	00011110
-		{0.0f, 1.0f},	//	31	00011111
-		{1.0f, 1.0f},	//	32	00100000
-		{-1.0f, 0.0f},	//	33	00100001
-		{-1.0f, -0.2f},	//	34	00100010
-		{-1.0f, -0.2f},	//	35	00100011
-		{1.0f, 1.0f},	//	36	00100100
-		{-1.0f, -1.0f},	//	37	00100101
-		{-1.0f, -1.0f},	//	38	00100110
-		{-1.0f, -1.0f},	//	39	00100111
-		{-0.2f, -1.0f},	//	40	00101000
-		{-1.0f, 0.0f},	//	41	00101001
-		{-0.2f, -1.0f},	//	42	00101010
-		{-0.2f, -1.0f},	//	43	00101011
-		{0.3f, 1.0f},	//	44	00101100
-		{-1.0f, -1.0f},	//	45	00101101
-		{-1.0f, -1.0f},	//	46	00101110
-		{-1.0f, -1.0f},	//	47	00101111
-		{0.3f, 1.0f},	//	48	00110000
-		{0.0f, 1.0f},	//	49	00110001
-		{1.0f, 1.0f},	//	50	00110010
-		{-0.5f, -1.0f},	//	51	00110011
-		{0.3f, 1.0f},	//	52	00110100
-		{-0.4f, -1.0f},	//	53	00110101
-		{1.0f, 1.0f},	//	54	00110110
-		{-0.5f, -1.0f},	//	55	00110111
-		{-0.3f, -1.0f},	//	56	00111000
-		{0.0f, 1.0f},	//	57	00111001
-		{-0.4f, -1.0f},	//	58	00111010
-		{-0.4f, -1.0f},	//	59	00111011
-		{1.0f, 1.0f},	//	60	00111100
-		{-0.4f, -1.0f},	//	61	00111101
-		{-0.4f, -1.0f},	//	62	00111110
-		{-0.4f, -1.0f},	//	63	00111111
-		{1.0f, 0.0f},	//	64	01000000
-		{-1.0f, 0.5f},	//	65	01000001
-		{1.0f, 0.0f},	//	66	01000010
-		{1.0f, 0.0f},	//	67	01000011
-		{1.0f, 0.5f},	//	68	01000100
-		{1.0f, 0.0f},	//	69	01000101
-		{1.0f, 0.0f},	//	70	01000110
-		{0.0f, 1.0f},	//	71	01000111
-		{-1.0f, 1.0f},	//	72	01001000
-		{-1.0f, 0.5f},	//	73	01001001
-		{1.0f, 0.0f},	//	74	01001010
-		{1.0f, 0.0f},	//	75	01001011
-		{1.0f, 1.0f},	//	76	01001100
-		{-1.0f, -1.0f},	//	77	01001101
-		{-1.0f, -1.0f},	//	78	01001110
-		{-1.0f, -1.0f},	//	79	01001111
-		{1.0f, 1.0f},	//	80	01010000
-		{-1.0f, 1.0f},	//	81	01010001
-		{1.0f, 0.0f},	//	82	01010010
-		{1.0f, -1.0f},	//	83	01010011
-		{1.0f, 0.5f},	//	84	01010100
-		{1.0f, -0.6f},	//	85	01010101
-		{1.0f, 0.0f},	//	86	01010110
-		{1.0f, -1.0f},	//	87	01010111
-		{0.0f, 1.0f},	//	88	01011000
-		{-0.2f, 1.0f},	//	89	01011001
-		{1.0f, 1.0f},	//	90	01011010
-		{1.0f, -1.0f},	//	91	01011011
-		{0.3f, 1.0f},	//	92	01011100
-		{0.0f, 1.0f},	//	93	01011101
-		{1.0f, 1.0f},	//	94	01011110
-		{0.0f, 1.0f},	//	95	01011111
-		{1.0f, 0.2f},	//	96	01100000
-		{-1.0f, 0.5f},	//	97	01100001
-		{1.0f, 0.0f},	//	98	01100010
-		{1.0f, 0.0f},	//	99	01100011
-		{1.0f, 1.0f},	//	100	01100100
-		{1.0f, 1.0f},	//	101	01100101
-		{1.0f, 1.0f},	//	102	01100110
-		{1.0f, 0.0f},	//	103	01100111
-		{-1.0f, 1.0f},	//	104	01101000
-		{-1.0f, 0.5f},	//	105	01101001
-		{1.0f, 0.0f},	//	106	01101010
-		{1.0f, 0.0f},	//	107	01101011
-		{1.0f, 1.0f},	//	108	01101100
-		{-1.0f, -1.0f},	//	109	01101101
-		{1.0f, 1.0f},	//	110	01101110
-		{1.0f, 1.0f},	//	111	01101111
-		{0.5f, 1.0f},	//	112	01110000
-		{1.0f, -1.0f},	//	113	01110001
-		{1.0f, 1.0f},	//	114	01110010
-		{1.0f, 0.0f},	//	115	01110011
-		{1.0f, 1.0f},	//	116	01110100
-		{1.0f, 1.0f},	//	117	01110101
-		{1.0f, 1.0f},	//	118	01110110
-		{1.0f, 1.0f},	//	119	01110111
-		{0.0f, 1.0f},	//	120	01111000
-		{-1.0f, 1.0f},	//	121	01111001
-		{-1.0f, 1.0f},	//	122	01111010
-		{1.0f, 0.0f},	//	123	01111011
-		{1.0f, 1.0f},	//	124	01111100
-		{-0.8f, -1.0f},	//	125	01111101
-		{1.0f, 1.0f},	//	126	01111110
-		{1.0f, 1.0f},	//	127	01111111
-		{1.0f, -1.0f},	//	128 10000000
-		{1.0f, -1.0f},	//	129	10000001
-		{1.0f, -0.5f},	//	130	10000010
-		{1.0f, -1.0f},	//	131	10000011
-		{1.0f, 0.0f},	//	132	10000100
-		{1.0f, -1.0f},	//	133	10000101
-		{1.0f, -0.5f},	//	134	10000110
-		{1.0f, -1.0f},	//	135	10000111
-		{-0.5f, 1.0f},	//	136	10001000
-		{-1.0f, 1.0f},	//	137	10001001
-		{1.0f, -1.0f},	//	138	10001010
-		{1.0f, -1.0f},	//	139	10001011
-		{0.0f, 1.0f},	//	140	10001100
-		{1.0f, -1.0f},	//	141	10001101
-		{1.0f, -1.0f},	//	142	10001110
-		{1.0f, -1.0f},	//	143	10001111
-		{-0.3f, 1.0f},	//	144	10010000
-		{1.0f, -1.0f},	//	145	10010001
-		{1.0f, -0.5f},	//	146	10010010
-		{1.0f, -1.0f},	//	147	10010011
-		{1.0f, 0.0f},	//	148	10010100
-		{1.0f, -1.0f},	//	149	10010101
-		{1.0f, -0.5f},	//	150	10010110
-		{1.0f, -1.0f},	//	151	10010111
-		{0.0f, 1.0f},	//	152	10011000
-		{1.0f, -1.0f},	//	153	10011001
-		{1.0f, -1.0f},	//	154	10011010
-		{1.0f, -1.0f},	//	155	10011011
-		{0.0f, 1.0f},	//	156 10011100
-		{0.0f, 1.0f},	//	157	10011101
-		{0.0f, 1.0f},	//	158	10011110
-		{1.0f, -1.0f},	//	159	10011111
-		{0.0f, 1.0f},	//	160	10100000
-		{-1.0f, 1.0f},	//	161	10100001
-		{1.0f, 0.0f},	//	162	10100010
-		{-1.0f, 1.0f},	//	163	10100011
-		{1.0f, 1.0f},	//	164	10100100
-		{1.0f, 0.0f},	//	165	10100101
-		{1.0f, 1.0f},	//	166	10100110
-		{1.0f, 0.0f},	//	167	10100111
-		{-0.5f, 1.0f},	//	168	10101000
-		{-1.0f, 1.0f},	//	169	10101001
-		{-1.0f, 1.0f},	//	170	10101010
-		{-1.0f, 1.0f},	//	171	10101011
-		{0.0f, 1.0f},	//	172	10101100
-		{0.0f, 1.0f},	//	173	10101101
-		{1.0f, 1.0f},	//	174	10101110
-		{1.0f, 1.0f},	//	175	10101111
-		{0.5f, 1.0f},	//	176	10110000
-		{-1.0f, 1.0f},	//	177 10110001
-		{0.8f, 1.0f},	//	178	10110010
-		{-1.0f, 1.0f},	//	179	10110011
-		{1.0f, 1.0f},	//	180	10110100
-		{0.0f, 1.0f},	//	181	10110101
-		{1.0f, 1.0f},	//	182	10110110
-		{1.0f, -1.0f},	//	183	10110111
-		{0.0f, 1.0f},	//	184	10111000
-		{-1.0f, 1.0f},	//	185	10111001
-		{0.0f, 1.0f},	//	186	10111010
-		{0.3f, -1.0f},	//	187	10111011
-		{1.0f, 1.0f},	//	188	10111100
-		{0.0f, 1.0f},	//	189	10111101
-		{1.0f, 1.0f},	//	190	10111110
-		{0.0f, 1.0f},	//	191	10111111
-		{-1.0f, 0.2f},	//	192	11000000
-		{-1.0f, 1.0f},	//	193	11000001
-		{1.0f, 0.0f},	//	194	11000010
-		{1.0f, -1.0f},	//	195	11000011
-		{1.0f, 0.5f},	//	196	11000100
-		{1.0f, -1.0f},	//	197	11000101
-		{1.0f, 0.0f},	//	198	11000110
-		{1.0f, -1.0f},	//	199	11000111
-		{-0.5, 1.0f},	//	200	11001000
-		{-1.0f, 1.0f},	//	201	11001001
-		{-1.0f, 1.0f},	//	202	11001010
-		{-1.0f, 1.0f},	//	203	11001011
-		{1.0f, 1.0f},	//	204	11001100
-		{1.0f, -1.0f},	//	205	11001101
-		{1.0f, 0.0f},	//	206	11001110
-		{1.0f, -1.0f},	//	207	11001111
-		{1.0f, 1.0f},	//	208	11010000
-		{1.0f, -1.0f},	//	209	11010001
-		{1.0f, 0.0f},	//	210	11010010
-		{1.0f, -1.0f},	//	211	11010011
-		{1.0f, 0.5f},	//	212	11010100
-		{1.0f, -1.0f},	//	213	11010101
-		{1.0f, 0.0f},	//	214	11010110
-		{1.0f, -1.0f},	//	215	11010111
-		{0.0f, 1.0f},	//	216	11011000
-		{-1.0f, 1.0f},	//	217	11011001
-		{1.0f, -1.0f},	//	218	11011010
-		{1.0f, -1.0f},	//	219	11011011
-		{1.0f, 1.0f},	//	220	11011100
-		{0.0f, 1.0f},	//	221	11011101
-		{1.0f, 0.0f},	//	222	11011110
-		{1.0f, -1.0f},	//	223	11011111
-		{0.0f, 1.0f},	//	224	11100000
-		{-1.0f, 1.0f},	//	225	11100001
-		{1.0f, 0.0f},	//	226	11100010
-		{1.0f, 0.0f},	//	227	11100011
-		{1.0f, 1.0f},	//	228	11100100
-		{1.0f, 0.0f},	//	229	11100101
-		{1.0f, 1.0f},	//	230	11100110
-		{1.0f, 0.0f},	//	231	11100111
-		{-0.5f, 1.0f},	//	232	11101000
-		{-1.0f, 1.0f},	//	233	11101001
-		{-1.0f, 1.0f},	//	234	11101010
-		{-1.0f, 1.0f},	//	235	11101011
-		{1.0f, 1.0f},	//	236	11101100
-		{-1.0f, 1.0f},	//	237	11101101
-		{1.0f, 0.0f},	//	238	11101110
-		{1.0f, 0.0f},	//	239	11101111
-		{0.5f, 1.0f},	//	240	11110000
-		{-0.5f, 1.0f},	//	241	11110001
-		{0.8f, 1.0f},	//	242	11110010
-		{1.0f, 0.0f},	//	243	11110011
-		{1.0f, 1.0f},	//	244	11110100
-		{1.0f, 1.0f},	//	245	11110101
-		{1.0f, 1.0f},	//	246	11110110
-		{1.0f, 0.0f},	//	247	11110111
-		{0.0f, 1.0f},	//	248	11111000
-		{-0.5f, 1.0f},	//	249	11111001
-		{0.0f, 1.0f},	//	250	11111010
-		{-1.0f, 1.0f},	//	251	11111011
-		{0.5f, 1.0f},	//	252	11111100
-		{0.0f, 1.0f},	//	253	11111101
-		{1.0f, 1.0f},	//	254	11111110
-		{0.0f, 0.0f} 	//	255	11111111
-	};
 
 	std::vector<game_engine::vec2> load_normal_vectors()
 	{
@@ -748,19 +525,22 @@ namespace game
 		std::vector<game_engine::vec2> normal_vectors;
 
 		std::fstream newfile;
-		newfile.open(path, std::ios::in); //open a file to perform read operation using file object
-		if (newfile.is_open()) { //checking whether the file is open
+		newfile.open(path, std::ios::in); // open a file to perform read operation using file object
+		if (newfile.is_open())
+		{ // checking whether the file is open
 			std::string tp;
-			while (getline(newfile, tp)) { //read data from file object and put it into string.
+			while (getline(newfile, tp))
+			{ // read data from file object and put it into string.
 				std::stringstream ss(tp);
 				std::string token;
 				std::vector<std::string> tokens;
-				while (getline(ss, token, ',')) {
+				while (getline(ss, token, ','))
+				{
 					tokens.push_back(token);
 				}
 				normal_vectors.push_back(game_engine::vec2(std::stof(tokens[0]), std::stof(tokens[1])));
 			}
-			newfile.close(); //close the file object.
+			newfile.close(); // close the file object.
 		}
 		return normal_vectors;
 	}
