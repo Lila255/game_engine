@@ -362,6 +362,7 @@ namespace game
 		std::array<entity, NUM_CHUNKS> chunk_entities;
 		entity all_chunk_ent;
 
+
 	public:
 		world_tile_system()
 		{
@@ -402,6 +403,7 @@ namespace game
 				return (tile_type)0;
 			return (chunk_data[chunk]) -> get_tile(tile_x, tile_y);
 		}
+
 		void set_tile_at(int x, int y, uint8_t tile_type)
 		{
 			int chunk_x = x / CHUNK_SIZE;
@@ -414,6 +416,12 @@ namespace game
 			
 			(chunk_data[chunk]) -> set_tile(tile_x, tile_y, tile_type);
 		}
+		
+		std::array<entity, NUM_CHUNKS> get_chunk_entities()
+		{
+			return chunk_entities;
+		}
+
 		void update() {}
 
 		void update(uint64_t tick_count)

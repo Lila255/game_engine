@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <thread>
 
 #include "engine_comp.hpp"
 #include "game_core.hpp"
@@ -137,6 +138,38 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		world_sys->delete_circle(world_x, world_y, 8, &chunk_outlines);
 
 		buttons.erase(GLFW_MOUSE_BUTTON_LEFT);
+	}
+}
+
+uint8_t physics_loop_running = 1;
+
+void start_physics_thread()
+{
+	game_engine::engine * engine_ptr = game_engine::game_engine_pointer;
+	game::box2d_system *b2d_sys = (game::box2d_system *)(engine_ptr->get_system(game_engine::family::type<game::box2d_system>()));
+	game::world_tile_system *world_sys = (game::world_tile_system *)(engine_ptr->get_system(game_engine::family::type<game::world_tile_system>()));
+
+	const int tick_rate = 20;
+
+	while (physics_loop_running)
+	{
+		world_sys->update();
+
+		std::array<entity, game::NUM_CHUNKS> chunk_entities = world_sys->get_chunk_entities();
+		std::array<game::chunk *, game::NUM_CHUNKS> * chunks = world_sys->get_chunks();
+		
+
+		for (int i = 0; i < game::NUM_CHUNKS; i++)
+		{
+			entity e = chunk_entities[i];
+			game::chunk *c = chunks->at(i);
+
+			std::vector<std::vector<std::pair<float, float>>> outlines = c->create_outlines();
+			b2d_sys->update_static_outlines(e, outlines);
+		}
+
+		// sleep for 1 / tick_rate seconds
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / tick_rate));
 	}
 }
 
@@ -425,6 +458,8 @@ void run_game(GLFWwindow *window)
 	// GLuint view_location = glGetUniformLocation(game_engine::shader_programs[1], "view");
 	// glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
 
+	std::thread world_thread(start_physics_thread);
+
 	uint16_t saved_light_textures = 0;
 	uint16_t light_texture_index = 0;
 	uint64_t last_time_taken = 0;
@@ -437,63 +472,13 @@ void run_game(GLFWwindow *window)
 		uint64_t start_time = glfwGetTimerValue();
 		// draw lines for chunk outlines
 		box2d_sys->update(last_time_taken);
-		world_sys->update(counter);
-		// update the player's outlines
-		// std::vector<std::pair<float, float>> player_outline;
-		// b2Fixture *fixture = player_body->GetFixtureList();
-		// while (fixture != NULL)
-		// {
-		// 	b2PolygonShape *shape = (b2PolygonShape *)fixture->GetShape();
-		// 	for (int i = 0; i < shape->m_count; i++)
-		// 	{
-		// 		b2Vec2 vertex = player_body->GetWorldPoint(shape->m_vertices[i]);
-		// 		// b2Vec2 vertex = shape->m_vertices[i] + player_body->GetPosition() - b2Vec2(glsl_helper::character_width / 2.0f, glsl_helper::character_height / 2.0f);
-		// 		player_outline.push_back({vertex.x, vertex.y});
-		// 	}
-		// 	fixture = fixture->GetNext();
-		// }
-		// chunk_outlines[game::NUM_CHUNKS] = {player_outline};
+		// world_sys->update(counter);
 
 		game_engine::box &b = box_sys->get(player_entity);
 		game_engine::view_matrix[12] = -b.x - 0.5 * glsl_helper::character_width + game_engine::window_width * (1.0 / (2 * PIXEL_SCALE));
 		game_engine::view_matrix[13] = -b.y - 0.5 * glsl_helper::character_height + game_engine::window_height * (1.0 / (2 * PIXEL_SCALE));
 
 		// printf("before_update_call: %d\n", glGetError());
-
-
-		// printf("after_update_call: %d\n", glGetError());
-		// printf("Rendering\n");
-		// glUseProgram(0);
-		// glUseProgram(game_engine::shader_programs[1]);
-		// GLuint projection_location = glGetUniformLocation(game_engine::shader_programs[1], "projection");
-		// glUniformMatrix4fv(projection_location, 1, GL_FALSE, game_engine::projection_matrix);
-		// GLuint view_location = glGetUniformLocation(game_engine::shader_programs[1], "view");
-		// glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
-		// for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
-		// {
-		// 	// printf("rendering outlines for a chunk\n");
-		// 	for (std::vector<std::pair<float, float>> &outline : chunk_outline)
-		// 	{
-		// 		for (int i = 0; i < outline.size() - 2; i += 3)
-		// 		{
-		// 			// printf("Line: %d\n", i);
-		// 			std::pair<float, float> p1 = outline[i];
-		// 			std::pair<float, float> p2 = outline[i + 1];
-		// 			std::pair<float, float> p3 = outline[i + 2];
-		// 			render_sys->draw_line(p1.first, p1.second, -3.0f, p2.first, p2.second, -3.0f);
-		// 			render_sys->draw_line(p2.first, p2.second, -3.0f, p3.first, p3.second, -3.0f);
-		// 			render_sys->draw_line(p3.first, p3.second, -3.0f, p1.first, p1.second, -3.0f);
-		// 		}
-		// 		// for (int i = 0; i < outline.size() - 1; i += 1)
-		// 		// {
-		// 		//     // Non-triangulated outlines
-		// 		//     std::pair<float, float> p1 = outline[i];
-		// 		//     std::pair<float, float> p2 = outline[i + 1];
-		// 		//     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
-		// 		// }
-		// 		// game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
-		// 	}
-		// }
 
 		// printf("before_clearing_l_texture: %d\n", glGetError());
 		// glActiveTexture(GL_TEXTURE0);
@@ -503,7 +488,6 @@ void run_game(GLFWwindow *window)
 		glClearTexImage(blurred_light_texture, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		// printf("after_clearing_l_texture: %d\n", glGetError());
 
 		// trace lights with compute shader
 		glUseProgram(compute_shader);
@@ -590,8 +574,7 @@ void run_game(GLFWwindow *window)
 		last_time_taken = glfwGetTimerValue() - start_time;
 		counter++;
 	}
-	// Learn how to do audio
-	// Learn how to do chunk switching
+	world_thread.join();
 }
 
 void error_callback(int error, const char *description)
@@ -601,8 +584,10 @@ void error_callback(int error, const char *description)
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
+		physics_loop_running = false;
+	}
 
 	game_engine::game_engine_pointer->key_callback(window, key, scancode, action, mods);
 	// game_engine::game_engine_pointer -> key_callback(window, key, scancode, action, mods);
