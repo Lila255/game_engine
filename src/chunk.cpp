@@ -19,12 +19,17 @@ namespace game
 				if (noise_1 > 0.525)
 				{ // solid
 					if (noise_2 > 0.5)
-					{ // dirt
-						data[y][x] = game::DIRT;
+					{
+						data[y][x] = game::STONE;
 					}
 					else
-					{ // stone
-						data[y][x] = game::STONE;
+					{ 
+						if(noise_3 > 0.5) {
+							data[y][x] = game::SAND;
+						}
+						else {
+							data[y][x] = game::DIRT;
+						}
 					}
 				}
 				else

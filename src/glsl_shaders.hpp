@@ -77,6 +77,8 @@ namespace glsl_helper
 					out_Color = vec4(0.0, 0.0, 0.0, 0.0);
 				} else if(value == 3) {
 					out_Color = vec4(1.0, 1.0, 1.0, 0.2);
+				} else if(value == 4) {
+					out_Color = vec4(1.0, 0.861, 0.360, 1.0);
 				} else if(value == 5) {
 					out_Color = vec4(0.45, 0.157, 0.039, 1.0);
 				} else if(value == 6) {
@@ -223,10 +225,10 @@ namespace glsl_helper
 				// float hue = (float(hue_value) / 4294967295.0) * 360.0;
 				// vec3 rgb = hsv2rgb(hue);
 				float inverse_alpha = 0.0;
-				if(value > 50) {
-					inverse_alpha = value / 1000.0;
+				if(value > 100) {
+					inverse_alpha = value / 1250.0;
 				} else {
-					inverse_alpha = blurred_value / 1000.0;
+					inverse_alpha = blurred_value / 1500.0;
 				}
 				
 				if(inverse_alpha > 1.0)

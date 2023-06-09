@@ -437,7 +437,7 @@ void run_game(GLFWwindow *window)
 		uint64_t start_time = glfwGetTimerValue();
 		// draw lines for chunk outlines
 		box2d_sys->update(last_time_taken);
-		world_sys->update();
+		world_sys->update(counter);
 		// update the player's outlines
 		// std::vector<std::pair<float, float>> player_outline;
 		// b2Fixture *fixture = player_body->GetFixtureList();

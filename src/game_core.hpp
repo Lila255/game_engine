@@ -402,10 +402,23 @@ namespace game
 				return (tile_type)0;
 			return (chunk_data[chunk]) -> get_tile(tile_x, tile_y);
 		}
-
-		void update() override
+		void set_tile_at(int x, int y, uint8_t tile_type)
 		{
-			for (int y = 0; y < CHUNKS_WIDTH * CHUNK_SIZE; y++)
+			int chunk_x = x / CHUNK_SIZE;
+			int chunk_y = y / CHUNK_SIZE;
+			int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+			int tile_x = x % CHUNK_SIZE;
+			int tile_y = y % CHUNK_SIZE;
+			if(chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+				return;
+			
+			(chunk_data[chunk]) -> set_tile(tile_x, tile_y, tile_type);
+		}
+		void update() {}
+
+		void update(uint64_t tick_count)
+		{
+			for (int y = CHUNKS_WIDTH * CHUNK_SIZE - 1; y >= 0 ; y--)
 			{
 				for (int x = 0; x < CHUNKS_WIDTH * CHUNK_SIZE; x++)
 				{
@@ -419,22 +432,31 @@ namespace game
 					switch (tile_type)
 					{
 					case GRASS:
-						if (rand() % 100 == 0)
+						if (rand() % 100 == 0)	// 1% chance to try growing grass
 						{
-							// spread grass right
-							if (get_tile_at(x + 1, y) == DIRT && get_tile_at(x + 1, y - 1) == AIR)
-							{
-								(chunk_data[chunk])->set_tile(tile_x + 1, tile_y,GRASS);
+							int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
+							int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
+							int r = rand() % 8;
+							for(int i = 0; i < 8; i++){
+								int xx = x + dx[(r + i) % 8];
+								int yy = y + dy[(r + i) % 8];
+								if(get_tile_at(xx, yy) == DIRT && get_tile_at(xx, yy - 1) == AIR){
+									set_tile_at(xx, yy, GRASS);
+									break;
+								}
 							}
 						}
-						else if (rand() % 100 == 1)
-						{
-							// spread grass left
-							if (get_tile_at(x - 1, y) == DIRT && get_tile_at(x - 1, y - 1) == AIR)
-							{
-								(chunk_data[chunk])->set_tile(tile_x - 1, tile_y,GRASS);
-							}
+						if(get_tile_at(x, y - 1) == AIR && rand() % 100 == 0){
+							set_tile_at(x, y, DIRT);
 						}
+						break;
+
+					case SAND:
+						if(get_tile_at(x, y + 1) == AIR && tick_count % 16 == 0){
+							set_tile_at(x, y + 1, SAND);
+							set_tile_at(x, y, AIR);
+						}
+						break;
 					}
 				}
 			}
