@@ -23,11 +23,13 @@ namespace game
 						data[y][x] = game::STONE;
 					}
 					else
-					{ 
-						if(noise_3 > 0.5) {
+					{
+						if (noise_3 > 0.5)
+						{
 							data[y][x] = game::SAND;
 						}
-						else {
+						else
+						{
 							data[y][x] = game::DIRT;
 						}
 					}
@@ -45,15 +47,15 @@ namespace game
 				// 	data[y][x] = 0;
 			}
 		}
-		
+
 		// spawn some grass
 		for (int y = 1; y < CHUNK_SIZE; y++)
 		{
 			for (int x = 0; x < CHUNK_SIZE; x++)
 			{
-				if(data[y][x] == game::DIRT && data[y - 1][x] == game::AIR)
+				if (data[y][x] == game::DIRT && data[y - 1][x] == game::AIR)
 				{
-					if(rand() % 100 < 10)
+					if (rand() % 100 < 10)
 						data[y][x] = game::GRASS;
 				}
 			}
@@ -73,24 +75,6 @@ namespace game
 		printf("\n");
 	}
 
-	// void chunk::create_texture_from_chunk(GLuint &texture)
-	// {
-	//     glGenTextures(1, &texture);
-	//     glBindTexture(GL_TEXTURE_2D, texture);
-	//     // set data and size
-	//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	//     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	//     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, CHUNK_SIZE, CHUNK_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
-	//     // set texture parameters
-	//     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	//     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	//     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	//     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//     glBindTexture(GL_TEXTURE_2D, 0);
-	// }
-
 	std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *chunk::get_data()
 	{
 		return &data;
@@ -109,7 +93,6 @@ namespace game
 		else
 			return 0;
 	}
-	
 
 	bool chunk::isBoundaryTile(int x, int y)
 	{
@@ -392,11 +375,6 @@ namespace game
 			tile_line left = {current_point.first, current_point.second, current_point.first - 1, current_point.second};
 			tile_line down = {current_point.first, current_point.second, current_point.first, current_point.second + 1};
 
-			if (current_point == std::make_pair(36, 0))
-			{
-				int a = 0;
-			}
-
 			if (!visited_lines.count(up))
 			{
 				if (is_outline(up))
@@ -443,182 +421,353 @@ namespace game
 		return outline;
 	}
 
+	// std::vector<std::vector<std::pair<float, float>>> create_outlines2()
+	// {
+	// 	auto start = std::chrono::high_resolution_clock::now();
+	// 	auto end = std::chrono::high_resolution_clock::now();
+	// 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+	// 	std::unordered_set<tile_line, tile_line_hash> visited_lines;
+	// 	std::vector<std::vector<std::pair<int, int>>> outlines;
+
+	// 	for (int y = 0; y < CHUNK_SIZE; y++)
+	// 	{
+	// 		for (int x = 0; x < CHUNK_SIZE; x++)
+	// 		{
+	// 			if (data[y][x] == 0)
+	// 				continue;
+
+	// 			if (!is_edge(x, y))
+	// 				continue;
+
+	// 			// tile_line tile_top = {x, y, x + 1, y};
+	// 			// tile_line tile_bottom = {x, y + 1, x + 1, y + 1};
+	// 			// tile_line tile_left = {x, y, x, y + 1};
+	// 			// tile_line tile_right = {x + 1, y, x + 1, y + 1};
+	// 			tile_line tile_up = {x, y, x, y - 1};
+	// 			tile_line tile_right = {x, y, x + 1, y};
+	// 			tile_line tile_down = {x, y, x, y + 1};
+	// 			tile_line tile_left = {x, y, x - 1, y};
+
+	// 			std::vector<std::pair<int, int>> outline;
+	// 			if (!visited_lines.count(tile_up) && is_outline(tile_up))
+	// 			{
+	// 				// do top stuff
+	// 				// outlines.push_back(trace_outline(tile_up, visited_lines));
+	// 				outline = trace_outline(tile_up, visited_lines);
+	// 			}
+	// 			else if (!visited_lines.count(tile_right) && is_outline(tile_right))
+	// 			{
+	// 				// do bottom stuff
+	// 				// outlines.push_back(trace_outline(tile_right, visited_lines));
+	// 				outline = trace_outline(tile_right, visited_lines);
+	// 			}
+	// 			else if (!visited_lines.count(tile_down) && is_outline(tile_down))
+	// 			{
+	// 				// do left stuff
+	// 				// outlines.push_back(trace_outline(tile_down, visited_lines));
+	// 				outline = trace_outline(tile_down, visited_lines);
+	// 			}
+	// 			else if (!visited_lines.count(tile_left) && is_outline(tile_left))
+	// 			{
+	// 				// do right stuff
+	// 				// outlines.push_back(trace_outline(tile_left, visited_lines));
+	// 				outline = trace_outline(tile_left, visited_lines);
+	// 			}
+
+	// 			if (outline.size() > 3)
+	// 			{
+	// 				outlines.push_back(outline);
+
+	// 				// // print outline
+	// 				// printf("outline: %d points\n", outline.size());
+	// 				// for (int i = 0; i < outline.size(); i++)
+	// 				// {
+	// 				// 	auto point = outline[i];
+	// 				// 	printf("(%d, %d) ", point.first, point.second);
+	// 				// }
+	// 				// printf("\n");
+	// 			}
+	// 		}
+	// 	}
+	// 	end = std::chrono::high_resolution_clock::now();
+	// 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	// 	// printf("Time taken by outline tracing: %d\n", duration.count());
+	// 	for (int i = 0; i < outlines.size(); i++)
+	// 	{
+	// 		std::vector<std::pair<int, int>> outline = outlines[i];
+	// 		std::vector<std::pair<int, int>> new_outline;
+	// 		new_outline.push_back(outline[0]);
+
+	// 		for (int j = 1; j < outline.size(); j++)
+	// 		{
+	// 			std::pair<int, int> p1 = outline[j - 1];
+	// 			std::pair<int, int> p2 = outline[j];
+	// 			std::pair<int, int> p3 = outline[(j + 1) % outline.size()];
+	// 			if (p1.first != p2.first || p1.second != p2.second)
+	// 			{
+	// 				if (p2.first != p3.first || p2.second != p3.second)
+	// 				{
+	// 					new_outline.push_back(p2);
+	// 				}
+	// 			}
+	// 		}
+	// 		outlines[i] = new_outline;
+	// 	}
+	// 	end = std::chrono::high_resolution_clock::now();
+	// 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	// 	// printf("Time taken by cleaning: %d\n", duration.count());
+	// 	int decimation = 4;
+	// 	// remove points to keep only one every decimation value
+	// 	for (int i = 0; i < outlines.size(); i++)
+	// 	{
+	// 		if (outlines[i].size() > 16)
+	// 		{
+	// 			std::vector<std::pair<int, int>> outline = outlines[i];
+	// 			std::vector<std::pair<int, int>> new_outline;
+	// 			for (int j = 0; j < outline.size(); j++)
+	// 			{
+	// 				if ((j % decimation) == 0 || j == 0 || j == outline.size() - 1)
+	// 				{
+	// 					new_outline.push_back(outline[j]);
+	// 				}
+	// 			}
+	// 			outlines[i] = new_outline;
+	// 		}
+	// 	}
+	// 	end = std::chrono::high_resolution_clock::now();
+	// 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	// 	// printf("Time taken by decimation: %d\n", duration.count());
+
+	// 	std::vector<std::vector<std::pair<float, float>>> outlines_triangles;
+	// 	for (int i = 0; i < outlines.size(); i++)
+	// 	{
+	// 		std::vector<std::pair<int, int>> &outline = outlines[i];
+	// 		std::vector<p2t::Point *> outline_points;
+	// 		std::vector<std::pair<float, float>> connected_triangles;
+	// 		for (int j = 0; j < outline.size(); j++)
+	// 		{
+	// 			outline_points.push_back(new p2t::Point(outline[j].first, outline[j].second));
+	// 		}
+
+	// 		if (outline_points.size() < 3)
+	// 			continue;
+
+	// 		p2t::CDT *cdt = new p2t::CDT(outline_points);
+
+	// 		cdt->Triangulate();
+
+	// 		std::vector<p2t::Triangle *> triangles = cdt->GetTriangles();
+
+	// 		for (p2t::Triangle *triangle : triangles)
+	// 		{
+	// 			if (*(triangle->GetPoint(0)) == *(triangle->GetPoint(1)) || *(triangle->GetPoint(0)) == *(triangle->GetPoint(2)) || *(triangle->GetPoint(1)) == *(triangle->GetPoint(2)))
+	// 				continue;
+	// 			for (int j = 0; j < 3; j++)
+	// 			{
+	// 				p2t::Point *point = triangle->GetPoint(j);
+	// 				connected_triangles.push_back(std::make_pair(point->x, point->y));
+	// 			}
+	// 		}
+	// 		outlines_triangles.push_back(connected_triangles);
+
+	// 		for (p2t::Point *point : outline_points)
+	// 		{
+	// 			delete point;
+	// 		}
+
+	// 		delete cdt;
+	// 	}
+	// 	end = std::chrono::high_resolution_clock::now();
+	// 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	// 	// printf("Time taken by entire function: %d\n", duration.count());
+	// 	return outlines_triangles;
+
+	// 	// std::vector<std::vector<std::pair<float, float>>> outlines_triangles;
+	// 	// // outlines_triangles.push_back({{chunk_x * CHUNK_SIZE,	// clockwise
+	// 	// // 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE / 2.0},
+	// 	// // 							  {chunk_x * CHUNK_SIZE + CHUNK_SIZE,
+	// 	// // 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE / 2.0},
+	// 	// // 							  {chunk_x * CHUNK_SIZE + CHUNK_SIZE / 2.0,
+	// 	// // 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE}});
+	// 	// outlines_triangles.push_back({{chunk_x * CHUNK_SIZE,	// counter-clockwise
+	// 	// 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE / 2.0},
+	// 	// 							  {chunk_x * CHUNK_SIZE + CHUNK_SIZE / 2.0,
+	// 	// 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE},
+	// 	// 							  {chunk_x * CHUNK_SIZE + CHUNK_SIZE,
+	// 	// 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE / 2.0 + 50}});
+	// 	// return outlines_triangles;
+	// }
+
+	const int adjacent_tiles_dx[4] = {0, 1, 0, -1}; // up, right, down, left
+	const int adjacent_tiles_dy[4] = {-1, 0, 1, 0};
+
+	uint16_t chunk::get_tile_edginess(int x, int y)
+	{
+		uint16_t edginess = 0;
+
+		for (int i = 0; i < 4; i++)
+		{
+			int adjacent_x = x + adjacent_tiles_dx[i];
+			int adjacent_y = y + adjacent_tiles_dy[i];
+			if (adjacent_x < 0 || adjacent_x >= CHUNK_SIZE || adjacent_y < 0 || adjacent_y >= CHUNK_SIZE)
+			{
+				continue;
+			}
+			if (data[adjacent_y][adjacent_x] == tile_type::AIR)
+			{
+				edginess |= (1 << i);
+			}
+		}
+
+		return edginess;
+	}
+
+#define top_line_def \
+	{                \
+		0, 0, 1, 0   \
+	}
+#define right_line_def \
+	{                  \
+		1, 0, 1, 1     \
+	}
+#define bottom_line_def \
+	{                   \
+		1, 1, 0, 1      \
+	}
+#define left_line_def \
+	{                 \
+		0, 1, 0, 0    \
+	}
+
+	const std::array<std::vector<tile_line>, 16> edges_lines = {
+		{{top_line_def, right_line_def, bottom_line_def, left_line_def},
+		 {right_line_def, bottom_line_def, left_line_def},
+		 {top_line_def, bottom_line_def, left_line_def},
+		 {bottom_line_def, left_line_def},
+		 {top_line_def, right_line_def, left_line_def},
+		 {right_line_def, left_line_def},
+		 {top_line_def, left_line_def},
+		 {left_line_def},
+		 {top_line_def, right_line_def, bottom_line_def},
+		 {right_line_def, bottom_line_def},
+		 {top_line_def, bottom_line_def},
+		 {bottom_line_def},
+		 {top_line_def, right_line_def},
+		 {right_line_def},
+		 {top_line_def},
+		 {{}}}};
+
 	std::vector<std::vector<std::pair<float, float>>> chunk::create_outlines()
 	{
-		auto start = std::chrono::high_resolution_clock::now();
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-
-		std::unordered_set<tile_line, tile_line_hash> visited_lines;
-		std::vector<std::vector<std::pair<int, int>>> outlines;
-
+		// Get all outline edges
+		std::unordered_set<tile_line, tile_line_hash> edge_lines;
 		for (int y = 0; y < CHUNK_SIZE; y++)
 		{
 			for (int x = 0; x < CHUNK_SIZE; x++)
 			{
-				if (data[y][x] == 0)
-					continue;
-
-				if (!is_edge(x, y))
-					continue;
-
-				// tile_line tile_top = {x, y, x + 1, y};
-				// tile_line tile_bottom = {x, y + 1, x + 1, y + 1};
-				// tile_line tile_left = {x, y, x, y + 1};
-				// tile_line tile_right = {x + 1, y, x + 1, y + 1};
-				tile_line tile_up = {x, y, x, y - 1};
-				tile_line tile_right = {x, y, x + 1, y};
-				tile_line tile_down = {x, y, x, y + 1};
-				tile_line tile_left = {x, y, x - 1, y};
-
-				std::vector<std::pair<int, int>> outline;
-				if (!visited_lines.count(tile_up) && is_outline(tile_up))
+				if (data[y][x] >= SOLID_TILE_START_INDEX)
 				{
-					// do top stuff
-					// outlines.push_back(trace_outline(tile_up, visited_lines));
-					outline = trace_outline(tile_up, visited_lines);
-				}
-				else if (!visited_lines.count(tile_right) && is_outline(tile_right))
-				{
-					// do bottom stuff
-					// outlines.push_back(trace_outline(tile_right, visited_lines));
-					outline = trace_outline(tile_right, visited_lines);
-				}
-				else if (!visited_lines.count(tile_down) && is_outline(tile_down))
-				{
-					// do left stuff
-					// outlines.push_back(trace_outline(tile_down, visited_lines));
-					outline = trace_outline(tile_down, visited_lines);
-				}
-				else if (!visited_lines.count(tile_left) && is_outline(tile_left))
-				{
-					// do right stuff
-					// outlines.push_back(trace_outline(tile_left, visited_lines));
-					outline = trace_outline(tile_left, visited_lines);
-				}
-
-				if (outline.size() > 3)
-				{
-					outlines.push_back(outline);
-
-					// // print outline
-					// printf("outline: %d points\n", outline.size());
-					// for (int i = 0; i < outline.size(); i++)
-					// {
-					// 	auto point = outline[i];
-					// 	printf("(%d, %d) ", point.first, point.second);
-					// }
-					// printf("\n");
-				}
-			}
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-		printf("Time taken by outline tracing: %d\n", duration.count());
-		for (int i = 0; i < outlines.size(); i++)
-		{
-			std::vector<std::pair<int, int>> outline = outlines[i];
-			std::vector<std::pair<int, int>> new_outline;
-			new_outline.push_back(outline[0]);
-
-			for (int j = 1; j < outline.size(); j++)
-			{
-				std::pair<int, int> p1 = outline[j - 1];
-				std::pair<int, int> p2 = outline[j];
-				std::pair<int, int> p3 = outline[(j + 1) % outline.size()];
-				if (p1.first != p2.first || p1.second != p2.second)
-				{
-					if (p2.first != p3.first || p2.second != p3.second)
+					uint16_t edginess = get_tile_edginess(x, y);
+					for (tile_line line : edges_lines[edginess])
 					{
-						new_outline.push_back(p2);
+						line.x1 += x;
+						line.y1 += y;
+						line.x2 += x;
+						line.y2 += y;
+						edge_lines.insert(line);
 					}
 				}
 			}
-			outlines[i] = new_outline;
 		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-		printf("Time taken by cleaning: %d\n", duration.count());
-		int decimation = 4;
-		// remove points to keep only one every decimation value
-		for (int i = 0; i < outlines.size(); i++)
+
+		// Create outlines
+		std::vector<std::vector<tile_line>> outlines;
+		while (!edge_lines.empty())
 		{
-			if (outlines[i].size() > 16)
+			std::vector<tile_line> current_outline;
+			tile_line current_line = *edge_lines.begin();
+			tile_line start_line = current_line;
+			edge_lines.erase(current_line);
+
+			current_outline.push_back(current_line);
+
+			do
 			{
-				std::vector<std::pair<int, int>> outline = outlines[i];
-				std::vector<std::pair<int, int>> new_outline;
-				for (int j = 0; j < outline.size(); j++)
+				tile_line up_line = {current_line.x2, current_line.y2, current_line.x2, current_line.y2 - 1};
+				tile_line right_line = {current_line.x2, current_line.y2, current_line.x2 + 1, current_line.y2};
+				tile_line down_line = {current_line.x2, current_line.y2, current_line.x2, current_line.y2 + 1};
+				tile_line left_line = {current_line.x2, current_line.y2, current_line.x2 - 1, current_line.y2};
+
+				if (edge_lines.count(up_line))
 				{
-					if ((j % decimation) == 0 || j == 0 || j == outline.size() - 1)
-					{
-						new_outline.push_back(outline[j]);
-					}
+					current_line = up_line;
 				}
-				outlines[i] = new_outline;
-			}
+				else if (edge_lines.count(right_line))
+				{
+					current_line = right_line;
+				}
+				else if (edge_lines.count(down_line))
+				{
+					current_line = down_line;
+				}
+				else if (edge_lines.count(left_line))
+				{
+					current_line = left_line;
+				}
+				else
+				{
+					break;
+				}
+				current_outline.push_back(current_line);
+				edge_lines.erase(current_line);
+
+			} while (!(current_line.x2 == start_line.x1 && current_line.y2 == start_line.y1));
+
+			outlines.push_back(current_outline);
 		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-		printf("Time taken by decimation: %d\n", duration.count());
 
 		std::vector<std::vector<std::pair<float, float>>> outlines_triangles;
+		int vert_retention_count = 4;
 		for (int i = 0; i < outlines.size(); i++)
 		{
-			std::vector<std::pair<int, int>> &outline = outlines[i];
 			std::vector<p2t::Point *> outline_points;
-			std::vector<std::pair<float, float>> connected_triangles;
-			for (int j = 0; j < outline.size(); j++)
-			{
-				outline_points.push_back(new p2t::Point(outline[j].first, outline[j].second));
-			}
 
+			for (int j = 0; j < outlines[i].size(); j++)
+			{
+				if (outlines[i].size() > 12 || j % vert_retention_count == 0)
+				{
+					// should also remove useless points
+					outline_points.push_back(new p2t::Point(outlines[i][j].x1, outlines[i][j].y1));
+				}
+			}
 			if (outline_points.size() < 3)
 				continue;
 
 			p2t::CDT *cdt = new p2t::CDT(outline_points);
-
 			cdt->Triangulate();
-
 			std::vector<p2t::Triangle *> triangles = cdt->GetTriangles();
 
-			for (p2t::Triangle *triangle : triangles)
-			{
-				if (*(triangle->GetPoint(0)) == *(triangle->GetPoint(1)) || *(triangle->GetPoint(0)) == *(triangle->GetPoint(2)) || *(triangle->GetPoint(1)) == *(triangle->GetPoint(2)))
-					continue;
-				for (int j = 0; j < 3; j++)
-				{
-					p2t::Point *point = triangle->GetPoint(j);
-					connected_triangles.push_back(std::make_pair(point->x, point->y));
-				}
-			}
-			outlines_triangles.push_back(connected_triangles);
+			std::vector<std::pair<float, float>> outline_triangles;
 
-			for (p2t::Point *point : outline_points)
+			for (int j = 0; j < triangles.size(); j++)
 			{
-				delete point;
+				p2t::Point *p1 = triangles[j]->GetPoint(0);
+				p2t::Point *p2 = triangles[j]->GetPoint(1);
+				p2t::Point *p3 = triangles[j]->GetPoint(2);
+
+				outline_triangles.push_back(std::make_pair(p1->x, p1->y));
+				outline_triangles.push_back(std::make_pair(p2->x, p2->y));
+				outline_triangles.push_back(std::make_pair(p3->x, p3->y));
 			}
 
+			outlines_triangles.push_back(outline_triangles);
+			for (p2t::Point *p : outline_points)
+				delete p;
 			delete cdt;
 		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-		printf("Time taken by entire function: %d\n", duration.count());
-		return outlines_triangles;
 
-		// std::vector<std::vector<std::pair<float, float>>> outlines_triangles;
-		// // outlines_triangles.push_back({{chunk_x * CHUNK_SIZE,	// clockwise
-		// // 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE / 2.0},
-		// // 							  {chunk_x * CHUNK_SIZE + CHUNK_SIZE,
-		// // 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE / 2.0},
-		// // 							  {chunk_x * CHUNK_SIZE + CHUNK_SIZE / 2.0,
-		// // 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE}});
-		// outlines_triangles.push_back({{chunk_x * CHUNK_SIZE,	// counter-clockwise
-		// 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE / 2.0},
-		// 							  {chunk_x * CHUNK_SIZE + CHUNK_SIZE / 2.0,
-		// 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE},
-		// 							  {chunk_x * CHUNK_SIZE + CHUNK_SIZE,
-		// 							   chunk_y * CHUNK_SIZE + CHUNK_SIZE / 2.0 + 50}});
-		// return outlines_triangles;
+		return outlines_triangles;
 	}
 
 	bool chunk::delete_circle(int x, int y, int radius)

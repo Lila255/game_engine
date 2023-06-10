@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <thread>
+#include <mutex>
 
 #include "engine_comp.hpp"
 #include "game_core.hpp"
@@ -150,23 +151,30 @@ void start_physics_thread()
 	game::world_tile_system *world_sys = (game::world_tile_system *)(engine_ptr->get_system(game_engine::family::type<game::world_tile_system>()));
 
 	const int tick_rate = 20;
-
+	const uint64_t tick_count = 0;
 	while (physics_loop_running)
 	{
-		world_sys->update();
+
+		// world_sys->update(tick_count);
 
 		std::array<entity, game::NUM_CHUNKS> chunk_entities = world_sys->get_chunk_entities();
 		std::array<game::chunk *, game::NUM_CHUNKS> * chunks = world_sys->get_chunks();
 		
+		std::vector<std::vector<std::vector<std::pair<float, float>>>> chunk_outlines;
+		for (int i = 0; i < game::NUM_CHUNKS; i++)
+		{
+			game::chunk *c = chunks->at(i);
+			chunk_outlines.push_back(c->create_outlines());
+		}
 
+		game::b2d_mutex.lock();
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
 			entity e = chunk_entities[i];
-			game::chunk *c = chunks->at(i);
 
-			std::vector<std::vector<std::pair<float, float>>> outlines = c->create_outlines();
-			b2d_sys->update_static_outlines(e, outlines);
+			b2d_sys->update_static_outlines(e, chunk_outlines[i]);
 		}
+		game::b2d_mutex.unlock();
 
 		// sleep for 1 / tick_rate seconds
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / tick_rate));
@@ -471,7 +479,9 @@ void run_game(GLFWwindow *window)
 
 		uint64_t start_time = glfwGetTimerValue();
 		// draw lines for chunk outlines
+		game::b2d_mutex.lock();
 		box2d_sys->update(last_time_taken);
+		game::b2d_mutex.unlock();
 		// world_sys->update(counter);
 
 		game_engine::box &b = box_sys->get(player_entity);
@@ -574,6 +584,7 @@ void run_game(GLFWwindow *window)
 		last_time_taken = glfwGetTimerValue() - start_time;
 		counter++;
 	}
+	physics_loop_running = false;
 	world_thread.join();
 }
 

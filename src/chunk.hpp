@@ -20,6 +20,7 @@ namespace game
 
 	const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 	
+	const uint16_t SOLID_TILE_START_INDEX = 3;
 	// enum for tile types
 	enum tile_type
 	{
@@ -54,6 +55,8 @@ namespace game
 	struct tile_line
 	{
 		int x1, y1, x2, y2;
+		tile_line(int x1, int y1, int x2, int y2) : x1(x1), y1(y1), x2(x2), y2(y2) {}
+		
 		// define != operator
 		bool operator!=(const tile_line &other) const
 		{
@@ -124,6 +127,7 @@ namespace game
 		//     float y = p1->y - p2->y;
 		//     return x * x + y * y;
 		// }
+		
 		std::vector<std::vector<std::pair<float, float>>> create_outlines();
 		bool is_outline(tile_line l);
 		bool is_edge(int, int);
@@ -132,5 +136,7 @@ namespace game
 
 
 		bool delete_circle(int x, int y, int radius);
+	private:
+		uint16_t get_tile_edginess(int x, int y);
 	};
 }

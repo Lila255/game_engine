@@ -30,6 +30,8 @@ namespace game
 	const uint16_t CHUNKS_WIDTH = 3;
 	// const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
+	std::mutex b2d_mutex;
+
 	// box2d system
 	struct box2d_system : public game_engine::system
 	{
@@ -440,7 +442,7 @@ namespace game
 					switch (tile_type)
 					{
 					case GRASS:
-						if (rand() % 100 == 0)	// 1% chance to try growing grass
+						if (rand() % 20 == 0)	// 1% chance to try growing grass
 						{
 							int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
 							int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
@@ -460,7 +462,7 @@ namespace game
 						break;
 
 					case SAND:
-						if(get_tile_at(x, y + 1) == AIR && tick_count % 16 == 0){
+						if(get_tile_at(x, y + 1) == AIR){
 							set_tile_at(x, y + 1, SAND);
 							set_tile_at(x, y, AIR);
 						}
