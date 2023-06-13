@@ -150,6 +150,10 @@ namespace game
 		{
 			if (!static_bodies.contains(ent))
 				return;
+
+			printf("Here, locking now\n");
+			game::b2d_mutex.lock();
+			printf("Locked\n");
 			b2Body *body = static_bodies.get(ent);
 			b2Fixture *fixtures = body->GetFixtureList();
 			while (fixtures)
@@ -189,6 +193,7 @@ namespace game
 					delete[] vertices;
 				}
 			}
+			game::b2d_mutex.unlock();
 		}
 
 		void remove_static_body(entity ent)

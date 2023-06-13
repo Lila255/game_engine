@@ -601,7 +601,7 @@ namespace game
 
 	const int adjacent_tiles_dx[4] = {0, 1, 0, -1}; // up, right, down, left
 	const int adjacent_tiles_dy[4] = {-1, 0, 1, 0};
-
+	const int offset[4] = {1, 2, 4, 8};
 	uint16_t chunk::get_tile_edginess(int x, int y)
 	{
 		uint16_t edginess = 0;
@@ -614,9 +614,9 @@ namespace game
 			{
 				continue;
 			}
-			if (data[adjacent_y][adjacent_x] == tile_type::AIR)
+			if (data[adjacent_y][adjacent_x] >= SOLID_TILE_START_INDEX)
 			{
-				edginess |= (1 << i);
+				edginess += offset[i];
 			}
 		}
 
@@ -660,6 +660,7 @@ namespace game
 
 	std::vector<std::vector<std::pair<float, float>>> chunk::create_outlines()
 	{
+		auto start = std::chrono::high_resolution_clock::now();
 		// Get all outline edges
 		std::unordered_set<tile_line, tile_line_hash> edge_lines;
 		for (int y = 0; y < CHUNK_SIZE; y++)
@@ -680,6 +681,9 @@ namespace game
 				}
 			}
 		}
+		auto running_duration = std::chrono::high_resolution_clock::now() - start;
+		printf("marching squares: %f mis\n", running_duration.count() / 1000.0);
+		start = std::chrono::high_resolution_clock::now();
 
 		// Create outlines
 		std::vector<std::vector<tile_line>> outlines;
@@ -687,18 +691,38 @@ namespace game
 		{
 			std::vector<tile_line> current_outline;
 			tile_line current_line = *edge_lines.begin();
-			tile_line start_line = current_line;
 			edge_lines.erase(current_line);
 
+			if (current_line.y1 > current_line.y2)
+			{
+				int temp = current_line.y1;
+				current_line.y1 = current_line.y2;
+				current_line.y2 = temp;
+			}
+			if (current_line.x1 < current_line.x2)
+			{
+				int temp = current_line.x1;
+				current_line.x1 = current_line.x2;
+				current_line.x2 = temp;
+			}
+			tile_line start_line = current_line;
 			current_outline.push_back(current_line);
+
+			std::vector<std::pair<int, int>> cross_points;
 
 			do
 			{
+
 				tile_line up_line = {current_line.x2, current_line.y2, current_line.x2, current_line.y2 - 1};
 				tile_line right_line = {current_line.x2, current_line.y2, current_line.x2 + 1, current_line.y2};
 				tile_line down_line = {current_line.x2, current_line.y2, current_line.x2, current_line.y2 + 1};
 				tile_line left_line = {current_line.x2, current_line.y2, current_line.x2 - 1, current_line.y2};
 
+				if (edge_lines.count(up_line) + edge_lines.count(right_line) + edge_lines.count(down_line) + edge_lines.count(left_line) > 2)
+				{
+					// At a crossroads, add to cross_points so we can split the outline later
+					cross_points.push_back({current_line.x2, current_line.y2});
+				}
 				if (edge_lines.count(up_line))
 				{
 					current_line = up_line;
@@ -723,19 +747,109 @@ namespace game
 				edge_lines.erase(current_line);
 
 			} while (!(current_line.x2 == start_line.x1 && current_line.y2 == start_line.y1));
+			// current_outline.push_back(start_line);
 
-			outlines.push_back(current_outline);
+			// Split outline at crossroads, stich together outlines that are split
+			if (cross_points.size() > 0)
+			{
+				std::vector<std::vector<tile_line>> split_outlines(cross_points.size() + 1);
+				
+				uint16_t current_split_outline_index = 0;
+				uint16_t insert_outline_index = 0;
+				bool reached_end = false;
+				std::unordered_set<uint16_t> cross_points_used;
+				for (int i = 0; i < current_outline.size(); i++)
+				{
+					if (!(!insert_outline_index && reached_end) && cross_points[current_split_outline_index].first == current_outline[i].x1 && cross_points[current_split_outline_index].second == current_outline[i].y1)
+					{
+						// reached a crossroad
+						if (reached_end)
+						{
+							current_split_outline_index--;
+							insert_outline_index--;
+							split_outlines[insert_outline_index].push_back(current_outline[i]);
+						}
+						else
+						{
+							if(current_split_outline_index == cross_points.size() - 1)
+							{
+								insert_outline_index++;
+								reached_end = true;
+							} else {
+								current_split_outline_index++;
+								insert_outline_index++;
+							}
+							split_outlines[insert_outline_index].push_back(current_outline[i]);
+						}
+					}
+					else
+					{
+						split_outlines[insert_outline_index].push_back(current_outline[i]);
+					}
+
+					// if (cross_points[current_split_outline_index].first == current_outline[i].x1 && cross_points[current_split_outline_index].second == current_outline[i].y1)
+					// {
+					// 	// reached a crossroad
+					// 	if (reached_end)
+					// 	{
+					// 		current_split_outline_index--;
+					// 		split_outlines[current_split_outline_index].push_back(current_outline[i]);
+					// 	}
+					// 	else
+					// 	{
+					// 		split_outlines.push_back(current_split_outline);
+					// 		current_split_outline.clear();
+					// 		if (current_split_outline_index == cross_points.size())
+					// 		{
+					// 			reached_end = true;
+					// 			// current_split_outline_index--;
+					// 			split_outlines[current_split_outline_index].push_back(current_outline[i]);
+					// 		}
+					// 		else
+					// 		{
+					// 			current_split_outline.push_back(current_outline[i]);
+					// 			current_split_outline_index++;
+					// 		}
+					// 	}
+					// }
+					// else
+					// {
+					// 	if (reached_end)
+					// 	{
+					// 		split_outlines[current_split_outline_index].push_back(current_outline[i]);
+					// 	}
+					// 	else
+					// 	{
+					// 		current_split_outline.push_back(current_outline[i]);
+					// 	}
+					// }
+				}
+
+				for (int i = 0; i < split_outlines.size(); i++)
+				{
+					outlines.push_back(split_outlines[i]);
+				}
+			}
+			else
+			{
+				outlines.push_back(current_outline);
+			}
 		}
+
+		running_duration = std::chrono::high_resolution_clock::now() - start;
+		printf("Connecting edges: %f mis\n", running_duration.count() / 1000.0);
+		start = std::chrono::high_resolution_clock::now();
 
 		std::vector<std::vector<std::pair<float, float>>> outlines_triangles;
 		int vert_retention_count = 4;
 		for (int i = 0; i < outlines.size(); i++)
 		{
 			std::vector<p2t::Point *> outline_points;
-
+			// printf("\nNew outline\n");
 			for (int j = 0; j < outlines[i].size(); j++)
 			{
-				if (outlines[i].size() > 12 || j % vert_retention_count == 0)
+				// printf("%d, %d\n", outlines[i][j].x1, outlines[i][j].y1);
+				if (outlines[i].size() < 12 || j % vert_retention_count == 0)
 				{
 					// should also remove useless points
 					outline_points.push_back(new p2t::Point(outlines[i][j].x1, outlines[i][j].y1));
@@ -744,28 +858,37 @@ namespace game
 			if (outline_points.size() < 3)
 				continue;
 
-			p2t::CDT *cdt = new p2t::CDT(outline_points);
-			cdt->Triangulate();
-			std::vector<p2t::Triangle *> triangles = cdt->GetTriangles();
-
-			std::vector<std::pair<float, float>> outline_triangles;
-
-			for (int j = 0; j < triangles.size(); j++)
+			try
 			{
-				p2t::Point *p1 = triangles[j]->GetPoint(0);
-				p2t::Point *p2 = triangles[j]->GetPoint(1);
-				p2t::Point *p3 = triangles[j]->GetPoint(2);
+				p2t::CDT *cdt = new p2t::CDT(outline_points);
+				cdt->Triangulate();
+				std::vector<p2t::Triangle *> triangles = cdt->GetTriangles();
+				std::vector<std::pair<float, float>> outline_triangles;
 
-				outline_triangles.push_back(std::make_pair(p1->x, p1->y));
-				outline_triangles.push_back(std::make_pair(p2->x, p2->y));
-				outline_triangles.push_back(std::make_pair(p3->x, p3->y));
+				for (int j = 0; j < triangles.size(); j++)
+				{
+					p2t::Point *p1 = triangles[j]->GetPoint(0);
+					p2t::Point *p2 = triangles[j]->GetPoint(1);
+					p2t::Point *p3 = triangles[j]->GetPoint(2);
+
+					outline_triangles.push_back(std::make_pair(p1->x + chunk_x * CHUNK_SIZE, p1->y + chunk_y * CHUNK_SIZE));
+					outline_triangles.push_back(std::make_pair(p2->x + chunk_x * CHUNK_SIZE, p2->y + chunk_y * CHUNK_SIZE));
+					outline_triangles.push_back(std::make_pair(p3->x + chunk_x * CHUNK_SIZE, p3->y + chunk_y * CHUNK_SIZE));
+				}
+
+				outlines_triangles.push_back(outline_triangles);
+				for (p2t::Point *p : outline_points)
+					delete p;
+				delete cdt;
 			}
-
-			outlines_triangles.push_back(outline_triangles);
-			for (p2t::Point *p : outline_points)
-				delete p;
-			delete cdt;
+			catch (std::exception e)
+			{
+				printf("Exception: %s\n", e.what());
+				continue;
+			}
 		}
+		running_duration = std::chrono::high_resolution_clock::now() - start;
+		printf("triangulation: %f mis\n", running_duration.count() / 1000.0);
 
 		return outlines_triangles;
 	}

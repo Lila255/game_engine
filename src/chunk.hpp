@@ -56,7 +56,7 @@ namespace game
 	{
 		int x1, y1, x2, y2;
 		tile_line(int x1, int y1, int x2, int y2) : x1(x1), y1(y1), x2(x2), y2(y2) {}
-		
+
 		// define != operator
 		bool operator!=(const tile_line &other) const
 		{
@@ -138,5 +138,7 @@ namespace game
 		bool delete_circle(int x, int y, int radius);
 	private:
 		uint16_t get_tile_edginess(int x, int y);
+		bool isClockwiseLoop(int start_index, std::vector<game::tile_line> &edges);
+
 	};
 }
