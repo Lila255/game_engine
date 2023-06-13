@@ -367,10 +367,12 @@ namespace game
 	private:
 		std::array<chunk *, NUM_CHUNKS> chunk_data{};
 		std::array<entity, NUM_CHUNKS> chunk_entities;
-		entity all_chunk_ent;
+		
 
 
 	public:
+		entity all_chunk_ent;
+
 		world_tile_system()
 		{
 			// chunk_data = new uint8_t[NUM_CHUNKS];

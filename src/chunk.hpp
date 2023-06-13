@@ -88,6 +88,14 @@ namespace game
 		}
 	};
 
+	struct pair_hash {
+		template <class T1, class T2>
+		std::size_t operator() (const std::pair<T1, T2> &p) const {
+			return std::hash<T1>()(p.first) ^ std::hash<T2>()(p.second * CHUNK_SIZE);
+		}
+	};
+
+
 	struct chunk
 	{
 	public:
@@ -138,7 +146,7 @@ namespace game
 		bool delete_circle(int x, int y, int radius);
 	private:
 		uint16_t get_tile_edginess(int x, int y);
-		bool isClockwiseLoop(int start_index, std::vector<game::tile_line> &edges);
+		
 
 	};
 }

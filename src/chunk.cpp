@@ -708,7 +708,7 @@ namespace game
 			tile_line start_line = current_line;
 			current_outline.push_back(current_line);
 
-			std::vector<std::pair<int, int>> cross_points;
+			std::unordered_set<std::pair<int, int>, pair_hash> cross_points;
 
 			do
 			{
@@ -721,7 +721,7 @@ namespace game
 				if (edge_lines.count(up_line) + edge_lines.count(right_line) + edge_lines.count(down_line) + edge_lines.count(left_line) > 2)
 				{
 					// At a crossroads, add to cross_points so we can split the outline later
-					cross_points.push_back({current_line.x2, current_line.y2});
+					cross_points.insert({current_line.x2, current_line.y2});
 				}
 				if (edge_lines.count(up_line))
 				{
@@ -754,38 +754,59 @@ namespace game
 			{
 				std::vector<std::vector<tile_line>> split_outlines(cross_points.size() + 1);
 				
-				uint16_t current_split_outline_index = 0;
-				uint16_t insert_outline_index = 0;
+				// uint16_t current_split_outline_index = 0;
+				// uint16_t insert_outline_index = 0;
+				
+				uint16_t current_depth = 0;
+				uint16_t max_depth_reached = 0;
 				bool reached_end = false;
-				std::unordered_set<uint16_t> cross_points_used;
+				std::unordered_set<std::pair<int, int>, pair_hash> cross_points_used;
+
 				for (int i = 0; i < current_outline.size(); i++)
 				{
-					if (!(!insert_outline_index && reached_end) && cross_points[current_split_outline_index].first == current_outline[i].x1 && cross_points[current_split_outline_index].second == current_outline[i].y1)
+					if (cross_points.count({current_outline[i].x1, current_outline[i].y1}))
 					{
-						// reached a crossroad
-						if (reached_end)
+						if (cross_points_used.count({current_outline[i].x1, current_outline[i].y1}))
 						{
-							current_split_outline_index--;
-							insert_outline_index--;
-							split_outlines[insert_outline_index].push_back(current_outline[i]);
+							current_depth--;
 						}
 						else
 						{
-							if(current_split_outline_index == cross_points.size() - 1)
-							{
-								insert_outline_index++;
-								reached_end = true;
-							} else {
-								current_split_outline_index++;
-								insert_outline_index++;
-							}
-							split_outlines[insert_outline_index].push_back(current_outline[i]);
+							cross_points_used.insert({current_outline[i].x1, current_outline[i].y1});
+							current_depth = ++max_depth_reached;
+							continue;
 						}
 					}
-					else
-					{
-						split_outlines[insert_outline_index].push_back(current_outline[i]);
-					}
+
+					split_outlines[current_depth].push_back(current_outline[i]);
+					
+
+					// if (!(!insert_outline_index && reached_end) && cross_points[current_split_outline_index].first == current_outline[i].x1 && cross_points[current_split_outline_index].second == current_outline[i].y1)
+					// {
+					// 	// reached a crossroad
+					// 	if (reached_end)
+					// 	{
+					// 		current_split_outline_index--;
+					// 		insert_outline_index--;
+					// 		split_outlines[insert_outline_index].push_back(current_outline[i]);
+					// 	}
+					// 	else
+					// 	{
+					// 		if(current_split_outline_index == cross_points.size() - 1)
+					// 		{
+					// 			insert_outline_index++;
+					// 			reached_end = true;
+					// 		} else {
+					// 			current_split_outline_index++;
+					// 			insert_outline_index++;
+					// 		}
+					// 		split_outlines[insert_outline_index].push_back(current_outline[i]);
+					// 	}
+					// }
+					// else
+					// {
+					// 	split_outlines[insert_outline_index].push_back(current_outline[i]);
+					// }
 
 					// if (cross_points[current_split_outline_index].first == current_outline[i].x1 && cross_points[current_split_outline_index].second == current_outline[i].y1)
 					// {
@@ -824,6 +845,16 @@ namespace game
 					// 	}
 					// }
 				}
+
+				// for (int i = 0; i < split_outlines.size(); i++)
+				// {
+				// 	std::vector<tile_line> &outline = split_outlines[i];
+				// 	if (outline.size() < 3)
+				// 	{
+				// 		throw std::runtime_error("Outline has less than 3 points");
+				// 	}
+				// 	if(outline)
+				// }
 
 				for (int i = 0; i < split_outlines.size(); i++)
 				{

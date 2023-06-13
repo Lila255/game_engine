@@ -149,6 +149,8 @@ void start_physics_thread()
 	game_engine::engine * engine_ptr = game_engine::game_engine_pointer;
 	game::box2d_system *b2d_sys = (game::box2d_system *)(engine_ptr->get_system(game_engine::family::type<game::box2d_system>()));
 	game::world_tile_system *world_sys = (game::world_tile_system *)(engine_ptr->get_system(game_engine::family::type<game::world_tile_system>()));
+	game_engine::render_system *render_sys = (game_engine::render_system *)(engine_ptr->get_system(game_engine::family::type<game_engine::render_system>()));
+
 	printf("Statring physics thread\n");
 
 	const int tick_rate = 20;
@@ -168,6 +170,9 @@ void start_physics_thread()
 		{
 			game::chunk *c = chunks->at(i);
 			chunks_outlines.push_back(c->create_outlines());
+
+			// render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(&(c->data)), (i % game::NUM_CHUNKS) * game::CHUNK_SIZE, (i / game::NUM_CHUNKS) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
+
 		}
 		chunk_outlines = chunks_outlines;
 		
@@ -178,6 +183,7 @@ void start_physics_thread()
 			b2d_sys->update_static_outlines(e, chunks_outlines[i]);
 		}
 		
+
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		printf("Physics loop took %lld ms\n", duration);
@@ -492,6 +498,12 @@ void run_game(GLFWwindow *window)
 		game::b2d_mutex.lock();
 		box2d_sys->update(last_time_taken);
 		game::b2d_mutex.unlock();
+
+		// for(int c = 0; c < game::NUM_CHUNKS; c++)
+		// {
+		// 	render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(&((world_sys->get_chunks())->at(c)->data)), (c % game::NUM_CHUNKS) * game::CHUNK_SIZE, (c / game::NUM_CHUNKS) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
+		// }
+		
 		auto after_b2d = std::chrono::high_resolution_clock::now();
 		
 		auto duration_b2d = std::chrono::duration_cast<std::chrono::microseconds>(after_b2d - before_b2d);
@@ -593,31 +605,31 @@ void run_game(GLFWwindow *window)
 		glUniformMatrix4fv(projection_location, 1, GL_FALSE, game_engine::projection_matrix);
 		GLuint view_location = glGetUniformLocation(game_engine::shader_programs[1], "view");
 		glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
-		for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
-		{
-			// printf("rendering outlines for a chunk\n");
-			for (std::vector<std::pair<float, float>> &outline : chunk_outline)
-			{
-				for (int i = 0; i < outline.size() - 2; i += 3)
-				{
-					// printf("Line: %d\n", i);
-					std::pair<float, float> p1 = outline[i];
-					std::pair<float, float> p2 = outline[i + 1];
-					std::pair<float, float> p3 = outline[i + 2];
-					render_sys->draw_line(p1.first, p1.second, -3.0f, p2.first, p2.second, -3.0f);
-					render_sys->draw_line(p2.first, p2.second, -3.0f, p3.first, p3.second, -3.0f);
-					render_sys->draw_line(p3.first, p3.second, -3.0f, p1.first, p1.second, -3.0f);
-				}
-				// for (int i = 0; i < outline.size() - 1; i += 1)
-				// {
-				//     // Non-triangulated outlines
-				//     std::pair<float, float> p1 = outline[i];
-				//     std::pair<float, float> p2 = outline[i + 1];
-				//     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
-				// }
-				// game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
-			}
-		}
+		// for (std::vector<std::vector<std::pair<float, float>>> &chunk_outline : chunk_outlines)
+		// {
+		// 	// printf("rendering outlines for a chunk\n");
+		// 	for (std::vector<std::pair<float, float>> &outline : chunk_outline)
+		// 	{
+		// 		for (int i = 0; i < outline.size() - 2; i += 3)
+		// 		{
+		// 			// printf("Line: %d\n", i);
+		// 			std::pair<float, float> p1 = outline[i];
+		// 			std::pair<float, float> p2 = outline[i + 1];
+		// 			std::pair<float, float> p3 = outline[i + 2];
+		// 			render_sys->draw_line(p1.first, p1.second, -3.0f, p2.first, p2.second, -3.0f);
+		// 			render_sys->draw_line(p2.first, p2.second, -3.0f, p3.first, p3.second, -3.0f);
+		// 			render_sys->draw_line(p3.first, p3.second, -3.0f, p1.first, p1.second, -3.0f);
+		// 		}
+		// 		// for (int i = 0; i < outline.size() - 1; i += 1)
+		// 		// {
+		// 		//     // Non-triangulated outlines
+		// 		//     std::pair<float, float> p1 = outline[i];
+		// 		//     std::pair<float, float> p2 = outline[i + 1];
+		// 		//     game_engine::draw_line(p1.first, p1.second, -2.0f, p2.first, p2.second, -2.0f);
+		// 		// }
+		// 		// game_engine::draw_line(outline[outline.size() - 1].first, outline[outline.size() - 1].second, -2.0f, outline[0].first, outline[0].second, -2.0f);
+		// 	}
+		// }
 
 		glFinish();
 
@@ -680,7 +692,7 @@ int main()
 
 	// glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, game_engine::window_width, game_engine::window_height, GLFW_DONT_CARE);
 
-	// glfwSwapInterval(0);
+	glfwSwapInterval(0);
 
 	// Init glew
 	err = glewInit();
