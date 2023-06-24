@@ -151,9 +151,9 @@ namespace game
 			if (!static_bodies.contains(ent))
 				return;
 
-			printf("Here, locking now\n");
+			// printf("Here, locking now\n");
 			game::b2d_mutex.lock();
-			printf("Locked\n");
+			// printf("Locked\n");
 			b2Body *body = static_bodies.get(ent);
 			b2Fixture *fixtures = body->GetFixtureList();
 			while (fixtures)
@@ -332,8 +332,8 @@ namespace game
 		void update(uint64_t time_to_step)
 		{
 
-			// world->Step((double)time_to_step / 1000.0, 6, 2);
-			world->Step(1.0f / 144.0f, 6, 2);
+			world->Step((double)time_to_step / 1000000.0, 6, 2);
+			// world->Step(1.0f / 144.0f, 6, 2);
 
 			b2Body *body = dynamic_bodies.get(game_engine::game_engine_pointer->player_entitiy);
 			b2Vec2 position = body->GetPosition();
@@ -472,6 +472,19 @@ namespace game
 						if(get_tile_at(x, y + 1) == AIR){
 							set_tile_at(x, y + 1, SAND);
 							set_tile_at(x, y, AIR);
+						} else {
+							// bool down_left = get_tile_at(x - 1, y + 1) == AIR;
+							// bool down_right = get_tile_at(x + 1, y + 1) == AIR;
+							// if(down_left)
+							// {
+							// 	set_tile_at(x - 1, y + 1, SAND);
+							// 	set_tile_at(x, y, AIR);
+							// }
+							// else if(down_right)
+							// {
+							// 	set_tile_at(x + 1, y + 1, SAND);
+							// 	set_tile_at(x, y, AIR);
+							// }
 						}
 						break;
 					}

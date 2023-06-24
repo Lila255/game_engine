@@ -20,6 +20,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 	{
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
+		game::b2d_mutex.lock();
 		b2Body *body = b2d_sys->get_dynamic_body(player);
 		// if body is touching something
 		if (body->GetContactList() != NULL)
@@ -43,6 +44,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 			// b2Vec2 impulse = b2Vec2(0.0f, -1000.1f);
 			// body->ApplyLinearImpulseToCenter(impulse, true);
 		}
+		game::b2d_mutex.unlock();
 		// b2Vec2 impulse = b2Vec2(0.0f, -100.1f);
 		// body->ApplyLinearImpulseToCenter(impulse, true);
 	}
@@ -144,6 +146,11 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 
 uint8_t physics_loop_running = 1;
 
+void do_outlining(game::chunk c, std::vector<std::vector<std::pair<float, float>>> * chunk_outline)
+{
+	*chunk_outline = c.create_outlines();
+}
+
 void start_physics_thread()
 {
 	game_engine::engine * engine_ptr = game_engine::game_engine_pointer;
@@ -151,36 +158,38 @@ void start_physics_thread()
 	game::world_tile_system *world_sys = (game::world_tile_system *)(engine_ptr->get_system(game_engine::family::type<game::world_tile_system>()));
 	game_engine::render_system *render_sys = (game_engine::render_system *)(engine_ptr->get_system(game_engine::family::type<game_engine::render_system>()));
 
-	printf("Statring physics thread\n");
 
 	const int tick_rate = 20;
 	const uint64_t tick_count = 0;
 	while (physics_loop_running)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
-		printf("Looping\n");
 
 		world_sys->update(tick_count);
 
 		std::array<entity, game::NUM_CHUNKS> chunk_entities = world_sys->get_chunk_entities();
 		std::array<game::chunk *, game::NUM_CHUNKS> * chunks = world_sys->get_chunks();
 		
-		std::vector<std::vector<std::vector<std::pair<float, float>>>> chunks_outlines;
+		std::vector<std::vector<std::vector<std::pair<float, float>>> *> chunks_outlines;
+		std::vector<std::thread> threads;
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
 			game::chunk *c = chunks->at(i);
-			chunks_outlines.push_back(c->create_outlines());
+			chunks_outlines.push_back(new std::vector<std::vector<std::pair<float, float>>>());
+			// std::thread t(do_outlining, *c, chunks_outlines[i]);
+			threads.push_back(std::thread(do_outlining, *c, chunks_outlines[i]));
+			// chunks_outlines.push_back(c->create_outlines());
 
 			// render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(&(c->data)), (i % game::NUM_CHUNKS) * game::CHUNK_SIZE, (i / game::NUM_CHUNKS) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
 
 		}
-		chunk_outlines = chunks_outlines;
+		// chunk_outlines = chunks_outlines;
 		
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
 			entity e = chunk_entities[i];
-
-			b2d_sys->update_static_outlines(e, chunks_outlines[i]);
+			threads[i].join();
+			b2d_sys->update_static_outlines(e, *(chunks_outlines[i]));
 		}
 		
 
@@ -190,7 +199,7 @@ void start_physics_thread()
 		
 		
 		// sleep for 1 / tick_rate seconds
-		if(duration < 1000000.0 / tick_rate)
+		if(duration < 1000.0 / tick_rate)
 			std::this_thread::sleep_for(std::chrono::milliseconds(uint64_t((1000 - duration / 1000.0) / tick_rate)));
 	}
 }
@@ -484,29 +493,22 @@ void run_game(GLFWwindow *window)
 
 	uint16_t saved_light_textures = 0;
 	uint16_t light_texture_index = 0;
-	uint64_t last_time_taken = 0;
+	uint64_t last_time_taken_micro = 0;
 	uint64_t counter = 0;
 	// Run the game loop
 	while (!glfwWindowShouldClose(window))
 	{
-		// printf("start_of_loop: %d\n", glGetError());
-
-		uint64_t start_time = glfwGetTimerValue();
-		// draw lines for chunk outlines
-		auto before_b2d = std::chrono::high_resolution_clock::now();
+		auto start_rendering_loop = std::chrono::high_resolution_clock::now();
 
 		game::b2d_mutex.lock();
-		box2d_sys->update(last_time_taken);
+		box2d_sys->update(last_time_taken_micro);
 		game::b2d_mutex.unlock();
 
-		// for(int c = 0; c < game::NUM_CHUNKS; c++)
-		// {
-		// 	render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(&((world_sys->get_chunks())->at(c)->data)), (c % game::NUM_CHUNKS) * game::CHUNK_SIZE, (c / game::NUM_CHUNKS) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
-		// }
+		for(int c = 0; c < game::NUM_CHUNKS; c++)
+		{
+			render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(&((world_sys->get_chunks())->at(c)->data)), (c % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (c / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
+		}
 		
-		auto after_b2d = std::chrono::high_resolution_clock::now();
-		
-		auto duration_b2d = std::chrono::duration_cast<std::chrono::microseconds>(after_b2d - before_b2d);
 		// printf("b2d_time: %lums\n", duration_b2d.count() / 1000);
 
 		game_engine::box &b = box_sys->get(player_entity);
@@ -638,7 +640,12 @@ void run_game(GLFWwindow *window)
 		if (light_texture_index == light_texture_count)
 			light_texture_index = 0;
 
-		last_time_taken = glfwGetTimerValue() - start_time;
+		
+		auto end_rendering_loop = std::chrono::high_resolution_clock::now();
+		
+		auto loop_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_rendering_loop - start_rendering_loop);
+
+		last_time_taken_micro = loop_duration.count();
 		counter++;
 	}
 	physics_loop_running = false;

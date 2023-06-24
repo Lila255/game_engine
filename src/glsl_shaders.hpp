@@ -225,7 +225,7 @@ namespace glsl_helper
 				// float hue = (float(hue_value) / 4294967295.0) * 360.0;
 				// vec3 rgb = hsv2rgb(hue);
 				float inverse_alpha = 0.0;
-				if(value > 100) {
+				if(value > 20) {
 					inverse_alpha = value / 1250.0;
 				} else {
 					inverse_alpha = blurred_value / 1500.0;

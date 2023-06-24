@@ -660,7 +660,7 @@ namespace game
 
 	std::vector<std::vector<std::pair<float, float>>> chunk::create_outlines()
 	{
-		auto start = std::chrono::high_resolution_clock::now();
+		// auto start = std::chrono::high_resolution_clock::now();
 		// Get all outline edges
 		std::unordered_set<tile_line, tile_line_hash> edge_lines;
 		for (int y = 0; y < CHUNK_SIZE; y++)
@@ -681,9 +681,9 @@ namespace game
 				}
 			}
 		}
-		auto running_duration = std::chrono::high_resolution_clock::now() - start;
-		printf("marching squares: %f mis\n", running_duration.count() / 1000.0);
-		start = std::chrono::high_resolution_clock::now();
+		// auto running_duration = std::chrono::high_resolution_clock::now() - start;
+		// // printf("marching squares: %f mis\n", running_duration.count() / 1000.0);
+		// start = std::chrono::high_resolution_clock::now();
 
 		// Create outlines
 		std::vector<std::vector<tile_line>> outlines;
@@ -693,13 +693,13 @@ namespace game
 			tile_line current_line = *edge_lines.begin();
 			edge_lines.erase(current_line);
 
-			if (current_line.y1 > current_line.y2)
+			if (current_line.y1 < current_line.y2)
 			{
 				int temp = current_line.y1;
 				current_line.y1 = current_line.y2;
 				current_line.y2 = temp;
 			}
-			if (current_line.x1 < current_line.x2)
+			if (current_line.x1 > current_line.x2)
 			{
 				int temp = current_line.x1;
 				current_line.x1 = current_line.x2;
@@ -749,18 +749,25 @@ namespace game
 			} while (!(current_line.x2 == start_line.x1 && current_line.y2 == start_line.y1));
 			// current_outline.push_back(start_line);
 
+			if (chunk_x == 1 && chunk_y == 1)
+			{
+				printf("hre\n");
+			}
+
 			// Split outline at crossroads, stich together outlines that are split
 			if (cross_points.size() > 0)
 			{
 				std::vector<std::vector<tile_line>> split_outlines(cross_points.size() + 1);
-				
+
 				// uint16_t current_split_outline_index = 0;
 				// uint16_t insert_outline_index = 0;
-				
+
 				uint16_t current_depth = 0;
 				uint16_t max_depth_reached = 0;
 				bool reached_end = false;
 				std::unordered_set<std::pair<int, int>, pair_hash> cross_points_used;
+
+				std::unordered_set<uint16_t> reverse_loops;
 
 				for (int i = 0; i < current_outline.size(); i++)
 				{
@@ -769,17 +776,20 @@ namespace game
 						if (cross_points_used.count({current_outline[i].x1, current_outline[i].y1}))
 						{
 							current_depth--;
+							split_outlines[current_depth].push_back(current_outline[i]);
+							// continue;
 						}
 						else
 						{
 							cross_points_used.insert({current_outline[i].x1, current_outline[i].y1});
 							current_depth = ++max_depth_reached;
-							continue;
+							split_outlines[current_depth].push_back(current_outline[i]);
 						}
 					}
-
-					split_outlines[current_depth].push_back(current_outline[i]);
-					
+					else
+					{
+						split_outlines[current_depth].push_back(current_outline[i]);
+					}
 
 					// if (!(!insert_outline_index && reached_end) && cross_points[current_split_outline_index].first == current_outline[i].x1 && cross_points[current_split_outline_index].second == current_outline[i].y1)
 					// {
@@ -856,6 +866,10 @@ namespace game
 				// 	if(outline)
 				// }
 
+				if (chunk_x == 1 && chunk_y == 1)
+				{
+					printf("hre\n");
+				}
 				for (int i = 0; i < split_outlines.size(); i++)
 				{
 					outlines.push_back(split_outlines[i]);
@@ -867,9 +881,9 @@ namespace game
 			}
 		}
 
-		running_duration = std::chrono::high_resolution_clock::now() - start;
-		printf("Connecting edges: %f mis\n", running_duration.count() / 1000.0);
-		start = std::chrono::high_resolution_clock::now();
+		// running_duration = std::chrono::high_resolution_clock::now() - start;
+		// printf("Connecting edges: %f mis\n", running_duration.count() / 1000.0);
+		// start = std::chrono::high_resolution_clock::now();
 
 		std::vector<std::vector<std::pair<float, float>>> outlines_triangles;
 		int vert_retention_count = 4;
@@ -918,8 +932,8 @@ namespace game
 				continue;
 			}
 		}
-		running_duration = std::chrono::high_resolution_clock::now() - start;
-		printf("triangulation: %f mis\n", running_duration.count() / 1000.0);
+		// running_duration = std::chrono::high_resolution_clock::now() - start;
+		// printf("triangulation: %f mis\n", running_duration.count() / 1000.0);
 
 		return outlines_triangles;
 	}
