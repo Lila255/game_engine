@@ -41,13 +41,13 @@ namespace game
 
 	};
 
-	struct linef
+	struct tile_linef
 	{
 		float x1, y1, x2, y2;
 	};
 	struct linef_hash
 	{
-		std::size_t operator()(const linef &l) const
+		std::size_t operator()(const tile_linef &l) const
 		{
 			return std::hash<float>()(l.x1) ^ std::hash<float>()(l.y1) ^ std::hash<float>()(l.x2) ^ std::hash<float>()(l.y2);
 		}
@@ -94,7 +94,13 @@ namespace game
 			return std::hash<T1>()(p.first) ^ std::hash<T2>()(p.second * CHUNK_SIZE);
 		}
 	};
-
+	struct chunk_coord_pair_hash {
+		template <class T1, class T2>
+		std::size_t operator() (const std::pair<T1, T2> &p) const {
+			return std::hash<T1>()(p.first) + std::hash<T2>()(p.second) * CHUNK_SIZE;
+		}
+	};
+	
 
 	struct chunk
 	{

@@ -57,6 +57,11 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		b2Vec2 impulse = b2Vec2(-15.1f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
+
+	 {
+		printf("5");
+	}
+
 	// s
 	if (keys.count(GLFW_KEY_S) > 0)
 	{
@@ -176,15 +181,8 @@ void start_physics_thread()
 		{
 			game::chunk *c = chunks->at(i);
 			chunks_outlines.push_back(new std::vector<std::vector<std::pair<float, float>>>());
-			// std::thread t(do_outlining, *c, chunks_outlines[i]);
 			threads.push_back(std::thread(do_outlining, *c, chunks_outlines[i]));
-			// chunks_outlines.push_back(c->create_outlines());
-
-			// render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(&(c->data)), (i % game::NUM_CHUNKS) * game::CHUNK_SIZE, (i / game::NUM_CHUNKS) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
-
 		}
-		// chunk_outlines = chunks_outlines;
-		
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
 			entity e = chunk_entities[i];

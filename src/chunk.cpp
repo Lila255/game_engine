@@ -599,8 +599,8 @@ namespace game
 	// 	// return outlines_triangles;
 	// }
 
-	const int adjacent_tiles_dx[4] = {0, 1, 0, -1}; // up, right, down, left
-	const int adjacent_tiles_dy[4] = {-1, 0, 1, 0};
+	const int adjacent_tiles_dx[4] = {-1, 0, 0, -1};
+	const int adjacent_tiles_dy[4] = {0, 0, -1, -1};
 	const int offset[4] = {1, 2, 4, 8};
 	uint16_t chunk::get_tile_edginess(int x, int y)
 	{
@@ -623,46 +623,31 @@ namespace game
 		return edginess;
 	}
 
-#define top_line_def \
-	{                \
-		0, 0, 1, 0   \
-	}
-#define right_line_def \
-	{                  \
-		1, 0, 1, 1     \
-	}
-#define bottom_line_def \
-	{                   \
-		1, 1, 0, 1      \
-	}
-#define left_line_def \
-	{                 \
-		0, 1, 0, 0    \
-	}
-
-	const std::array<std::vector<tile_line>, 16> edges_lines = {
-		{{top_line_def, right_line_def, bottom_line_def, left_line_def},
-		 {right_line_def, bottom_line_def, left_line_def},
-		 {top_line_def, bottom_line_def, left_line_def},
-		 {bottom_line_def, left_line_def},
-		 {top_line_def, right_line_def, left_line_def},
-		 {right_line_def, left_line_def},
-		 {top_line_def, left_line_def},
-		 {left_line_def},
-		 {top_line_def, right_line_def, bottom_line_def},
-		 {right_line_def, bottom_line_def},
-		 {top_line_def, bottom_line_def},
-		 {bottom_line_def},
-		 {top_line_def, right_line_def},
-		 {right_line_def},
-		 {top_line_def},
-		 {{}}}};
+	const std::array<std::vector<tile_linef>, 16> edges_lines = {
+		{{},
+		 {{-0.5, 0, 0, 0.5}},
+		 {{0, 0.5, 0.5, 0}},
+		 {{-0.5, 0, 0.5, 0}},
+		 {{0, -0.5, 0.5, 0}},
+		 {{-0.5, 0, 0, -0.5}, {0, 0.5, 0.5, 0}},
+		 {{0, 0.5, 0, -0.5}},
+		 {{-0.5, 0, 0, -0.5}},
+		 {{-0.5, 0, 0, -0.5}},
+		 {{0, -0.5, 0, 0.5}},
+		 {{-0.5, 0, 0, 0.5}, {0, -0.5, 0.5, 0}},
+		 {{0, -0.5, 0.5, 0}},
+		 {{-0.5, 0, 0.5, 0}},
+		 {{0, 0.5, 0.5, 0}},
+		 {{-0.5, 0, 0, 0.5}},
+		 {}}};
 
 	std::vector<std::vector<std::pair<float, float>>> chunk::create_outlines()
 	{
-		// auto start = std::chrono::high_resolution_clock::now();
-		// Get all outline edges
-		std::unordered_set<tile_line, tile_line_hash> edge_lines;
+		std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines;
+		std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines_other_way;
+		std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines_II;
+		std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines_other_way_II;
+
 		for (int y = 0; y < CHUNK_SIZE; y++)
 		{
 			for (int x = 0; x < CHUNK_SIZE; x++)
@@ -670,216 +655,88 @@ namespace game
 				if (data[y][x] >= SOLID_TILE_START_INDEX)
 				{
 					uint16_t edginess = get_tile_edginess(x, y);
-					for (tile_line line : edges_lines[edginess])
+					for (tile_linef line : edges_lines[edginess])
 					{
 						line.x1 += x;
 						line.y1 += y;
 						line.x2 += x;
 						line.y2 += y;
-						edge_lines.insert(line);
+						if (!edge_lines.count({line.x1, line.y1}))
+						{
+							edge_lines[{line.x1, line.y1}] = {line.x2, line.y2};
+							// edge_lines_other_way[{line.x2, line.y2}] = {line.x1, line.y1};
+						} else {
+							edge_lines_II[{line.x1, line.y1}] = {line.x2, line.y2};
+							// edge_lines_other_way_II[{line.x2, line.y2}] = {line.x1, line.y1};
+						}
+						
 					}
 				}
 			}
 		}
-		// auto running_duration = std::chrono::high_resolution_clock::now() - start;
-		// // printf("marching squares: %f mis\n", running_duration.count() / 1000.0);
-		// start = std::chrono::high_resolution_clock::now();
 
-		// Create outlines
-		std::vector<std::vector<tile_line>> outlines;
+		// add lines in reverse direction to other_way maps
+		for (auto it = edge_lines.begin(); it != edge_lines.end(); ++it)
+		{
+			// edge_lines_other_way[it->second] = it->first;
+			if(edge_lines_other_way.count(it->second) && edge_lines_other_way[it->second] == it->first)
+				continue;	// already added
+			
+		}
+
+		std::vector<std::vector<std::pair<float, float>>> outlines;
 		while (!edge_lines.empty())
 		{
-			std::vector<tile_line> current_outline;
-			tile_line current_line = *edge_lines.begin();
-			edge_lines.erase(current_line);
+			std::vector<std::pair<float, float>> current_outline;
 
-			if (current_line.y1 < current_line.y2)
+			std::pair<float, float> start_point = edge_lines.begin()->first;
+			current_outline.push_back(start_point);
+			std::pair<float, float> current_point = edge_lines.begin()->second;
+			edge_lines.erase(start_point);
+			if (edge_lines_other_way.count(current_point) && edge_lines_other_way[current_point] == start_point)
 			{
-				int temp = current_line.y1;
-				current_line.y1 = current_line.y2;
-				current_line.y2 = temp;
+				edge_lines_other_way.erase(current_point);
 			}
-			if (current_line.x1 > current_line.x2)
-			{
-				int temp = current_line.x1;
-				current_line.x1 = current_line.x2;
-				current_line.x2 = temp;
-			}
-			tile_line start_line = current_line;
-			current_outline.push_back(current_line);
-
-			std::unordered_set<std::pair<int, int>, pair_hash> cross_points;
 
 			do
 			{
+				current_outline.push_back(current_point);
+				if (edge_lines.count(current_point))
+				{
+					std::pair<float, float> next_point = edge_lines[current_point];
+					edge_lines.erase(current_point);
 
-				tile_line up_line = {current_line.x2, current_line.y2, current_line.x2, current_line.y2 - 1};
-				tile_line right_line = {current_line.x2, current_line.y2, current_line.x2 + 1, current_line.y2};
-				tile_line down_line = {current_line.x2, current_line.y2, current_line.x2, current_line.y2 + 1};
-				tile_line left_line = {current_line.x2, current_line.y2, current_line.x2 - 1, current_line.y2};
-
-				if (edge_lines.count(up_line) + edge_lines.count(right_line) + edge_lines.count(down_line) + edge_lines.count(left_line) > 2)
-				{
-					// At a crossroads, add to cross_points so we can split the outline later
-					cross_points.insert({current_line.x2, current_line.y2});
+					if (edge_lines_other_way.count(next_point) && edge_lines_other_way[next_point] == current_point)
+					{
+						edge_lines_other_way.erase(next_point);
+					}
+					current_point = next_point;
 				}
-				if (edge_lines.count(up_line))
+				else if (edge_lines_other_way.count(current_point))
 				{
-					current_line = up_line;
-				}
-				else if (edge_lines.count(right_line))
-				{
-					current_line = right_line;
-				}
-				else if (edge_lines.count(down_line))
-				{
-					current_line = down_line;
-				}
-				else if (edge_lines.count(left_line))
-				{
-					current_line = left_line;
+					std::pair<float, float> next_point = edge_lines_other_way[current_point];
+					edge_lines_other_way.erase(current_point);
+					if (edge_lines.count(next_point) && edge_lines[next_point] == current_point)
+					{
+						edge_lines.erase(next_point);
+					}
+					current_point = next_point;
 				}
 				else
 				{
+					// printf("Error: outline ended prematurely\n");
 					break;
 				}
-				current_outline.push_back(current_line);
-				edge_lines.erase(current_line);
 
-			} while (!(current_line.x2 == start_line.x1 && current_line.y2 == start_line.y1));
-			// current_outline.push_back(start_line);
+			} while (1);
 
-			if (chunk_x == 1 && chunk_y == 1)
-			{
-				printf("hre\n");
-			}
-
-			// Split outline at crossroads, stich together outlines that are split
-			if (cross_points.size() > 0)
-			{
-				std::vector<std::vector<tile_line>> split_outlines(cross_points.size() + 1);
-
-				// uint16_t current_split_outline_index = 0;
-				// uint16_t insert_outline_index = 0;
-
-				uint16_t current_depth = 0;
-				uint16_t max_depth_reached = 0;
-				bool reached_end = false;
-				std::unordered_set<std::pair<int, int>, pair_hash> cross_points_used;
-
-				std::unordered_set<uint16_t> reverse_loops;
-
-				for (int i = 0; i < current_outline.size(); i++)
-				{
-					if (cross_points.count({current_outline[i].x1, current_outline[i].y1}))
-					{
-						if (cross_points_used.count({current_outline[i].x1, current_outline[i].y1}))
-						{
-							current_depth--;
-							split_outlines[current_depth].push_back(current_outline[i]);
-							// continue;
-						}
-						else
-						{
-							cross_points_used.insert({current_outline[i].x1, current_outline[i].y1});
-							current_depth = ++max_depth_reached;
-							split_outlines[current_depth].push_back(current_outline[i]);
-						}
-					}
-					else
-					{
-						split_outlines[current_depth].push_back(current_outline[i]);
-					}
-
-					// if (!(!insert_outline_index && reached_end) && cross_points[current_split_outline_index].first == current_outline[i].x1 && cross_points[current_split_outline_index].second == current_outline[i].y1)
-					// {
-					// 	// reached a crossroad
-					// 	if (reached_end)
-					// 	{
-					// 		current_split_outline_index--;
-					// 		insert_outline_index--;
-					// 		split_outlines[insert_outline_index].push_back(current_outline[i]);
-					// 	}
-					// 	else
-					// 	{
-					// 		if(current_split_outline_index == cross_points.size() - 1)
-					// 		{
-					// 			insert_outline_index++;
-					// 			reached_end = true;
-					// 		} else {
-					// 			current_split_outline_index++;
-					// 			insert_outline_index++;
-					// 		}
-					// 		split_outlines[insert_outline_index].push_back(current_outline[i]);
-					// 	}
-					// }
-					// else
-					// {
-					// 	split_outlines[insert_outline_index].push_back(current_outline[i]);
-					// }
-
-					// if (cross_points[current_split_outline_index].first == current_outline[i].x1 && cross_points[current_split_outline_index].second == current_outline[i].y1)
-					// {
-					// 	// reached a crossroad
-					// 	if (reached_end)
-					// 	{
-					// 		current_split_outline_index--;
-					// 		split_outlines[current_split_outline_index].push_back(current_outline[i]);
-					// 	}
-					// 	else
-					// 	{
-					// 		split_outlines.push_back(current_split_outline);
-					// 		current_split_outline.clear();
-					// 		if (current_split_outline_index == cross_points.size())
-					// 		{
-					// 			reached_end = true;
-					// 			// current_split_outline_index--;
-					// 			split_outlines[current_split_outline_index].push_back(current_outline[i]);
-					// 		}
-					// 		else
-					// 		{
-					// 			current_split_outline.push_back(current_outline[i]);
-					// 			current_split_outline_index++;
-					// 		}
-					// 	}
-					// }
-					// else
-					// {
-					// 	if (reached_end)
-					// 	{
-					// 		split_outlines[current_split_outline_index].push_back(current_outline[i]);
-					// 	}
-					// 	else
-					// 	{
-					// 		current_split_outline.push_back(current_outline[i]);
-					// 	}
-					// }
-				}
-
-				// for (int i = 0; i < split_outlines.size(); i++)
-				// {
-				// 	std::vector<tile_line> &outline = split_outlines[i];
-				// 	if (outline.size() < 3)
-				// 	{
-				// 		throw std::runtime_error("Outline has less than 3 points");
-				// 	}
-				// 	if(outline)
-				// }
-
-				if (chunk_x == 1 && chunk_y == 1)
-				{
-					printf("hre\n");
-				}
-				for (int i = 0; i < split_outlines.size(); i++)
-				{
-					outlines.push_back(split_outlines[i]);
-				}
-			}
-			else
-			{
-				outlines.push_back(current_outline);
-			}
+			// current_outline.push_back(current_point);
+			outlines.push_back(current_outline);
 		}
+
+		// running_duration = std::chrono::high_resolution_clock::now() - start;
+		// printf("Connecting edges: %f mis\n", running_duration.count() / 1000.0);
+		// start = std::chrono::high_resolution_clock::now();
 
 		// running_duration = std::chrono::high_resolution_clock::now() - start;
 		// printf("Connecting edges: %f mis\n", running_duration.count() / 1000.0);
@@ -897,7 +754,7 @@ namespace game
 				if (outlines[i].size() < 12 || j % vert_retention_count == 0)
 				{
 					// should also remove useless points
-					outline_points.push_back(new p2t::Point(outlines[i][j].x1, outlines[i][j].y1));
+					outline_points.push_back(new p2t::Point(outlines[i][j].first, outlines[i][j].second));
 				}
 			}
 			if (outline_points.size() < 3)
