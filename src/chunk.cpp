@@ -10,8 +10,8 @@ namespace game
 		{
 			for (int x = 0; x < CHUNK_SIZE; x++)
 			{
-				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 35.0;
-				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 35.0;
+				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 25.0;
+				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 25.0;
 				double noise_1 = perlin_noise_1.noise2D_01(n_x, n_y);
 				double noise_2 = perlin_noise_2.noise2D_01(n_x, n_y);
 				double noise_3 = perlin_noise_3.noise2D_01(n_x, n_y);
@@ -599,7 +599,7 @@ namespace game
 	// 	// return outlines_triangles;
 	// }
 
-	const int adjacent_tiles_dx[4] = {-1, 0, 0, -1};
+	const int adjacent_tiles_dx[4] = {-1, 0, 0, -1};	// bottom left, bottom right, top right, top left
 	const int adjacent_tiles_dy[4] = {0, 0, -1, -1};
 	const int offset[4] = {1, 2, 4, 8};
 	uint16_t chunk::get_tile_edginess(int x, int y)
@@ -641,9 +641,78 @@ namespace game
 		 {{-0.5, 0, 0, 0.5}},
 		 {}}};
 
-	std::vector<std::vector<std::pair<float, float>>> chunk::create_outlines()
+	struct line_mapping_pair
 	{
-		std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines;
+		std::pair<float, float> p1{-1, -1};
+		std::pair<float, float> p2{-1, -1};
+
+		line_mapping_pair() {}
+		line_mapping_pair(std::pair<float, float> p)
+		{
+			p1 = p;
+		}
+
+		void insert(std::pair<float, float> p)
+		{
+			if (p1.first == -1)
+			{
+				p1 = p;
+			}
+			else if (p2.first == -1)
+			{
+				p2 = p;
+			}
+			else
+			{
+				printf("Error: line_mapping_pair already has two points\n");
+			}
+		}
+		std::pair<float, float> get_next()
+		{
+			if (p2.first != -1)
+			{
+				std::pair<float, float> p = p2;
+				p2 = {-1, -1};
+				return p;
+			}
+			else if (p1.first != -1)
+			{
+				std::pair<float, float> p = p1;
+				p1 = {-1, -1};
+				return p;
+			}
+			else
+			{
+				printf("Error: line_mapping_pair has no points\n");
+				return {-1, -1};
+			}
+		}
+		void remove_point(std::pair<float, float> p)
+		{
+			if (p1 == p)
+			{
+				if (p2.first != -1)
+				{
+					p1 = p2;
+					p2 = {-1, -1};
+				}
+				else
+					p1 = {-1, -1};
+			}
+			else if (p2 == p)
+			{
+				p2 = {-1, -1};
+			}
+			else
+			{
+				printf("Error: line_mapping_pair does not contain point\n");
+			}
+		}
+	};
+
+	void chunk::create_outlines(std::vector<std::vector<std::pair<float, float>>> * chunk_outline)
+	{
+		/*std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines;
 		std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines_other_way;
 		std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines_II;
 		std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines_other_way_II;
@@ -669,7 +738,7 @@ namespace game
 							edge_lines_II[{line.x1, line.y1}] = {line.x2, line.y2};
 							// edge_lines_other_way_II[{line.x2, line.y2}] = {line.x1, line.y1};
 						}
-						
+
 					}
 				}
 			}
@@ -681,7 +750,7 @@ namespace game
 			// edge_lines_other_way[it->second] = it->first;
 			if(edge_lines_other_way.count(it->second) && edge_lines_other_way[it->second] == it->first)
 				continue;	// already added
-			
+
 		}
 
 		std::vector<std::vector<std::pair<float, float>>> outlines;
@@ -733,6 +802,143 @@ namespace game
 			// current_outline.push_back(current_point);
 			outlines.push_back(current_outline);
 		}
+		*/
+
+		std::unordered_map<std::pair<float, float>, line_mapping_pair, chunk_coord_pair_hash> edge_lines;
+		std::unordered_map<std::pair<float, float>, line_mapping_pair, chunk_coord_pair_hash> edge_lines_reverse;
+
+		for (int y = 0; y < CHUNK_SIZE + 1; y++)
+		{
+			for (int x = 0; x < CHUNK_SIZE + 1; x++)
+			{
+				// if (data[y][x] >= SOLID_TILE_START_INDEX)
+				// {
+					uint16_t edginess = get_tile_edginess(x, y);
+					for (tile_linef line : edges_lines[edginess])
+					{
+						line.x1 += x;
+						line.y1 += y;
+						line.x2 += x;
+						line.y2 += y;
+						if (!edge_lines.count({line.x1, line.y1}))
+						{
+							edge_lines[{line.x1, line.y1}] = line_mapping_pair({line.x2, line.y2});
+
+							if (!edge_lines_reverse.count({line.x2, line.y2}))
+								edge_lines_reverse[{line.x2, line.y2}] = line_mapping_pair({line.x1, line.y1});
+							else
+								edge_lines_reverse[{line.x2, line.y2}].insert({line.x1, line.y1});
+						}
+						else
+						{
+							edge_lines[{line.x1, line.y1}].insert({line.x2, line.y2});
+							if (!edge_lines_reverse.count({line.x2, line.y2}))
+								edge_lines_reverse[{line.x2, line.y2}] = line_mapping_pair({line.x1, line.y1});
+							else
+								edge_lines_reverse[{line.x2, line.y2}].insert({line.x1, line.y1});
+						}
+					}
+				// }
+			}
+		}
+
+		std::vector<std::vector<std::pair<float, float>>> outlines;
+		while (1)
+		{
+			if (edge_lines.empty())
+				break;
+			std::vector<std::pair<float, float>> current_outline;
+			std::pair<float, float> start_point = edge_lines.begin()->first;
+
+			// current_outline.push_back(start_point);
+			std::pair<float, float> current_point = start_point;
+
+			do
+			{
+				std::pair<float, float> next_point;
+				if (edge_lines.count(current_point))
+				{
+					next_point = edge_lines[current_point].get_next();
+					if (edge_lines[current_point].p1.first == -1)
+					{
+						edge_lines.erase(current_point);
+					}
+					edge_lines_reverse[next_point].remove_point(current_point);
+					if (edge_lines_reverse[next_point].p1.first == -1)
+					{
+						edge_lines_reverse.erase(next_point);
+					}
+				}
+				else if (edge_lines_reverse.count(current_point))
+				{
+					next_point = edge_lines_reverse[current_point].get_next();
+					if (edge_lines_reverse[current_point].p1.first == -1)
+					{
+						edge_lines_reverse.erase(current_point);
+					}
+					edge_lines[next_point].remove_point(current_point);
+					if (edge_lines[next_point].p1.first == -1)
+					{
+						edge_lines.erase(next_point);
+					}
+				}
+				else
+				{
+					printf("Error: outline ended prematurely\n");
+					break;
+				}
+
+				if (next_point.first == -1)
+				{
+					printf("Error: outline ended prematurely\n");
+					break;
+				}
+
+				current_point = next_point;
+
+				current_outline.push_back(current_point);
+
+			} while (start_point != current_point);
+
+			outlines.push_back(current_outline);
+
+			// std::pair<float, float> start_point = edge_lines.begin()->first;
+			// current_outline.push_back(start_point);
+			// std::pair<float, float> current_point = edge_lines.begin()->second.p1;
+			// edge_lines.erase(start_point);
+			// edge_lines_reverse.erase(current_point);
+
+			// do
+			// {
+			// 	current_outline.push_back(current_point);
+			// 	if (edge_lines.count(current_point))
+			// 	{
+			// 		std::pair<float, float> next_point = edge_lines[current_point].p1;
+			// 		edge_lines.erase(current_point);
+			// 		edge_lines_reverse.erase(next_point);
+			// 		current_point = next_point;
+			// 	}
+			// 	else if (edge_lines_reverse.count(current_point))
+			// 	{
+			// 		std::pair<float, float> next_point = edge_lines_reverse[current_point].p1;
+			// 		edge_lines_reverse.erase(current_point);
+			// 		edge_lines.erase(next_point);
+			// 		current_point = next_point;
+			// 	}
+			// 	else
+			// 	{
+			// 		// printf("Error: outline ended prematurely\n");
+			// 		break;
+			// 	}
+
+			// } while (1);
+
+			// // current_outline.push_back(current_point);
+			// outlines.push_back(current_outline);
+
+			// if(edge_lines.empty())
+			// 	break;
+		}
 
 		// running_duration = std::chrono::high_resolution_clock::now() - start;
 		// printf("Connecting edges: %f mis\n", running_duration.count() / 1000.0);
@@ -742,7 +948,7 @@ namespace game
 		// printf("Connecting edges: %f mis\n", running_duration.count() / 1000.0);
 		// start = std::chrono::high_resolution_clock::now();
 
-		std::vector<std::vector<std::pair<float, float>>> outlines_triangles;
+		// std::vector<std::vector<std::pair<float, float>>> * outlines_triangles = new std::vector<std::vector<std::pair<float, float>>>();
 		int vert_retention_count = 4;
 		for (int i = 0; i < outlines.size(); i++)
 		{
@@ -778,7 +984,7 @@ namespace game
 					outline_triangles.push_back(std::make_pair(p3->x + chunk_x * CHUNK_SIZE, p3->y + chunk_y * CHUNK_SIZE));
 				}
 
-				outlines_triangles.push_back(outline_triangles);
+				chunk_outline -> push_back(outline_triangles);
 				for (p2t::Point *p : outline_points)
 					delete p;
 				delete cdt;
@@ -792,7 +998,8 @@ namespace game
 		// running_duration = std::chrono::high_resolution_clock::now() - start;
 		// printf("triangulation: %f mis\n", running_duration.count() / 1000.0);
 
-		return outlines_triangles;
+		// return outlines_triangles;
+
 	}
 
 	bool chunk::delete_circle(int x, int y, int radius)

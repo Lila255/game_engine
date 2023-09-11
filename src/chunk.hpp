@@ -142,7 +142,7 @@ namespace game
 		//     return x * x + y * y;
 		// }
 		
-		std::vector<std::vector<std::pair<float, float>>> create_outlines();
+		void create_outlines(std::vector<std::vector<std::pair<float, float>>> * chunk_outline);
 		bool is_outline(tile_line l);
 		bool is_edge(int, int);
 		std::vector<std::pair<int, int>> trace_outline(tile_line start_line, std::unordered_set<tile_line, tile_line_hash> &visited_lines);

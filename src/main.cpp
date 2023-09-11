@@ -149,11 +149,14 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 	}
 }
 
+
 uint8_t physics_loop_running = 1;
 
+
+// function to spawn threads on
 void do_outlining(game::chunk c, std::vector<std::vector<std::pair<float, float>>> * chunk_outline)
 {
-	*chunk_outline = c.create_outlines();
+	c.create_outlines(chunk_outline);
 }
 
 void start_physics_thread()
@@ -187,7 +190,8 @@ void start_physics_thread()
 		{
 			entity e = chunk_entities[i];
 			threads[i].join();
-			b2d_sys->update_static_outlines(e, *(chunks_outlines[i]));
+			b2d_sys->update_static_outlines(e, chunks_outlines[i]);
+			delete chunks_outlines[i];
 		}
 		
 
@@ -310,9 +314,12 @@ void run_game(GLFWwindow *window)
 			// if (x != 0 || y != 0)
 			// {
 			entity chunk_entity = world_sys->get_chunk_entity(x, y);
-			std::vector<std::vector<std::pair<float, float>>> outlines = world_sys->create_outlines(x, y);
+			std::vector<std::vector<std::pair<float, float>>> * outlines = world_sys->create_outlines(x, y);
+
+
 			box2d_sys->create_static_bodies(chunk_entity, outlines);
-			chunk_outlines.push_back(outlines);
+			delete outlines;
+			// chunk_outlines.push_back(outlines);
 			// chunk_outlines.push_back(world_sys->create_outlines(x, y));
 			float top_left_x = game::CHUNK_SIZE * x * 1.0;
 			float top_left_y = game::CHUNK_SIZE * y * 1.0;

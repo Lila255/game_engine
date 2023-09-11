@@ -81,7 +81,7 @@ namespace game
 		/// @brief Create a static body with multiple meshes
 		/// @param ent The entity to associate the body with
 		/// @param meshes The meshes to add to the body
-		void create_static_bodies(entity ent, std::vector<std::vector<std::pair<float, float>>> meshes)
+		void create_static_bodies(entity ent, std::vector<std::vector<std::pair<float, float>>>* meshes)
 		{
 			// b2BodyDef bodyDef;
 			// bodyDef.type = b2_staticBody;
@@ -114,19 +114,19 @@ namespace game
 			bodyDef.type = b2_staticBody;
 			b2Body *body = world->CreateBody(&bodyDef);
 			// add mesh
-			for (int i = 0; i < meshes.size(); i++)
+			for (int i = 0; i < meshes->size(); i++)
 			{
-				if (meshes[i].size() == 0 || meshes[i].size() % 3 != 0)
+				if (meshes->at(i).size() == 0 || meshes->at(i).size() % 3 != 0)
 					continue;
 				// if (meshes[i].size() < 3)
 				//     continue;
-				for (int j = 0; j < meshes[i].size(); j += 3)
+				for (int j = 0; j < meshes->at(i).size(); j += 3)
 				{
 					b2PolygonShape chain;
 					b2Vec2 *vertices = new b2Vec2[3];
 					for (int k = 0; k < 3; k++)
 					{
-						vertices[k].Set(meshes[i][j + k].first, meshes[i][j + k].second);
+						vertices[k].Set(meshes->at(i)[j + k].first, meshes->at(i)[j + k].second);
 					}
 					// if straight line, skip (poor check, only works for axis aligned lines)
 					if (vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
@@ -146,7 +146,7 @@ namespace game
 			static_bodies.add(ent, body);
 		}
 
-		void update_static_outlines(entity ent, std::vector<std::vector<std::pair<float, float>>> meshes)
+		void update_static_outlines(entity ent, std::vector<std::vector<std::pair<float, float>>>* meshes)
 		{
 			if (!static_bodies.contains(ent))
 				return;
@@ -164,19 +164,19 @@ namespace game
 				fixtures = next;
 			}
 			// add mesh
-			for (int i = 0; i < meshes.size(); i++)
+			for (int i = 0; i < meshes->size(); i++)
 			{
-				if (meshes[i].size() == 0 || meshes[i].size() % 3 != 0)
+				if (meshes->at(i).size() == 0 || meshes->at(i).size() % 3 != 0)
 					continue;
 				// if (meshes[i].size() < 3)
 				//     continue;
-				for (int j = 0; j < meshes[i].size(); j += 3)
+				for (int j = 0; j < meshes->at(i).size(); j += 3)
 				{
 					b2PolygonShape chain;
 					b2Vec2 *vertices = new b2Vec2[3];
 					for (int k = 0; k < 3; k++)
 					{
-						vertices[k].Set(meshes[i][j + k].first, meshes[i][j + k].second);
+						vertices[k].Set(meshes->at(i)[j + k].first, meshes->at(i)[j + k].second);
 					}
 					// if straight line, skip (poor check, only works for axis aligned lines)
 					if (vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
@@ -473,18 +473,18 @@ namespace game
 							set_tile_at(x, y + 1, SAND);
 							set_tile_at(x, y, AIR);
 						} else {
-							// bool down_left = get_tile_at(x - 1, y + 1) == AIR;
-							// bool down_right = get_tile_at(x + 1, y + 1) == AIR;
-							// if(down_left)
-							// {
-							// 	set_tile_at(x - 1, y + 1, SAND);
-							// 	set_tile_at(x, y, AIR);
-							// }
-							// else if(down_right)
-							// {
-							// 	set_tile_at(x + 1, y + 1, SAND);
-							// 	set_tile_at(x, y, AIR);
-							// }
+							bool down_left = get_tile_at(x - 1, y + 1) == AIR;
+							bool down_right = get_tile_at(x + 1, y + 1) == AIR;
+							if(down_left)
+							{
+								set_tile_at(x - 1, y + 1, SAND);
+								set_tile_at(x, y, AIR);
+							}
+							else if(down_right)
+							{
+								set_tile_at(x + 1, y + 1, SAND);
+								set_tile_at(x, y, AIR);
+							}
 						}
 						break;
 					}
@@ -533,9 +533,11 @@ namespace game
 			return chunks_data;
 		}
 
-		std::vector<std::vector<std::pair<float, float>>> create_outlines(int x, int y)
+		std::vector<std::vector<std::pair<float, float>>>* create_outlines(int x, int y)
 		{
-			return chunk_data[x + y * CHUNKS_WIDTH]->create_outlines();
+			std::vector<std::vector<std::pair<float, float>>>* outlines = new std::vector<std::vector<std::pair<float, float>>>;
+			chunk_data[x + y * CHUNKS_WIDTH]->create_outlines(outlines);
+			return outlines;
 		}
 
 		void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
@@ -556,11 +558,13 @@ namespace game
 					int chunkx = i % CHUNKS_WIDTH;
 					int chunky = i / CHUNKS_WIDTH;
 					texture_system->update_texture_section(all_chunk_ent, (uint8_t *)tile_data->data(), chunkx * CHUNK_SIZE, chunky * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
-					std::vector<std::vector<std::pair<float, float>>> outlines = chunk_data[i]->create_outlines();
+					std::vector<std::vector<std::pair<float, float>>> * outlines = new std::vector<std::vector<std::pair<float, float>>>;
+					chunk_data[i]->create_outlines(outlines);
 					// (*chunk_outlines)[i] = outlines;
 					// chunk_outlines->at(i) = outlines;
 
 					b2d_system->update_static_outlines(ent, outlines);
+					delete outlines;
 				}
 			}
 			//
