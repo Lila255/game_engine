@@ -17,7 +17,7 @@
 #define M_PI 3.14159265358979323846	  /* pi */
 #define radians(x) ((x)*M_PI / 180.0) // degrees to radians
 
-#define PIXEL_SCALE 8
+#define PIXEL_SCALE 9
 
 // typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 // typedef K::Point_2 point_2;
@@ -81,7 +81,7 @@ namespace game
 		/// @brief Create a static body with multiple meshes
 		/// @param ent The entity to associate the body with
 		/// @param meshes The meshes to add to the body
-		void create_static_bodies(entity ent, std::vector<std::vector<std::pair<float, float>>>* meshes)
+		void create_static_bodies(entity ent, std::vector<std::vector<std::pair<float, float>>> *meshes)
 		{
 			// b2BodyDef bodyDef;
 			// bodyDef.type = b2_staticBody;
@@ -146,7 +146,7 @@ namespace game
 			static_bodies.add(ent, body);
 		}
 
-		void update_static_outlines(entity ent, std::vector<std::vector<std::pair<float, float>>>* meshes)
+		void update_static_outlines(entity ent, std::vector<std::vector<std::pair<float, float>>> *meshes)
 		{
 			if (!static_bodies.contains(ent))
 				return;
@@ -243,7 +243,7 @@ namespace game
 			// // do this ^^^ but get the shape from the mesh paramater
 			b2BodyDef body_def;
 			body_def.type = b2_dynamicBody;
-			body_def.position.Set(90.0f, -20.0f);
+			body_def.position.Set(90.0f, 20.0f);
 			body_def.fixedRotation = true;
 			b2Body *body = world->CreateBody(&body_def);
 			// use mesh
@@ -367,8 +367,6 @@ namespace game
 	private:
 		std::array<chunk *, NUM_CHUNKS> chunk_data{};
 		std::array<entity, NUM_CHUNKS> chunk_entities;
-		
-
 
 	public:
 		entity all_chunk_ent;
@@ -406,11 +404,11 @@ namespace game
 			int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
 			int tile_x = x % CHUNK_SIZE;
 			int tile_y = y % CHUNK_SIZE;
-			if(chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+			if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 				return (tile_type)0;
-			if(tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
+			if (tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
 				return (tile_type)0;
-			return (chunk_data[chunk]) -> get_tile(tile_x, tile_y);
+			return (chunk_data[chunk])->get_tile(tile_x, tile_y);
 		}
 
 		void set_tile_at(int x, int y, uint8_t tile_type)
@@ -420,12 +418,12 @@ namespace game
 			int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
 			int tile_x = x % CHUNK_SIZE;
 			int tile_y = y % CHUNK_SIZE;
-			if(chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+			if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 				return;
-			
-			(chunk_data[chunk]) -> set_tile(tile_x, tile_y, tile_type);
+
+			(chunk_data[chunk])->set_tile(tile_x, tile_y, tile_type);
 		}
-		
+
 		std::array<entity, NUM_CHUNKS> get_chunk_entities()
 		{
 			return chunk_entities;
@@ -435,9 +433,10 @@ namespace game
 
 		void update(uint64_t tick_count)
 		{
-			for (int y = CHUNKS_WIDTH * CHUNK_SIZE - 1; y >= 0 ; y--)
+			uint8_t direction = tick_count % 2;
+			for (int y = CHUNKS_WIDTH * CHUNK_SIZE - 1; y >= 0; y--)
 			{
-				for (int x = 0; x < CHUNKS_WIDTH * CHUNK_SIZE; x++)
+				for (int x = direction ? 0 : CHUNKS_WIDTH * CHUNK_SIZE - 1; x < CHUNKS_WIDTH * CHUNK_SIZE && x >= 0; x += direction ? 1 : -1)
 				{
 					int chunk_x = x / CHUNK_SIZE;
 					int chunk_y = y / CHUNK_SIZE;
@@ -449,38 +448,45 @@ namespace game
 					switch (tile_type)
 					{
 					case GRASS:
-						if (rand() % 20 == 0)	// 1% chance to try growing grass
+						if (rand() % 20 == 0)
 						{
 							int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
 							int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
 							int r = rand() % 8;
-							for(int i = 0; i < 8; i++){
+							for (int i = 0; i < 8; i++)
+							{
 								int xx = x + dx[(r + i) % 8];
 								int yy = y + dy[(r + i) % 8];
-								if(get_tile_at(xx, yy) == DIRT && get_tile_at(xx, yy - 1) == AIR){
+								if (get_tile_at(xx, yy) == DIRT && get_tile_at(xx, yy - 1) == AIR)
+								{
 									set_tile_at(xx, yy, GRASS);
 									break;
 								}
 							}
 						}
-						if(get_tile_at(x, y - 1) == AIR && rand() % 100 == 0){
+						if (get_tile_at(x, y - 1) == AIR && rand() % 100 == 0)
+						{
 							set_tile_at(x, y, DIRT);
 						}
 						break;
 
 					case SAND:
-						if(get_tile_at(x, y + 1) == AIR){
+						if (get_tile_at(x, y + 1) == AIR)
+						{
 							set_tile_at(x, y + 1, SAND);
 							set_tile_at(x, y, AIR);
-						} else {
+						}
+						else
+						{
 							bool down_left = get_tile_at(x - 1, y + 1) == AIR;
 							bool down_right = get_tile_at(x + 1, y + 1) == AIR;
-							if(down_left)
+						
+							if (down_left)
 							{
 								set_tile_at(x - 1, y + 1, SAND);
 								set_tile_at(x, y, AIR);
 							}
-							else if(down_right)
+							else if (down_right)
 							{
 								set_tile_at(x + 1, y + 1, SAND);
 								set_tile_at(x, y, AIR);
@@ -496,7 +502,7 @@ namespace game
 			{
 				entity chunk_ent = chunk_entities[chunk];
 				int chunk_x = chunk % CHUNKS_WIDTH;
-				int chunk_y	= chunk / CHUNKS_WIDTH;
+				int chunk_y = chunk / CHUNKS_WIDTH;
 				game_engine::render_system *render_system_pointer = ((game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
 				render_system_pointer->update_texture_section(all_chunk_ent, (uint8_t *)(chunk_data[chunk]->get_data()), chunk_x * CHUNK_SIZE, chunk_y * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
 			}
@@ -508,6 +514,17 @@ namespace game
 			{
 				chunk_data[chunk]->create_chunk();
 				chunk_entities[chunk] = game_engine::game_engine_pointer->create_entity();
+			}
+			// create solid border around world
+			for (int x = 0; x < CHUNKS_WIDTH * CHUNK_SIZE; x++)
+			{
+				set_tile_at(x, 0, STONE);
+				set_tile_at(x, CHUNKS_WIDTH * CHUNK_SIZE - 1, STONE);
+			}
+			for (int y = 0; y < CHUNKS_WIDTH * CHUNK_SIZE; y++)
+			{
+				set_tile_at(0, y, STONE);
+				set_tile_at(CHUNKS_WIDTH * CHUNK_SIZE - 1, y, STONE);
 			}
 		}
 		entity get_chunk_entity(int x, int y)
@@ -533,9 +550,9 @@ namespace game
 			return chunks_data;
 		}
 
-		std::vector<std::vector<std::pair<float, float>>>* create_outlines(int x, int y)
+		std::vector<std::vector<std::pair<float, float>>> *create_outlines(int x, int y)
 		{
-			std::vector<std::vector<std::pair<float, float>>>* outlines = new std::vector<std::vector<std::pair<float, float>>>;
+			std::vector<std::vector<std::pair<float, float>>> *outlines = new std::vector<std::vector<std::pair<float, float>>>;
 			chunk_data[x + y * CHUNKS_WIDTH]->create_outlines(outlines);
 			return outlines;
 		}
@@ -558,13 +575,13 @@ namespace game
 					int chunkx = i % CHUNKS_WIDTH;
 					int chunky = i / CHUNKS_WIDTH;
 					texture_system->update_texture_section(all_chunk_ent, (uint8_t *)tile_data->data(), chunkx * CHUNK_SIZE, chunky * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
-					std::vector<std::vector<std::pair<float, float>>> * outlines = new std::vector<std::vector<std::pair<float, float>>>;
-					chunk_data[i]->create_outlines(outlines);
+					// std::vector<std::vector<std::pair<float, float>>> * outlines = new std::vector<std::vector<std::pair<float, float>>>;
+					// chunk_data[i]->create_outlines(outlines);
 					// (*chunk_outlines)[i] = outlines;
 					// chunk_outlines->at(i) = outlines;
 
-					b2d_system->update_static_outlines(ent, outlines);
-					delete outlines;
+					// b2d_system->update_static_outlines(ent, outlines);
+					// delete outlines;
 				}
 			}
 			//
@@ -572,7 +589,6 @@ namespace game
 	};
 
 	// misc
-
 
 	std::vector<game_engine::vec2> load_normal_vectors()
 	{

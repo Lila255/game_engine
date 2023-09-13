@@ -18,13 +18,13 @@ namespace game
 
 				if (noise_1 > 0.525)
 				{ // solid
-					if (noise_2 > 0.5)
+					if (noise_2 > 0.55)
 					{
 						data[y][x] = game::STONE;
 					}
 					else
 					{
-						if (noise_3 > 0.5)
+						if (noise_3 > 0.35)
 						{
 							data[y][x] = game::SAND;
 						}
@@ -804,6 +804,8 @@ namespace game
 		}
 		*/
 
+		// start time
+		// auto start = std::chrono::high_resolution_clock::now();
 		std::unordered_map<std::pair<float, float>, line_mapping_pair, chunk_coord_pair_hash> edge_lines;
 		std::unordered_map<std::pair<float, float>, line_mapping_pair, chunk_coord_pair_hash> edge_lines_reverse;
 
@@ -841,6 +843,9 @@ namespace game
 				// }
 			}
 		}
+		// auto last_time = std::chrono::high_resolution_clock::now();
+		// auto running_duration = last_time - start;
+		// printf("		marching squares: %f mis\n", running_duration.count() / 1000.0);
 
 		std::vector<std::vector<std::pair<float, float>>> outlines;
 		while (1)
@@ -901,52 +906,11 @@ namespace game
 			} while (start_point != current_point);
 
 			outlines.push_back(current_outline);
-
-			// std::pair<float, float> start_point = edge_lines.begin()->first;
-			// current_outline.push_back(start_point);
-			// std::pair<float, float> current_point = edge_lines.begin()->second.p1;
-			// edge_lines.erase(start_point);
-			// edge_lines_reverse.erase(current_point);
-
-			// do
-			// {
-			// 	current_outline.push_back(current_point);
-			// 	if (edge_lines.count(current_point))
-			// 	{
-			// 		std::pair<float, float> next_point = edge_lines[current_point].p1;
-			// 		edge_lines.erase(current_point);
-			// 		edge_lines_reverse.erase(next_point);
-			// 		current_point = next_point;
-			// 	}
-			// 	else if (edge_lines_reverse.count(current_point))
-			// 	{
-			// 		std::pair<float, float> next_point = edge_lines_reverse[current_point].p1;
-			// 		edge_lines_reverse.erase(current_point);
-			// 		edge_lines.erase(next_point);
-			// 		current_point = next_point;
-			// 	}
-			// 	else
-			// 	{
-			// 		// printf("Error: outline ended prematurely\n");
-			// 		break;
-			// 	}
-
-			// } while (1);
-
-			// // current_outline.push_back(current_point);
-			// outlines.push_back(current_outline);
-
-			// if(edge_lines.empty())
-			// 	break;
 		}
 
-		// running_duration = std::chrono::high_resolution_clock::now() - start;
-		// printf("Connecting edges: %f mis\n", running_duration.count() / 1000.0);
-		// start = std::chrono::high_resolution_clock::now();
-
-		// running_duration = std::chrono::high_resolution_clock::now() - start;
-		// printf("Connecting edges: %f mis\n", running_duration.count() / 1000.0);
-		// start = std::chrono::high_resolution_clock::now();
+		// running_duration = std::chrono::high_resolution_clock::now() - last_time;
+		// last_time = std::chrono::high_resolution_clock::now();
+		// printf("		Connecting edges: %f mis\n", running_duration.count() / 1000.0);
 
 		// std::vector<std::vector<std::pair<float, float>>> * outlines_triangles = new std::vector<std::vector<std::pair<float, float>>>();
 		int vert_retention_count = 4;
@@ -995,11 +959,15 @@ namespace game
 				continue;
 			}
 		}
-		// running_duration = std::chrono::high_resolution_clock::now() - start;
-		// printf("triangulation: %f mis\n", running_duration.count() / 1000.0);
 
-		// return outlines_triangles;
+		// running_duration = std::chrono::high_resolution_clock::now() - last_time;
+		// last_time = std::chrono::high_resolution_clock::now();
+		// printf("		triangulating: %f mis\n", running_duration.count() / 1000.0);
 
+
+		// auto end = std::chrono::high_resolution_clock::now();
+		// auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		// printf("	Time taken by entire function: %d\n", duration.count());
 	}
 
 	bool chunk::delete_circle(int x, int y, int radius)

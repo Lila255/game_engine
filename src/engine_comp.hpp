@@ -260,8 +260,8 @@ namespace game_engine
 			printf("Error_1.5: x%d\n", glGetError());
 			// Do some initialization stuff
 			// glClearColor(0.8392f, 0.0078f, 0.4392f, 1.0f);
-			// glClearColor(0.2902, 0.0118, 0.2118, 1.0f);
-			glClearColor(0.7, 0.8, 1.0, 1.0f);
+			glClearColor(0.0, 0.00, 0.0, 1.0f);
+			// glClearColor(0.7, 0.8, 1.0, 1.0f);
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			// glBlendEquation(GL_FUNC_ADD);

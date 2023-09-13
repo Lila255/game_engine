@@ -168,12 +168,12 @@ void start_physics_thread()
 
 
 	const int tick_rate = 20;
-	const uint64_t tick_count = 0;
+	uint64_t tick_count = 0;
 	while (physics_loop_running)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
 
-		world_sys->update(tick_count);
+		world_sys->update(tick_count++);
 
 		std::array<entity, game::NUM_CHUNKS> chunk_entities = world_sys->get_chunk_entities();
 		std::array<game::chunk *, game::NUM_CHUNKS> * chunks = world_sys->get_chunks();
@@ -372,7 +372,7 @@ void run_game(GLFWwindow *window)
 	b2Body *player_body = box2d_sys->get_dynamic_body(player_entity);
 
 	// create light components
-	uint16_t light_texture_count = 32;
+	uint16_t light_texture_count = 24;
 	std::vector<entity> light_entities;
 	std::vector<GLuint> light_textures;
 	// std::vector<GLuint> colour_textures;
@@ -704,7 +704,7 @@ int main()
 
 	// glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, game_engine::window_width, game_engine::window_height, GLFW_DONT_CARE);
 
-	glfwSwapInterval(0);
+	// glfwSwapInterval(0);
 
 	// Init glew
 	err = glewInit();

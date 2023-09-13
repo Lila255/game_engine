@@ -225,10 +225,10 @@ namespace glsl_helper
 				// float hue = (float(hue_value) / 4294967295.0) * 360.0;
 				// vec3 rgb = hsv2rgb(hue);
 				float inverse_alpha = 0.0;
-				if(value > 20) {
-					inverse_alpha = value / 1250.0;
+				if(value > 45) {
+					inverse_alpha = value / 1200.0;
 				} else {
-					inverse_alpha = blurred_value / 1500.0;
+					inverse_alpha = blurred_value / 1000.0;
 				}
 				
 				if(inverse_alpha > 1.0)
@@ -251,7 +251,7 @@ namespace glsl_helper
 			// layout(binding = 0, rg32ui) uniform coherent uimage2D lightingTex;
 			layout(binding = 1, r8ui) uniform readonly uimage2D world_chunks;  // 3x3 grid of 128x128 textures, lays on top of worldChunkTex textures
 
-			const int CHUNK_SIZE = 128;  // width and height of a chunk
+			const int CHUNK_SIZE = 64;  // width and height of a chunk
 			const int CHUNKS_WIDTH = 3;	// number of chunks in a row
 
 			uniform ivec2 texture_size; // size of the lighting texture
