@@ -993,7 +993,7 @@ namespace game
 					continue;
 				if ((x - local_x) * (x - local_x) + (y - local_y) * (y - local_y) <= radius * radius)
 				{
-					data[y][x] = 0;
+					data[y][x] = 1;
 				}
 			}
 		}

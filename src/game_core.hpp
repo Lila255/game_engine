@@ -447,6 +447,57 @@ namespace game
 					uint8_t tile_type = get_tile_at(x, y);
 					switch (tile_type)
 					{
+					// case SMOKE:
+					// 	if (get_tile_at(x, y-1) == AIR)
+					// 	{
+					// 		set_tile_at(x, y-1, SMOKE);
+					// 		set_tile_at(x, y, AIR);
+					// 		break;
+					// 	}
+					// 	if (get_tile_at(x-1, y-1) == AIR)
+					// 	{
+					// 		set_tile_at(x-1, y-1, SMOKE);
+					// 		set_tile_at(x, y, AIR);
+					// 		break;
+					// 	}
+					// 	if (get_tile_at(x+1, y-1) == AIR)
+					// 	{
+					// 		set_tile_at(x+1, y-1, SMOKE);
+					// 		set_tile_at(x, y, AIR);
+					// 		break;
+					// 	}
+					// 	break;
+					case WATER:
+						if (get_tile_at(x, y + 1) == AIR)
+						{
+							set_tile_at(x, y + 1, WATER);
+							set_tile_at(x, y, AIR);
+							break;
+						}
+						if (get_tile_at(x - 1, y + 1) == AIR)
+						{
+							set_tile_at(x - 1, y + 1, WATER);
+							set_tile_at(x, y, AIR);
+							break;
+						}
+						if (get_tile_at(x + 1, y + 1) == AIR)
+						{
+							set_tile_at(x + 1, y + 1, WATER);
+							set_tile_at(x, y, AIR);
+							break;
+						}
+						if (get_tile_at(x - 1, y) == AIR)
+						{
+							set_tile_at(x - 1, y, WATER);
+							set_tile_at(x, y, AIR);
+							break;
+						}
+						if (get_tile_at(x + 1, y) == AIR)
+						{
+							set_tile_at(x + 1, y, WATER);
+							set_tile_at(x, y, AIR);
+							break;
+						}
 					case GRASS:
 						if (rand() % 20 == 0)
 						{
@@ -480,7 +531,7 @@ namespace game
 						{
 							bool down_left = get_tile_at(x - 1, y + 1) == AIR;
 							bool down_right = get_tile_at(x + 1, y + 1) == AIR;
-						
+
 							if (down_left)
 							{
 								set_tile_at(x - 1, y + 1, SAND);
@@ -492,6 +543,51 @@ namespace game
 								set_tile_at(x, y, AIR);
 							}
 						}
+						break;
+					}
+				}
+			}
+
+			for (int y = 0; y < CHUNKS_WIDTH * CHUNK_SIZE; y++)
+			{
+				for (int x = direction ? 0 : CHUNKS_WIDTH * CHUNK_SIZE - 1; x < CHUNKS_WIDTH * CHUNK_SIZE && x >= 0; x += direction ? 1 : -1)
+				{
+					int chunk_x = x / CHUNK_SIZE;
+					int chunk_y = y / CHUNK_SIZE;
+					int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+					int tile_x = x % CHUNK_SIZE;
+					int tile_y = y % CHUNK_SIZE;
+
+					uint8_t tile_type = get_tile_at(x, y);
+					switch (tile_type)
+					{
+					case SMOKE:
+						if (get_tile_at(x, y - 1) == AIR)
+						{
+							set_tile_at(x, y - 1, SMOKE);
+							set_tile_at(x, y, AIR);
+						}
+						else if (get_tile_at(x - 1, y - 1) == AIR)
+						{
+							set_tile_at(x - 1, y - 1, SMOKE);
+							set_tile_at(x, y, AIR);
+						}
+						else if (get_tile_at(x + 1, y - 1) == AIR)
+						{
+							set_tile_at(x + 1, y - 1, SMOKE);
+							set_tile_at(x, y, AIR);
+						}
+						else if (get_tile_at(x - 1, y) == AIR)
+						{
+							set_tile_at(x - 1, y, SMOKE);
+							set_tile_at(x, y, AIR);
+						}
+						else if (get_tile_at(x + 1, y) == AIR)
+						{
+							set_tile_at(x + 1, y, SMOKE);
+							set_tile_at(x, y, AIR);
+						}
+
 						break;
 					}
 				}
@@ -559,6 +655,7 @@ namespace game
 
 		void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
 		{
+
 			// get texture system
 			auto texture_system = (game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>());
 			// get b2d system

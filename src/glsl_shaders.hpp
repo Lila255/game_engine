@@ -75,6 +75,10 @@ namespace glsl_helper
 
 				if(value == 0) {
 					out_Color = vec4(0.0, 0.0, 0.0, 0.0);
+				} else if(value == 1) {
+					out_Color = vec4(0.25, 0.25, 0.25, 0.75);
+				} else if(value == 2) {
+					out_Color = vec4(0.01, 0.01, 0.98, 0.65);
 				} else if(value == 3) {
 					out_Color = vec4(1.0, 1.0, 1.0, 0.2);
 				} else if(value == 4) {
@@ -92,12 +96,12 @@ namespace glsl_helper
 				} else if(value == 102) {
 					out_Color = vec4(.7, .7, .7, 1.0);
 				} else if(value == 103) {
-					out_Color = vec4(0.760, 0.139, 0.0152, 1.0);
+					out_Color = vec4(0.319, 0.319, 0.352, 1.0);
 				} else {
 					out_Color = vec4(1.0, 0.41, 0.71, 1.0);
 				}
 			}
-		)";
+			)";
 
 		// return frag_0.str();
 	}
@@ -226,9 +230,9 @@ namespace glsl_helper
 				// vec3 rgb = hsv2rgb(hue);
 				float inverse_alpha = 0.0;
 				if(value > 45) {
-					inverse_alpha = value / 1200.0;
+					inverse_alpha = value / 16000.0;
 				} else {
-					inverse_alpha = blurred_value / 1000.0;
+					// inverse_alpha = blurred_value / 19600.0;
 				}
 				
 				if(inverse_alpha > 1.0)
@@ -273,18 +277,44 @@ namespace glsl_helper
 				return value;
 			}
 
-			uniform vec2 player_pos;    // relative to the lighting texture, center of the screen but not center of lighting texture
-			const int max_ray_length = 128;
+			vec2 refract_ray(vec2 ray_dir, float current_ior, float next_ior)
+			{
+				// float cosThetaI = dot(ray_dir, vec2(0.0, 1.0));
+				// float sinThetaI = sqrt(1.0 - cosThetaI * cosThetaI);
+				// float sinThetaT = (current_ior / next_ior) * sinThetaI;
+				// float cosThetaT = sqrt(1.0 - sinThetaT * sinThetaT);
+				// // return vec2(-cosThetaT, sinThetaT);
+				// // return normalize(vec2(-ray_dir.x, -ray_dir.y * cosThetaI / cosThetaR));
+				// return normalize(vec2(-ray_dir.x * cosThetaT, -ray_dir.y * sinThetaT));
+				// // return ray_dir;
+				float cosThetaI = dot(normalize(ray_dir), vec2(0.0, 1.0));
+				float sinThetaI = sqrt(1.0 - cosThetaI * cosThetaI);
+				float sinThetaT = (current_ior / next_ior) * sinThetaI;
+				float cosThetaT = sqrt(1.0 - sinThetaT * sinThetaT);
 
-			// raycast from player_pos to the edge of the screen, 720 invocations
+				// Handle total internal reflection
+				if (sinThetaT > 1.0) {
+					return reflect(ray_dir, vec2(0.0, 1.0));
+				}
+
+				return normalize(vec2(-ray_dir.x * cosThetaT, -ray_dir.y * sinThetaT));
+			}
+
+			uniform vec2 player_pos;    // relative to the lighting texture, center of the screen but not center of lighting texture
+			float step_distance = 0.5;
+			
+			const int max_ray_length = 256;
+			const float ior_values[6] = float[6](1.0, 1.01, 1.33, 1.52, 1.62, 1.65);
+
+			// raycast from player_pos to the edge of the screen, 28800 invocations
 			layout(local_size_x = 1, local_size_y = 1) in;
 			void main() {
 				if(player_pos.x < 0.0 || player_pos.x > texture_size.x || player_pos.y < 0.0 || player_pos.y > texture_size.y) {
 					return;
 				}
 				int ray_index = int(gl_GlobalInvocationID.x);
-				float ray_angle = (float(ray_index) / float(720)) * 2.0 * 3.1415926535897932384626433832795;
-				// uint hue_val = uint((float(ray_index) / 720.0) * 4294967295.0);
+				float ray_angle = (float(ray_index) / float(28800)) * 2.0 * 3.1415926535897932384626433832795;
+				// uint hue_val = uint((float(ray_index) / 28800.0) * 4294967295.0);
 				vec2 ray_dir = vec2(cos(ray_angle), sin(ray_angle));
 
 				vec2 ray_pos = player_pos;
@@ -294,14 +324,34 @@ namespace glsl_helper
 				// loop until we hit something or we reach max_ray_length
 				for (int i = 0; i < max_ray_length;) {
 					ivec2 ray_pos_int = ivec2(ray_pos);
-					while (ray_pos_int == ivec2(ray_pos)) { // if we're still in the same pixel, move forward a bit
-						ray_pos += ray_dir;
+					uint sample_v0 = sampleWorld(ray_pos);
+					// while (ray_pos_int == ivec2(ray_pos)) { // if we're still in the same pixel, move forward a bit
+						ray_pos += step_distance * ray_dir;
 						i++;
-					}
+					// }
 
 					// ray_pos += ray_dir;
 					uint sample_v = sampleWorld(ray_pos);
-					if (sample_v > 0.0) {     // hit something, bounce
+					
+					if(sample_v == 1 && sample_v0 != 1)
+					{
+						bounces++;
+					}
+					else if(sample_v == 2)
+					{
+						
+					// 	// hit water, refract
+					// 	// ray_dir = refract_ray(ray_dir, 1.0003, 1.33);
+						if(sample_v0 != sample_v) 
+						{
+							ray_dir = refract_ray(ray_dir, ior_values[sample_v0], ior_values[sample_v]);
+						}
+
+					// 		ray_dir = refract_ray(ray_dir, 1.0003, 1.33);
+					// 		ray_pos += step_distance * ray_dir;
+					// }
+					} else
+					if (sample_v >= 3) {     // hit something, bounce
 
 						uint surround_values = 0;
 						// for(int j = 0; j < 9; j++)
@@ -360,8 +410,18 @@ namespace glsl_helper
 					// imageAtomicExchange(lighting_colour_tex, ivec2(ray_pos.xy), hue_val);
 					
 					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  6 * int(bounces > 0)); 
-					imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  uint(8.0 / (bounces / 2.0 + 2))); 
+
+					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  uint(8.0 / (bounces / 2.0 + 2))); 
 					
+					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  1); 
+					
+					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  bounces > 0 ? 0.5 : 1); 
+					if(bounces > 0)
+					{
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  1); 
+					} else {
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  2); 
+					}
 				}
 			};
 		)";
@@ -391,8 +451,8 @@ namespace glsl_helper
 
 				// blended_light -= uvec4(vec4(old_light) / total_frames);
 				// blended_light += uvec4(vec4(new_light) / total_frames);
-				blended_light -= old_light;
-				blended_light += new_light;
+				blended_light -= old_light;// * uvec4(1,1,1, .1);
+				blended_light += new_light;// * uvec4(1,1,1, .1);
 				
 				imageStore(blended_lights, texel, blended_light);
 			}

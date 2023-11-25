@@ -372,7 +372,7 @@ void run_game(GLFWwindow *window)
 	b2Body *player_body = box2d_sys->get_dynamic_body(player_entity);
 
 	// create light components
-	uint16_t light_texture_count = 24;
+	uint16_t light_texture_count = 8;
 	std::vector<entity> light_entities;
 	std::vector<GLuint> light_textures;
 	// std::vector<GLuint> colour_textures;
@@ -549,8 +549,9 @@ void run_game(GLFWwindow *window)
 		// printf("before_binding_col_texture: %d\n", glGetError());
 		// glBindImageTexture(3, colour_textures[light_texture_index], 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		// printf("after_binding_col_texture: %d\n", glGetError());
-
-		glDispatchCompute(720, 1, 1);
+		
+		
+		glDispatchCompute(28800, 1, 1);
 		// printf("after dispatch: %d\n", glGetError());
 		glFinish();
 
@@ -606,6 +607,7 @@ void run_game(GLFWwindow *window)
 		// Update the engine
 		// glFinish();
 		render_sys->update();
+		// game_engine::rendering_mutex.lock();
 
 		glUseProgram(game_engine::shader_programs[1]);
 		GLuint projection_location = glGetUniformLocation(game_engine::shader_programs[1], "projection");
@@ -641,6 +643,7 @@ void run_game(GLFWwindow *window)
 		glFinish();
 
 		glfwSwapBuffers(window);
+		// game_engine::rendering_mutex.unlock();
 		light_texture_index++;
 		if (light_texture_index == light_texture_count)
 			light_texture_index = 0;
