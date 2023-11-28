@@ -16,8 +16,8 @@
 
 #define M_PI 3.14159265358979323846	  /* pi */
 #define radians(x) ((x)*M_PI / 180.0) // degrees to radians
-
-#define PIXEL_SCALE 9
+#define raise(x) (1 << x)
+#define PIXEL_SCALE 8
 
 // typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 // typedef K::Point_2 point_2;
@@ -468,31 +468,31 @@ namespace game
 					// 	}
 					// 	break;
 					case WATER:
-						if (get_tile_at(x, y + 1) == AIR)
+						if (raise(get_tile_at(x, y + 1)) & (raise(AIR) | raise(SMOKE)))
 						{
+							set_tile_at(x, y, get_tile_at(x, y + 1));
 							set_tile_at(x, y + 1, WATER);
-							set_tile_at(x, y, AIR);
 							break;
 						}
-						if (get_tile_at(x - 1, y + 1) == AIR)
+						if (raise(get_tile_at(x - 1, y + 1)) & (raise(AIR) | raise(SMOKE)))
 						{
+							set_tile_at(x, y, get_tile_at(x - 1, y + 1));
 							set_tile_at(x - 1, y + 1, WATER);
-							set_tile_at(x, y, AIR);
 							break;
 						}
-						if (get_tile_at(x + 1, y + 1) == AIR)
+						if (raise(get_tile_at(x + 1, y + 1)) & (raise(AIR) | raise(SMOKE)))
 						{
+							set_tile_at(x, y, get_tile_at(x + 1, y + 1));
 							set_tile_at(x + 1, y + 1, WATER);
-							set_tile_at(x, y, AIR);
 							break;
 						}
-						if (get_tile_at(x - 1, y) == AIR)
+						if (raise(get_tile_at(x - 1, y)) & (raise(AIR) | raise(SMOKE)))
 						{
 							set_tile_at(x - 1, y, WATER);
 							set_tile_at(x, y, AIR);
 							break;
 						}
-						if (get_tile_at(x + 1, y) == AIR)
+						if (raise(get_tile_at(x + 1, y)) & (raise(AIR) | raise(SMOKE)))
 						{
 							set_tile_at(x + 1, y, WATER);
 							set_tile_at(x, y, AIR);
@@ -522,26 +522,20 @@ namespace game
 						break;
 
 					case SAND:
-						if (get_tile_at(x, y + 1) == AIR)
+						if (raise(get_tile_at(x, y + 1)) & (raise(AIR) | raise(SMOKE) | raise(WATER)))
 						{
+							set_tile_at(x, y,  get_tile_at(x, y + 1));
 							set_tile_at(x, y + 1, SAND);
-							set_tile_at(x, y, AIR);
 						}
-						else
+						else if (raise(get_tile_at(x - 1, y + 1)) & (raise(AIR) | raise(SMOKE) | raise(WATER)))
 						{
-							bool down_left = get_tile_at(x - 1, y + 1) == AIR;
-							bool down_right = get_tile_at(x + 1, y + 1) == AIR;
-
-							if (down_left)
-							{
-								set_tile_at(x - 1, y + 1, SAND);
-								set_tile_at(x, y, AIR);
-							}
-							else if (down_right)
-							{
-								set_tile_at(x + 1, y + 1, SAND);
-								set_tile_at(x, y, AIR);
-							}
+							set_tile_at(x, y, get_tile_at(x - 1, y + 1));
+							set_tile_at(x - 1, y + 1, SAND);
+						}
+						else if (raise(get_tile_at(x + 1, y + 1)) & (raise(AIR) | raise(SMOKE) | raise(WATER)))
+						{
+							set_tile_at(x, y, get_tile_at(x + 1, y + 1));
+							set_tile_at(x + 1, y + 1, SAND);
 						}
 						break;
 					}
@@ -562,32 +556,31 @@ namespace game
 					switch (tile_type)
 					{
 					case SMOKE:
-						if (get_tile_at(x, y - 1) == AIR)
+						if (raise(get_tile_at(x, y - 1)) & (raise(AIR) | raise(WATER)))
 						{
+							set_tile_at(x, y, get_tile_at(x, y - 1));
 							set_tile_at(x, y - 1, SMOKE);
-							set_tile_at(x, y, AIR);
 						}
-						else if (get_tile_at(x - 1, y - 1) == AIR)
+						else if (raise(get_tile_at(x - 1, y - 1)) & (raise(AIR) | raise(WATER)))
 						{
+							set_tile_at(x, y, get_tile_at(x - 1, y - 1));
 							set_tile_at(x - 1, y - 1, SMOKE);
-							set_tile_at(x, y, AIR);
 						}
-						else if (get_tile_at(x + 1, y - 1) == AIR)
+						else if (raise(get_tile_at(x + 1, y - 1)) & (raise(AIR) | raise(WATER)))
 						{
+							set_tile_at(x, y, get_tile_at(x + 1, y - 1));
 							set_tile_at(x + 1, y - 1, SMOKE);
-							set_tile_at(x, y, AIR);
 						}
-						else if (get_tile_at(x - 1, y) == AIR)
+						else if (raise(get_tile_at(x - 1, y)) & (raise(AIR) | raise(WATER)))
 						{
+							set_tile_at(x, y, get_tile_at(x - 1, y));
 							set_tile_at(x - 1, y, SMOKE);
-							set_tile_at(x, y, AIR);
 						}
-						else if (get_tile_at(x + 1, y) == AIR)
+						else if (raise(get_tile_at(x + 1, y)) & (raise(AIR) | raise(WATER)))
 						{
+							set_tile_at(x, y, get_tile_at(x + 1, y));
 							set_tile_at(x + 1, y, SMOKE);
-							set_tile_at(x, y, AIR);
 						}
-
 						break;
 					}
 				}

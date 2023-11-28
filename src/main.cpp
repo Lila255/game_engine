@@ -154,9 +154,9 @@ uint8_t physics_loop_running = 1;
 
 
 // function to spawn threads on
-void do_outlining(game::chunk c, std::vector<std::vector<std::pair<float, float>>> * chunk_outline)
+void do_outlining(game::chunk * c, std::vector<std::vector<std::pair<float, float>>> * chunk_outline)
 {
-	c.create_outlines(chunk_outline);
+	c->create_outlines(chunk_outline);
 }
 
 void start_physics_thread()
@@ -184,7 +184,7 @@ void start_physics_thread()
 		{
 			game::chunk *c = chunks->at(i);
 			chunks_outlines.push_back(new std::vector<std::vector<std::pair<float, float>>>());
-			threads.push_back(std::thread(do_outlining, *c, chunks_outlines[i]));
+			threads.push_back(std::thread(do_outlining, c, chunks_outlines[i]));
 		}
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
@@ -372,7 +372,7 @@ void run_game(GLFWwindow *window)
 	b2Body *player_body = box2d_sys->get_dynamic_body(player_entity);
 
 	// create light components
-	uint16_t light_texture_count = 8;
+	uint16_t light_texture_count = 16;
 	std::vector<entity> light_entities;
 	std::vector<GLuint> light_textures;
 	// std::vector<GLuint> colour_textures;
@@ -450,11 +450,14 @@ void run_game(GLFWwindow *window)
 	sprt = game_engine::sprite(game_engine::shader_programs[2]);
 	sprt.add_texture({master_light_texture, 0, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
 	sprt.add_texture({blurred_light_texture, 1, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	sprt.add_texture({chunk_texture, 2, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+		// glBindImageTexture(1, chunk_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+
 	// sprt.add_texture({colour_light_texture, 2, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
 	render_sys->add(mater_light_entity, sprt);
 
 
-	
+
 	// printf("Error_after: %d\n", glGetError());
 	// std::vector<game_engine::vec2> normal_vectors(256);
 	// for(int i = 0; i < normal_vectors.size(); i+=1){
@@ -551,7 +554,7 @@ void run_game(GLFWwindow *window)
 		// printf("after_binding_col_texture: %d\n", glGetError());
 		
 		
-		glDispatchCompute(28800, 1, 1);
+		glDispatchCompute(18000, 1, 1);
 		// printf("after dispatch: %d\n", glGetError());
 		glFinish();
 

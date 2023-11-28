@@ -192,8 +192,17 @@ namespace glsl_helper
 			layout(binding = 0, r32ui) uniform readonly uimage2D tex;
 			layout(binding = 1, r32ui) uniform readonly uimage2D blurred_tex;
 			// layout(binding = 2, r32ui) uniform uimage2D colour_tex;
+			layout(binding = 2, r8ui) uniform readonly uimage2D world_chunks;
 			uniform ivec2 texture_size; 
 			out vec4 out_Color;
+
+			uint sampleWorld(vec2 texCoord) {
+				if (texCoord.x < 0.0 || texCoord.x >= texture_size.x || texCoord.y < 0.0 || texCoord.y >= texture_size.y) {
+					return -1;	// -1 is out of bounds, uint max value so doing value > 0 will work
+				}
+				uint value = imageLoad(world_chunks, ivec2(texCoord.xy)).r;
+				return value;
+			}
 
 			vec3 hsv2rgb(float h) {
 				float c = 1.0;
@@ -229,10 +238,11 @@ namespace glsl_helper
 				// float hue = (float(hue_value) / 4294967295.0) * 360.0;
 				// vec3 rgb = hsv2rgb(hue);
 				float inverse_alpha = 0.0;
-				if(value > 45) {
-					inverse_alpha = value / 16000.0;
+				uint world_value = sampleWorld(v_TexCoord * texture_size);
+				if(world_value < 3) {
+					inverse_alpha = value / 30000.0;
 				} else {
-					// inverse_alpha = blurred_value / 19600.0;
+					inverse_alpha = blurred_value / 30000.0;
 				}
 				
 				if(inverse_alpha > 1.0)
@@ -306,15 +316,15 @@ namespace glsl_helper
 			const int max_ray_length = 256;
 			const float ior_values[6] = float[6](1.0, 1.01, 1.33, 1.52, 1.62, 1.65);
 
-			// raycast from player_pos to the edge of the screen, 28800 invocations
+			// raycast from player_pos to the edge of the screen, 18000 invocations
 			layout(local_size_x = 1, local_size_y = 1) in;
 			void main() {
 				if(player_pos.x < 0.0 || player_pos.x > texture_size.x || player_pos.y < 0.0 || player_pos.y > texture_size.y) {
 					return;
 				}
 				int ray_index = int(gl_GlobalInvocationID.x);
-				float ray_angle = (float(ray_index) / float(28800)) * 2.0 * 3.1415926535897932384626433832795;
-				// uint hue_val = uint((float(ray_index) / 28800.0) * 4294967295.0);
+				float ray_angle = (float(ray_index) / float(18000)) * 2.0 * 3.1415926535897932384626433832795;
+				// uint hue_val = uint((float(ray_index) / 18000.0) * 4294967295.0);
 				vec2 ray_dir = vec2(cos(ray_angle), sin(ray_angle));
 
 				vec2 ray_pos = player_pos;
@@ -418,9 +428,9 @@ namespace glsl_helper
 					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  bounces > 0 ? 0.5 : 1); 
 					if(bounces > 0)
 					{
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  1); 
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 2); 
 					} else {
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  2); 
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 3); 
 					}
 				}
 			};

@@ -18,8 +18,8 @@ namespace game_engine
 	struct engine;
 	engine *game_engine_pointer;
 	std::vector<GLuint> shader_programs;
-	const uint16_t window_width = 3440;
-	const uint16_t window_height = 1440;
+	const uint16_t window_width = 2048;
+	const uint16_t window_height = 1024;
 	// float projection_matrix[16]{
 	//     //};
 	//     8.0f / window_width, 0.0f, 0.0f, 0.0f,
