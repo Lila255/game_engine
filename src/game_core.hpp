@@ -14,8 +14,8 @@
 #include "engine_comp.hpp"
 #include "chunk.hpp"
 
-#define M_PI 3.14159265358979323846	  /* pi */
-#define radians(x) ((x)*M_PI / 180.0) // degrees to radians
+#define M_PI 3.14159265358979323846		/* pi */
+#define radians(x) ((x) * M_PI / 180.0) // degrees to radians
 #define raise(x) (1 << x)
 #define PIXEL_SCALE 8
 
@@ -32,22 +32,46 @@ namespace game
 
 	std::mutex b2d_mutex;
 
+	// pre-declare world_tile_system, with a delete_circle function
+	// struct b2_contact_listener : public b2ContactListener;
+	// void world_tile_system::delete_circle(int x, int y, int radius){}
+
+
+	enum b2fixture_types
+	{
+		EMPTY = 0x00,
+		PLAYER = 0x01,
+		TERRAIN = 0x02,
+		PROJECTILE = 0x04,
+	};
+
+	struct b2_user_data
+	{
+		entity ent;
+		b2fixture_types type;
+		b2_user_data() = default;
+		b2_user_data(entity e, b2fixture_types t) : ent(e), type(t) {}
+	};
+
+	// b2ContactListener * contact_listener;
+
 	// box2d system
 	struct box2d_system : public game_engine::system
 	{
 	private:
-		b2World *world;
 		b2Vec2 gravity; //(0.0f, -9.8f);
 		// std::vector<b2Body *> bodies;
 		game_engine::sparse_component_set<b2Body *> static_bodies;
 		game_engine::sparse_component_set<b2Body *> dynamic_bodies;
 
 	public:
+		b2World *world;
 		// box2d_system() = default;
 		box2d_system()
 		{
-			gravity = b2Vec2(0.0f, 51.8f);
+			gravity = b2Vec2(0.0f, 80.8f);
 			world = new b2World(gravity);
+			// contact_listener = new b2_contact_listener();
 		}
 
 		/// @brief Create and add a static body to the b2d world
@@ -74,6 +98,9 @@ namespace game
 			fixtureDef.shape = &chain;
 			fixtureDef.density = 0.0f;
 			fixtureDef.friction = 0.73f;
+			b2FixtureUserData fixtureUserData;
+			fixtureUserData.pointer = (uintptr_t)new b2_user_data(ent, b2fixture_types::TERRAIN);
+			fixtureDef.userData = fixtureUserData;
 			body->CreateFixture(&fixtureDef);
 			static_bodies.add(ent, body);
 		}
@@ -139,6 +166,11 @@ namespace game
 					fixtureDef.shape = &chain;
 					fixtureDef.density = 0.0f;
 					fixtureDef.friction = 0.73f;
+					fixtureDef.isSensor = true;
+					b2FixtureUserData fixtureUserData;
+					// fixtureUserData.pointer = b2fixture_types::TERRAIN;
+					fixtureUserData.pointer = (uintptr_t)new b2_user_data(ent, b2fixture_types::TERRAIN);
+					fixtureDef.userData = fixtureUserData;
 					body->CreateFixture(&fixtureDef);
 					delete[] vertices;
 				}
@@ -187,8 +219,13 @@ namespace game
 					chain.Set(vertices, 3);
 					b2FixtureDef fixtureDef;
 					fixtureDef.shape = &chain;
-					fixtureDef.density = 0.0f;
+					fixtureDef.density = 1.0f;
 					fixtureDef.friction = 0.9f;
+					fixtureDef.restitution = 0.5f;
+					b2FixtureUserData fixtureUserData;
+						// fixtureUserData.pointer = b2fixture_types::TERRAIN;
+					fixtureUserData.pointer = (uintptr_t)new b2_user_data(ent, b2fixture_types::TERRAIN);
+					fixtureDef.userData = fixtureUserData;
 					body->CreateFixture(&fixtureDef);
 					delete[] vertices;
 				}
@@ -266,7 +303,11 @@ namespace game
 				fixture_def.shape = &dynamic_box;
 				fixture_def.density = 1.f;
 				fixture_def.friction = 0.5f;
-				fixture_def.restitution = .20f;
+				// fixture_def.restitution = .20f;
+				b2FixtureUserData fixtureUserData;
+				// fixtureUserData.pointer = b2fixture_types::PLAYER;
+				fixtureUserData.pointer = (uintptr_t)new b2_user_data(ent, b2fixture_types::PLAYER);
+				fixture_def.userData = fixtureUserData;
 				body->CreateFixture(&fixture_def);
 				delete[] vertices;
 			}
@@ -325,7 +366,9 @@ namespace game
 
 		void remove_dynamic_body(entity ent)
 		{
+			b2d_mutex.lock();
 			world->DestroyBody(dynamic_bodies.get(ent));
+			b2d_mutex.unlock();
 			dynamic_bodies.remove(ent);
 		}
 		void update() {}
@@ -359,6 +402,108 @@ namespace game
 		b2Body *get_dynamic_body(entity ent)
 		{
 			return dynamic_bodies.get(ent);
+		}
+	};
+
+	// projectile
+	struct projectile : public game_engine::component
+	{
+		b2Body *body;
+		projectile() = default;
+		projectile(b2Body *b) : body(b) {}
+	};
+
+	// projectile system
+	struct projectile_system : public game_engine::system
+	{
+	private:
+		game_engine::sparse_component_set<projectile> projectiles;
+
+	public:
+		projectile_system() = default;
+
+		void update() {}
+
+		void update(uint64_t time_to_step) // updating projectiles requires stepping time in box2d first
+		{
+			std::vector<entity> entities = projectiles.get_entities();
+			// box2d_system *box2d_system_pointer = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()));
+			game_engine::box_system *bo_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
+
+			// retrieve all projectiles' locations from the box2d world, and update their positions in the game
+			// for (auto &proj : projectiles)
+			for (auto &proj : entities)
+			{
+				b2Vec2 position = projectiles.get(proj).body->GetPosition();
+				// b2Body *body = proj.second.body;
+				// b2Vec2 position = body->GetPosition();
+				// printf("x: %f, y: %f\n", position.x, position.y);
+				// get box position
+				game_engine::box b = bo_system_pointer->get(proj);
+				b.x = position.x - glsl_helper::projectile_width / 2.0f;
+				b.y = position.y - glsl_helper::projectile_height / 2.0f;
+				bo_system_pointer->update_box(proj, b);
+				game_engine::texture_vbo_system *tex_vbo_system_pointer = ((game_engine::texture_vbo_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
+				tex_vbo_system_pointer->update(proj);
+			}
+		}
+
+		b2Body *create_projectile(entity ent, float x, float y, float ang, float vel)
+		{
+			// create small circle projectile
+			b2BodyDef body_def;
+			body_def.type = b2_dynamicBody;
+			body_def.position.Set(x, y);
+			// body_def.angle = ang;
+			b2Body *body = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()))->world->CreateBody(&body_def);
+			b2CircleShape circle;
+			circle.m_radius = 2.f;
+			b2FixtureDef fixture_def;
+			fixture_def.shape = &circle;
+			fixture_def.density = 0.2f;
+			fixture_def.friction = 0.3f;
+			fixture_def.restitution = 0.89f;
+			
+			b2FixtureUserData fixtureUserData;
+			// fixtureUserData.pointer = b2fixture_types::PROJECTILE;
+			fixtureUserData.pointer = (uintptr_t)new b2_user_data(ent, b2fixture_types::PROJECTILE);
+			fixture_def.userData = fixtureUserData;
+
+
+			b2d_mutex.lock();
+			body->CreateFixture(&fixture_def);
+			body->SetLinearVelocity(b2Vec2(vel * cos(ang), -vel * sin(ang)));
+			b2d_mutex.unlock();
+			projectile proj(body);
+			projectiles.add(ent, proj);
+			return body;
+		}
+
+		void add_projectile(entity ent, projectile proj)
+		{
+			projectiles.add(ent, proj);
+		}
+
+		/// @brief Remove the projectile from the system, and destroy the box2d body
+		/// @param ent 
+		void remove_projectile(entity ent)
+		{
+			// if userdata is not null, delete it
+			if ((projectiles.get(ent).body)->GetUserData().pointer != 0)
+			{
+				delete (b2_user_data *)(projectiles.get(ent).body->GetUserData().pointer);
+			}
+
+			// destroy box2d body
+			b2d_mutex.lock();
+			((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()))->world->DestroyBody(projectiles.get(ent).body);
+			b2d_mutex.unlock();
+			projectiles.remove(ent);
+		}
+
+		projectile &get_projectile(entity ent)
+		{
+			return projectiles.get(ent);
 		}
 	};
 
@@ -524,7 +669,7 @@ namespace game
 					case SAND:
 						if (raise(get_tile_at(x, y + 1)) & (raise(AIR) | raise(SMOKE) | raise(WATER)))
 						{
-							set_tile_at(x, y,  get_tile_at(x, y + 1));
+							set_tile_at(x, y, get_tile_at(x, y + 1));
 							set_tile_at(x, y + 1, SAND);
 						}
 						else if (raise(get_tile_at(x - 1, y + 1)) & (raise(AIR) | raise(SMOKE) | raise(WATER)))
@@ -607,13 +752,13 @@ namespace game
 			// create solid border around world
 			for (int x = 0; x < CHUNKS_WIDTH * CHUNK_SIZE; x++)
 			{
-				set_tile_at(x, 0, STONE);
-				set_tile_at(x, CHUNKS_WIDTH * CHUNK_SIZE - 1, STONE);
+				set_tile_at(x, 0, BEDROCK);
+				set_tile_at(x, CHUNKS_WIDTH * CHUNK_SIZE - 1, BEDROCK);
 			}
 			for (int y = 0; y < CHUNKS_WIDTH * CHUNK_SIZE; y++)
 			{
-				set_tile_at(0, y, STONE);
-				set_tile_at(CHUNKS_WIDTH * CHUNK_SIZE - 1, y, STONE);
+				set_tile_at(0, y, BEDROCK);
+				set_tile_at(CHUNKS_WIDTH * CHUNK_SIZE - 1, y, BEDROCK);
 			}
 		}
 		entity get_chunk_entity(int x, int y)
@@ -646,25 +791,25 @@ namespace game
 			return outlines;
 		}
 
-		void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
+		void delete_circle(int x, int y, int radius)
 		{
 
 			// get texture system
-			auto texture_system = (game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>());
+			// auto texture_system = (game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>());
 			// get b2d system
-			auto b2d_system = (box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>());
+			// auto b2d_system = (box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>());
 
 			for (int i = 0; i < NUM_CHUNKS; i++)
 			{
 				bool modified = chunk_data[i]->delete_circle(x, y, radius);
-				if (modified)
-				{
-					std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *tile_data = chunk_data[i]->get_data();
-					entity ent = chunk_entities[i];
+				// if (modified)
+				// {
+					// std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *tile_data = chunk_data[i]->get_data();
+					// entity ent = chunk_entities[i];
 					// texture_system->update_texture(ent, (uint8_t *)tile_data->data(), CHUNK_SIZE, CHUNK_SIZE, game_engine::shader_programs[0]);
-					int chunkx = i % CHUNKS_WIDTH;
-					int chunky = i / CHUNKS_WIDTH;
-					texture_system->update_texture_section(all_chunk_ent, (uint8_t *)tile_data->data(), chunkx * CHUNK_SIZE, chunky * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
+					// int chunkx = i % CHUNKS_WIDTH;
+					// int chunky = i / CHUNKS_WIDTH;
+					// texture_system->update_texture_section(all_chunk_ent, (uint8_t *)tile_data->data(), chunkx * CHUNK_SIZE, chunky * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
 					// std::vector<std::vector<std::pair<float, float>>> * outlines = new std::vector<std::vector<std::pair<float, float>>>;
 					// chunk_data[i]->create_outlines(outlines);
 					// (*chunk_outlines)[i] = outlines;
@@ -672,9 +817,65 @@ namespace game
 
 					// b2d_system->update_static_outlines(ent, outlines);
 					// delete outlines;
-				}
+				// }
 			}
 			//
+		}
+	};
+
+	struct b2_contact_listener : public b2ContactListener
+	{
+		void BeginContact(b2Contact *contact) override
+		{
+			b2Fixture *fixture_a = contact->GetFixtureA();
+			b2Fixture *fixture_b = contact->GetFixtureB();
+			b2_user_data *ud_a = (b2_user_data *)fixture_a->GetUserData().pointer;
+			b2_user_data *ud_b = (b2_user_data *)fixture_b->GetUserData().pointer;
+
+			if(ud_a == nullptr || ud_b == nullptr)
+				return;
+			
+			if (ud_a->type == b2fixture_types::PROJECTILE || ud_b->type == b2fixture_types::PROJECTILE)
+			{
+				// if (fixture_a->IsSensor() || fixture_b->IsSensor())
+				// 	return;
+				
+				if(ud_a->type == b2fixture_types::PLAYER || ud_b->type == b2fixture_types::PLAYER)
+				{
+					// printf("Player hit\n");
+					return;
+				}
+				if(ud_a->type == b2fixture_types::TERRAIN || ud_b->type == b2fixture_types::TERRAIN)
+				{
+					// printf("Terrain hit\n");
+					if(ud_a->type == b2fixture_types::PROJECTILE)
+					{
+						// delete circle shape around projectile
+						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle(fixture_a->GetBody()->GetPosition().x, fixture_a->GetBody()->GetPosition().y, 5);
+						// void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
+
+						// ((projectile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<projectile_system>()))->remove_projectile(ud_a->ent);
+						// remove from box2d world
+						
+						// b2d_mutex.lock();
+						// ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>())) ->
+						// b2d_mutex.unlock();
+					}
+					else
+					{
+						// delete circle shape around projectile
+						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle(fixture_b->GetBody()->GetPosition().x, fixture_b->GetBody()->GetPosition().y, 5);
+						// void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
+
+						// ((projectile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<projectile_system>()))->remove_projectile(ud_b->ent);
+						// remove from box2d world
+						// b2d_mutex.lock();
+						// ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()))->world->DestroyBody(fixture_b->GetBody());
+						// b2d_mutex.unlock();
+					}
+					return;
+				}
+			}
 		}
 	};
 

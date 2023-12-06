@@ -140,11 +140,18 @@ namespace game_engine
 			return m_components[index];
 		}
 
-		/// @brief Get a pointer to the beginning of the dense array
-		/// @return A pointer to the beginning of the dense array
-		std::vector<uint32_t> *get_entities()
+		
+		std::vector<uint32_t> get_entities()
 		{
-			return &m_dense;
+			std::vector<uint32_t> entities;
+			for (uint32_t i = 0; i < m_size; i++)
+			{
+				if (m_sparse[m_dense[i]] < m_size)
+				{
+					entities.push_back(m_dense[i]);
+				}
+			}
+			return entities;
 		}
 	};
 }

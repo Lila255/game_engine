@@ -33,7 +33,7 @@ file(GLOB SOURCES src/*.cpp)
 
 # Build executable
 add_executable(game ${SOURCES})
-target_link_libraries(game PRIVATE glfw GLEW::glew opengl32 poly2tri::poly2tri box2d::box2d)
+target_link_libraries(game PRIVATE glfw GLEW::glew opengl32 poly2tri::poly2tri box2d::box2d Winmm)
 # target_link_libraries(game glfw3 glew opengl32)
 
 # print the build type

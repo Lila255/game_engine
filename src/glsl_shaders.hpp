@@ -89,6 +89,8 @@ namespace glsl_helper
 					out_Color = vec4(0.5, 0.446, 0.425, 1.0);
 				} else if(value == 9) {
 					out_Color = vec4(0.077, 0.66, 0.0, 1.0);
+				} else if(value == 10) {
+					out_Color = vec4(1.0, 0.7647058824, 0.0, 1.0);
 				} else if(value == 100) {
 					out_Color = vec4(0.9, 0.7, 0.4, 1.0);
 				} else if(value == 101) {
@@ -240,9 +242,9 @@ namespace glsl_helper
 				float inverse_alpha = 0.0;
 				uint world_value = sampleWorld(v_TexCoord * texture_size);
 				if(world_value < 3) {
-					inverse_alpha = value / 30000.0;
+					inverse_alpha = value / 96000.0 + blurred_value / 256000.0;
 				} else {
-					inverse_alpha = blurred_value / 30000.0;
+					inverse_alpha = blurred_value / 96000.0;
 				}
 				
 				if(inverse_alpha > 1.0)
@@ -323,13 +325,20 @@ namespace glsl_helper
 					return;
 				}
 				int ray_index = int(gl_GlobalInvocationID.x);
-				float ray_angle = (float(ray_index) / float(18000)) * 2.0 * 3.1415926535897932384626433832795;
+				float ray_decimal = float(ray_index) / float(18000);
+				float ray_angle = float(ray_index) / float(18000) * 2.0 * 3.1415926535897932384626433832795;
 				// uint hue_val = uint((float(ray_index) / 18000.0) * 4294967295.0);
 				vec2 ray_dir = vec2(cos(ray_angle), sin(ray_angle));
 
 				vec2 ray_pos = player_pos;
 				
 				uint bounces = 0;
+				uint metal_bounces = 0;
+				uint refracted_bounces = 0;
+
+				if (sampleWorld(ray_pos) > 0 && sampleWorld(ray_pos) < 3) {
+					refracted_bounces = 1;
+				}
 
 				// loop until we hit something or we reach max_ray_length
 				for (int i = 0; i < max_ray_length;) {
@@ -345,10 +354,11 @@ namespace glsl_helper
 					
 					if(sample_v == 1 && sample_v0 != 1)
 					{
-						bounces++;
+						refracted_bounces = 1;
 					}
 					else if(sample_v == 2)
 					{
+						refracted_bounces = 1;
 						
 					// 	// hit water, refract
 					// 	// ray_dir = refract_ray(ray_dir, 1.0003, 1.33);
@@ -362,6 +372,9 @@ namespace glsl_helper
 					// }
 					} else
 					if (sample_v >= 3) {     // hit something, bounce
+						if(sample_v == 10) {
+							metal_bounces++;
+						}
 
 						uint surround_values = 0;
 						// for(int j = 0; j < 9; j++)
@@ -392,10 +405,6 @@ namespace glsl_helper
 						}
 
 						vec2 normal_vec = imageLoad(normal_vectors, int(surround_values)).rg;
-						// vec2 normal_vec = normal_vectors[surround_values];
-						// vec2 normal_vec = normal_vectors.data[surround_values % 256];
-						// vec2 normal_vec = vec2(0.0, 1.0);
-
 
 						float dot_val = dot(normal_vec, ray_dir);
 
@@ -404,7 +413,11 @@ namespace glsl_helper
 							dot_val = -dot_val;
 						}
 						vec2 reflection = ray_dir - 2.0 * dot_val * normal_vec;
-						
+
+						// Add a small random variation
+						float noise_scale = 0.22; 
+						reflection += noise_scale * ((ray_index % 100 - 50) / float(50.0));
+
 						ray_dir = reflection;
 						ray_pos += ray_dir;
 						if(sampleWorld(ray_pos) > 0) {
@@ -428,9 +441,9 @@ namespace glsl_helper
 					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  bounces > 0 ? 0.5 : 1); 
 					if(bounces > 0)
 					{
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 2); 
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 3 + metal_bounces - refracted_bounces); 
 					} else {
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 3); 
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 3 - refracted_bounces);
 					}
 				}
 			};
@@ -628,6 +641,31 @@ namespace glsl_helper
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, character_width, character_height, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
 	}
 
+	const uint16_t projectile_height = 4;
+	const uint16_t projectile_width = 4;
+	// create_projectile_texture
+	void create_projectile_texture(GLuint &texture)
+	{
+		// Create a texture for the character
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
+		// Set texture options
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		
+		std::array<uint8_t, 16> data = {
+			0, 7, 7, 0,
+			7, 0, 0, 7,
+			7, 0, 0, 7,
+			0, 7, 7, 0
+		};
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 4, 4, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
+
+	}
 };
 
 std::vector<GLuint> load_shaders(std::string vert, std::string frag)

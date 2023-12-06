@@ -313,9 +313,11 @@ namespace game_engine
 			// {
 			// 	std::vector<uint32_t> *entities = m_texture_groups[shader_program.second]->get_entities();
 
-			std::vector<uint32_t> *entities = m_sprite_textures.get_entities();
-			// glUseProgram(m_);
-
+			std::vector<uint32_t> entities = m_sprite_textures.get_entities();
+			// sort entities by box z value
+			std::sort(entities.begin(), entities.end(), [&](uint32_t a, uint32_t b) {
+				return bo_system_pointer->get(a).z < bo_system_pointer->get(b).z;
+			});
 
 			// glUniform1i(glGetUniformLocation(shader_program.first, "tex"), 0);
 
@@ -327,7 +329,7 @@ namespace game_engine
 			// glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
 
 			// printf("Rendfering %d entities\n", entities->size());
-			for (std::vector<uint32_t>::iterator it = entities->begin(); it != entities->end(); it++)
+			for (std::vector<uint32_t>::iterator it = entities.begin(); it != entities.end(); it++)
 			{
 				// GLuint program = m_sprite_programs.get(*it);
 				sprite &t = m_sprite_textures.get(*it);

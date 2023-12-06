@@ -13,7 +13,7 @@
 
 namespace game
 {
-	const double perlin_noise_seed = 10.0;
+	const double perlin_noise_seed = 31.0;
 	static siv::PerlinNoise perlin_noise_1(perlin_noise_seed);
 	static siv::PerlinNoise perlin_noise_2(perlin_noise_seed + 1);
 	static siv::PerlinNoise perlin_noise_3(perlin_noise_seed + 2);
@@ -34,10 +34,14 @@ namespace game
 		WOOD,	// 7
 		LEAF,	// 8
 		GRASS,	// 9
-		
-		BRICK_1,
+		GOLD,	// 10
+
+		BRICK_1,	// background tiles
 		BRICK_2,
 		MORTAR,
+
+		// indestructible tiles
+		BEDROCK,
 
 	};
 

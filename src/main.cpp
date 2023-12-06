@@ -16,7 +16,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		glfwSetWindowShouldClose(glfwGetCurrentContext(), true);
 	}
 	// w
-	if (keys.count(GLFW_KEY_W) > 0)
+	if (keys.count(GLFW_KEY_SPACE) > 0)
 	{
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
@@ -25,22 +25,25 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		// if body is touching something
 		if (body->GetContactList() != NULL)
 		{
-			for (b2ContactEdge *ce = body->GetContactList(); ce != NULL; ce = ce->next)
-			{
-				if (!ce->contact->IsTouching())
-					continue;
-				printf("normal: %f, %f\n", ce->contact->GetManifold()->localNormal.x, ce->contact->GetManifold()->localNormal.y);
-				// if the normal is pointing up
-				if (ce->contact->GetManifold()->localNormal.y <= 0)
-				{
-					b2Vec2 impulse = b2Vec2(0.0f, -1000.1f);
-					body->ApplyLinearImpulseToCenter(impulse, true);
+			// for (b2ContactEdge *ce = body->GetContactList(); ce != NULL; ce = ce->next)
+			// {
+			// 	if (!ce->contact->IsTouching())
+			// 		continue;
+			// 	printf("normal: %f, %f\n", ce->contact->GetManifold()->localNormal.x, ce->contact->GetManifold()->localNormal.y);
+			// 	// if the normal is pointing up
+			// 	if (ce->contact->GetManifold()->localNormal.y <= 0)
+			// 	{
+			// 		b2Vec2 impulse = b2Vec2(0.0f, -1000.1f);
+					// body->ApplyLinearImpulseToCenter(impulse, true);
 					// apply force
 					// keys.erase(GLFW_KEY_W);
 					// body->ApplyForceToCenter(impulse, true);
-					break;
-				}
-			}
+					
+					// set vertical velocity to negative value.
+					body->SetLinearVelocity(b2Vec2(body->GetLinearVelocity().x, -25.0f));
+			// 		break;
+			// 	}
+			// }
 			// b2Vec2 impulse = b2Vec2(0.0f, -1000.1f);
 			// body->ApplyLinearImpulseToCenter(impulse, true);
 		}
@@ -54,13 +57,13 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(-15.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(-8.1f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
-	 {
-		printf("5");
-	}
+	//  {
+		// printf("5");
+	// }
 
 	// s
 	if (keys.count(GLFW_KEY_S) > 0)
@@ -80,7 +83,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(15.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(8.1f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
@@ -103,8 +106,10 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(direction * 3.f, 0.f);
-		body->ApplyLinearImpulseToCenter(impulse, true);
+		// b2Vec2 impulse = b2Vec2(direction * 3.f, 0.f);
+		// body->ApplyLinearImpulseToCenter(impulse, true);
+		// set horizontal velocity to direction * 10
+		body->SetLinearVelocity(b2Vec2(direction * 85.0f, body->GetLinearVelocity().y));
 	}
 }
 
@@ -113,39 +118,71 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 	// if mouse click
 	if (buttons.count(GLFW_MOUSE_BUTTON_LEFT) > 0)
 	{
+		// // get mouse position
+		// double xpos, ypos = -1;
+		// glfwGetCursorPos(window, &xpos, &ypos);
+		// printf("Cursor pos: x: %f, y: %f\n", xpos, ypos);
+		// // get character position
+		// game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+		// entity player = game_engine::game_engine_pointer->player_entitiy;
+		// b2Body *body = b2d_sys->get_dynamic_body(player);
+		// b2Vec2 player_pos = body->GetPosition();
+		// // get mouse position
+		// int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x);
+		// int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y);
+		// printf("x: %d, y: %d\n", world_x, world_y);
+		// // get world tile system
+		// game::world_tile_system *world_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
+		// world_sys->delete_circle(world_x, world_y, 8, &chunk_outlines);
+		// buttons.erase(GLFW_MOUSE_BUTTON_LEFT);
+		// *** OLD CODE ***
+
 		// get mouse position
 		double xpos, ypos = -1;
 		glfwGetCursorPos(window, &xpos, &ypos);
 		printf("Cursor pos: x: %f, y: %f\n", xpos, ypos);
 
-		// translate to world coordinates
-		// int width, height;
-		// glfwGetWindowSize(window, &width, &height);
+		// get angle from center of screen to mouse
+		double angle = atan2(ypos - game_engine::window_height / 2.0, xpos - game_engine::window_width / 2.0);
+		printf("Angle: %f\n", angle);
 
+		// lock b2d mutex
+ 		// game::b2d_mutex.lock();
 		// get character position
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
-		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 player_pos = body->GetPosition();
+		b2Body *player_body = b2d_sys->get_dynamic_body(player);
+		b2Vec2 player_pos = player_body->GetPosition();
 
-		// get mouse position
-		int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x);
-		int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y);
-		printf("x: %d, y: %d\n", world_x, world_y);
+		// create projectile
+		game::projectile_system *projectile_sys = (game::projectile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::projectile_system>()));
+		// projectile_sys->create_projectile(player_pos.x, player_pos.y, angle);
 
-		// get world tile system
-		game::world_tile_system *world_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
-		// std::array<game::chunk *, game::NUM_CHUNKS> *chunks = world_sys->get_chunks();
-		// // for(game::chunk * c : chunks)
+		// create entity for projectile
+		entity projectile_entity = game_engine::game_engine_pointer->create_entity();
+		// create b2d projectile
+		//start away from player
+		// player_pos.x += cos(angle) * 0.5;
+		b2Body *projectile_body  = projectile_sys->create_projectile(projectile_entity, player_pos.x + cos(angle) * 3.0, player_pos.y + sin(angle) * 3.0, angle, 250);
+		// create sprite for projectile
+		game_engine::render_system *render_sys = (game_engine::render_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
+		game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
+		game_engine::box_system *box_sys = (game_engine::box_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
+		game_engine::sprite sprt(game_engine::shader_programs[0]);
+		GLuint projectile_texture;
+		glsl_helper::create_projectile_texture(projectile_texture);
 
-		// for (int i = 0; i < game::NUM_CHUNKS; i++)
-		// {
-		//     chunks->at(i) -> delete_circle(world_x, world_y, 8);
-		//     entity e = world_sys->get_chunk_entity(i);
-		// }
-		world_sys->delete_circle(world_x, world_y, 8, &chunk_outlines);
+		sprt.add_texture({projectile_texture, 0, GL_R8, glsl_helper::projectile_width, glsl_helper::projectile_height});
+		render_sys->add(projectile_entity, sprt);
+		box_sys->add(projectile_entity, {0.f, 0.f, -4.6f, glsl_helper::projectile_width, glsl_helper::projectile_height});
+		texture_vbo_sys->add(projectile_entity);
 
+		// projectile_sys -> add_entity(projectile)
 		buttons.erase(GLFW_MOUSE_BUTTON_LEFT);
+
+		// unlock b2d mutex
+		// game::b2d_mutex.unlock();
+
 	}
 }
 
@@ -159,6 +196,10 @@ void do_outlining(game::chunk * c, std::vector<std::vector<std::pair<float, floa
 	c->create_outlines(chunk_outline);
 }
 
+// start_time = 0;
+std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
+
+
 void start_physics_thread()
 {
 	game_engine::engine * engine_ptr = game_engine::game_engine_pointer;
@@ -166,7 +207,7 @@ void start_physics_thread()
 	game::world_tile_system *world_sys = (game::world_tile_system *)(engine_ptr->get_system(game_engine::family::type<game::world_tile_system>()));
 	game_engine::render_system *render_sys = (game_engine::render_system *)(engine_ptr->get_system(game_engine::family::type<game_engine::render_system>()));
 
-
+	start_time = std::chrono::high_resolution_clock::now();
 	const int tick_rate = 20;
 	uint64_t tick_count = 0;
 	while (physics_loop_running)
@@ -197,12 +238,25 @@ void start_physics_thread()
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		// printf("Physics loop took %lld ms\n", duration);
 		printf("Physics loop took %lld ms\n", duration);
 		
 		
 		// sleep for 1 / tick_rate seconds
 		if(duration < 1000.0 / tick_rate)
 			std::this_thread::sleep_for(std::chrono::milliseconds(uint64_t((1000 - duration / 1000.0) / tick_rate)));
+			// std::thread::sleep()
+
+		// if(tick_count % 100 == 0)
+		// {
+		// 	// end time
+		// 	std::chrono::time_point<std::chrono::high_resolution_clock> end_time = std::chrono::high_resolution_clock::now();
+		// 	// get duration
+		// 	uint64_t duration_micro = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+		// 	printf("100x physics loop took %lld ms\n", duration_micro / 1000);
+		// 	start_time = std::chrono::high_resolution_clock::now();
+		// }
+		
 	}
 }
 
@@ -237,7 +291,11 @@ void run_game(GLFWwindow *window)
 	eng.add_system(game_engine::family::type<game::world_tile_system>(), world_sys);
 
 	game::box2d_system *box2d_sys = new game::box2d_system();
+	box2d_sys->world -> SetContactListener(new game::b2_contact_listener());
 	eng.add_system(game_engine::family::type<game::box2d_system>(), box2d_sys);
+
+	game::projectile_system *projectile_sys = new game::projectile_system();
+	eng.add_system(game_engine::family::type<game::projectile_system>(), projectile_sys);
 
 	world_sys->generate_world();
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
@@ -372,7 +430,7 @@ void run_game(GLFWwindow *window)
 	b2Body *player_body = box2d_sys->get_dynamic_body(player_entity);
 
 	// create light components
-	uint16_t light_texture_count = 16;
+	uint16_t light_texture_count = 32;
 	std::vector<entity> light_entities;
 	std::vector<GLuint> light_textures;
 	// std::vector<GLuint> colour_textures;
@@ -503,13 +561,17 @@ void run_game(GLFWwindow *window)
 	uint16_t light_texture_index = 0;
 	uint64_t last_time_taken_micro = 0;
 	uint64_t counter = 0;
+	b2Vec2 player_vel = b2Vec2(0.0f, 0.0f);
 	// Run the game loop
 	while (!glfwWindowShouldClose(window))
 	{
 		auto start_rendering_loop = std::chrono::high_resolution_clock::now();
 
 		game::b2d_mutex.lock();
+		// set player velocity again
+		player_body->SetLinearVelocity(player_vel);
 		box2d_sys->update(last_time_taken_micro);
+		projectile_sys->update(last_time_taken_micro);
 		game::b2d_mutex.unlock();
 
 		for(int c = 0; c < game::NUM_CHUNKS; c++)
@@ -554,7 +616,7 @@ void run_game(GLFWwindow *window)
 		// printf("after_binding_col_texture: %d\n", glGetError());
 		
 		
-		glDispatchCompute(18000, 1, 1);
+		glDispatchCompute(36000, 1, 1);
 		// printf("after dispatch: %d\n", glGetError());
 		glFinish();
 
@@ -651,6 +713,8 @@ void run_game(GLFWwindow *window)
 		if (light_texture_index == light_texture_count)
 			light_texture_index = 0;
 
+		// get player velocity
+		player_vel = player_body->GetLinearVelocity();
 		
 		auto end_rendering_loop = std::chrono::high_resolution_clock::now();
 		
@@ -686,6 +750,8 @@ int main()
 {
 	printf("Hello World!\n");
 
+	timeBeginPeriod(1);
+
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -710,7 +776,7 @@ int main()
 
 	// glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, game_engine::window_width, game_engine::window_height, GLFW_DONT_CARE);
 
-	// glfwSwapInterval(0);
+	glfwSwapInterval(0);
 
 	// Init glew
 	err = glewInit();

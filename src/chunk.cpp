@@ -16,15 +16,16 @@ namespace game
 				double noise_2 = perlin_noise_2.noise2D_01(n_x, n_y);
 				double noise_3 = perlin_noise_3.noise2D_01(n_x, n_y);
 
-				if (noise_1 > 0.525)
+				if (noise_1 * noise_2 > .220)
+				// if (noise_1 + noise_2 > .970)
 				{ // solid
-					if (noise_2 > 0.55)
+					if (noise_2 > 0.625)
 					{
 						data[y][x] = game::STONE;
 					}
 					else
 					{
-						if (noise_3 > 0.35)
+						if (noise_3 > 0.58)
 						{
 							data[y][x] = game::SAND;
 						}
@@ -889,7 +890,7 @@ namespace game
 				}
 				else
 				{
-					printf("Error: outline ended prematurely\n");
+ 					printf("Error: outline ended prematurely\n");
 					break;
 				}
 
@@ -990,6 +991,8 @@ namespace game
 			for (int x = x0; x <= x1; x++)
 			{
 				if (x < 0 || y < 0 || x >= CHUNK_SIZE || y >= CHUNK_SIZE)
+					continue;
+				if(data[y][x] == tile_type::BEDROCK || data[y][x] < SOLID_TILE_START_INDEX)
 					continue;
 				if ((x - local_x) * (x - local_x) + (y - local_y) * (y - local_y) <= radius * radius)
 				{
