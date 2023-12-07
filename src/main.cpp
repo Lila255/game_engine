@@ -40,7 +40,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 					// body->ApplyForceToCenter(impulse, true);
 					
 					// set vertical velocity to negative value.
-					body->SetLinearVelocity(b2Vec2(body->GetLinearVelocity().x, -25.0f));
+					body->SetLinearVelocity(b2Vec2(body->GetLinearVelocity().x, -45.0f));
 			// 		break;
 			// 	}
 			// }
@@ -503,7 +503,7 @@ void run_game(GLFWwindow *window)
 
 	entity mater_light_entity = eng.create_entity();
 
-	box_sys->add(mater_light_entity, {0.f, 0.f, -4.5f, game::CHUNK_SIZE * 3.0, game::CHUNK_SIZE * 3.0});
+	box_sys->add(mater_light_entity, {0.f, 0.f, -4.5f, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
 	texture_vbo_sys->add(mater_light_entity);
 	sprt = game_engine::sprite(game_engine::shader_programs[2]);
 	sprt.add_texture({master_light_texture, 0, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});

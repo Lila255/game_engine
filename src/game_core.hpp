@@ -17,7 +17,7 @@
 #define M_PI 3.14159265358979323846		/* pi */
 #define radians(x) ((x) * M_PI / 180.0) // degrees to radians
 #define raise(x) (1 << x)
-#define PIXEL_SCALE 8
+#define PIXEL_SCALE 4
 
 // typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 // typedef K::Point_2 point_2;
@@ -26,8 +26,8 @@
 
 namespace game
 {
-	const uint16_t NUM_CHUNKS = 9; // 3x3 chunks in world
-	const uint16_t CHUNKS_WIDTH = 3;
+	const uint16_t NUM_CHUNKS = 25; // 3x3 chunks in world
+	const uint16_t CHUNKS_WIDTH = 5;
 	// const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
 	std::mutex b2d_mutex;
@@ -457,7 +457,7 @@ namespace game
 			// body_def.angle = ang;
 			b2Body *body = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()))->world->CreateBody(&body_def);
 			b2CircleShape circle;
-			circle.m_radius = 2.f;
+			circle.m_radius = glsl_helper::projectile_width / 2.0f;
 			b2FixtureDef fixture_def;
 			fixture_def.shape = &circle;
 			fixture_def.density = 0.2f;
@@ -851,7 +851,7 @@ namespace game
 					if(ud_a->type == b2fixture_types::PROJECTILE)
 					{
 						// delete circle shape around projectile
-						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle(fixture_a->GetBody()->GetPosition().x, fixture_a->GetBody()->GetPosition().y, 5);
+						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2, fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2, 5);
 						// void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
 
 						// ((projectile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<projectile_system>()))->remove_projectile(ud_a->ent);

@@ -76,7 +76,7 @@ namespace glsl_helper
 				if(value == 0) {
 					out_Color = vec4(0.0, 0.0, 0.0, 0.0);
 				} else if(value == 1) {
-					out_Color = vec4(0.25, 0.25, 0.25, 0.75);
+					out_Color = vec4(0.15, 0.15, 0.15, 0.65);
 				} else if(value == 2) {
 					out_Color = vec4(0.01, 0.01, 0.98, 0.65);
 				} else if(value == 3) {
@@ -313,7 +313,7 @@ namespace glsl_helper
 			}
 
 			uniform vec2 player_pos;    // relative to the lighting texture, center of the screen but not center of lighting texture
-			float step_distance = 0.5;
+			float step_distance = 1.0;
 			
 			const int max_ray_length = 256;
 			const float ior_values[6] = float[6](1.0, 1.01, 1.33, 1.52, 1.62, 1.65);
@@ -662,6 +662,9 @@ namespace glsl_helper
 			7, 0, 0, 7,
 			0, 7, 7, 0
 		};
+		// std::array<uint8_t, 16> data = {
+		// 	7,7,7,7
+		// };
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 4, 4, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
 
