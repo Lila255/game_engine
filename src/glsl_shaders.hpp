@@ -643,9 +643,16 @@ namespace glsl_helper
 
 	const uint16_t projectile_height = 4;
 	const uint16_t projectile_width = 4;
+
+	std::unordered_map<std::string, GLuint> texture_map;
+
 	// create_projectile_texture
 	void create_projectile_texture(GLuint &texture)
 	{
+		if(texture_map.count("projectile")) {
+			texture = texture_map["projectile"];
+			return;
+		}
 		// Create a texture for the character
 		glGenTextures(1, &texture);
 		glBindTexture(GL_TEXTURE_2D, texture);
@@ -667,7 +674,7 @@ namespace glsl_helper
 		// };
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 4, 4, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
-
+		texture_map["projectile"] = texture;
 	}
 };
 
