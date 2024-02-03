@@ -29,6 +29,19 @@
             "environment": [],
             "console": "integratedTerminal",
             "preLaunchTask": "Build Debug"
-        }
+        },
+        // build game in release mode with cmake and run game.exe
+        {
+            "name": "(Windows) Build Release with cmake & Launch",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Release/game.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/Release",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build Release"
+        },
     ]
 }

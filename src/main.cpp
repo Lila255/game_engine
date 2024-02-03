@@ -109,7 +109,8 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		// b2Vec2 impulse = b2Vec2(direction * 3.f, 0.f);
 		// body->ApplyLinearImpulseToCenter(impulse, true);
 		// set horizontal velocity to direction * 10
-		body->SetLinearVelocity(b2Vec2(direction * 85.0f, body->GetLinearVelocity().y));
+		body->SetLinearVelocity(b2Vec2(direction * 115.0f, body->GetLinearVelocity().y));
+		keys.erase(GLFW_KEY_LEFT_SHIFT);
 	}
 }
 
@@ -215,7 +216,7 @@ void start_physics_thread()
 		auto start = std::chrono::high_resolution_clock::now();
 
 		world_sys->update(tick_count++);
-
+		printf("Tile movements took %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count());
 		std::array<entity, game::NUM_CHUNKS> chunk_entities = world_sys->get_chunk_entities();
 		std::array<game::chunk *, game::NUM_CHUNKS> * chunks = world_sys->get_chunks();
 		
@@ -226,6 +227,7 @@ void start_physics_thread()
 			game::chunk *c = chunks->at(i);
 			chunks_outlines.push_back(new std::vector<std::vector<std::pair<float, float>>>());
 			threads.push_back(std::thread(do_outlining, c, chunks_outlines[i]));
+			// threads.push_back(std::thread((c->create_outlines), chunks_outlines[i]));
 		}
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
@@ -265,6 +267,11 @@ void run_game(GLFWwindow *window)
 	// Create the engine and systems
 	game_engine::engine eng;
 	game_engine::shader_programs = load_shaders(glsl_helper::vert_0(), glsl_helper::frag_0());
+
+	// use the shader program
+	glUseProgram(game_engine::shader_programs[0]);
+	GLint colours_location = glGetUniformLocation(game_engine::shader_programs[0], "colours");
+	glUniform4fv(colours_location, glsl_helper::colours.size() / 4, glsl_helper::colours.data());
 
 	// generic shader
 	game_engine::shader_programs.push_back(load_shaders(glsl_helper::vert_1(), glsl_helper::frag_1())[0]);
@@ -430,7 +437,7 @@ void run_game(GLFWwindow *window)
 	b2Body *player_body = box2d_sys->get_dynamic_body(player_entity);
 
 	// create light components
-	uint16_t light_texture_count = 32;
+	uint16_t light_texture_count = 48;
 	std::vector<entity> light_entities;
 	std::vector<GLuint> light_textures;
 	// std::vector<GLuint> colour_textures;
@@ -763,8 +770,11 @@ int main()
 		return 1;
 	}
 
+	// // Create window
+	// GLFWwindow *window = glfwCreateWindow(game_engine::window_width, game_engine::window_height, "Game", NULL, NULL);
 	// Create window
-	GLFWwindow *window = glfwCreateWindow(game_engine::window_width, game_engine::window_height, "Game", NULL, NULL);
+	GLFWwindow *window = glfwCreateWindow(game_engine::window_width, game_engine::window_height, "Game", glfwGetPrimaryMonitor(), NULL);
+	
 	if (window == NULL)
 	{
 		printf("Failed to create window\n");

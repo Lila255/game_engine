@@ -17,7 +17,7 @@
 #define M_PI 3.14159265358979323846		/* pi */
 #define radians(x) ((x) * M_PI / 180.0) // degrees to radians
 #define raise(x) (1 << x)
-#define PIXEL_SCALE 8
+#define PIXEL_SCALE 7
 
 // typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 // typedef K::Point_2 point_2;
@@ -26,8 +26,8 @@
 
 namespace game
 {
-	const uint16_t NUM_CHUNKS = 25; // 3x3 chunks in world
-	const uint16_t CHUNKS_WIDTH = 5;
+	const uint16_t NUM_CHUNKS = 9; // 3x3 chunks in world
+	const uint16_t CHUNKS_WIDTH = 3;
 	// const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
 	std::mutex b2d_mutex;
@@ -39,7 +39,7 @@ namespace game
 
 	enum b2fixture_types
 	{
-		EMPTY = 0x00,
+		EMPTY = 0x00,	// set to this to delete fixture
 		PLAYER = 0x01,
 		TERRAIN = 0x02,
 		PROJECTILE = 0x04,
@@ -69,7 +69,7 @@ namespace game
 		// box2d_system() = default;
 		box2d_system()
 		{
-			gravity = b2Vec2(0.0f, 80.8f);
+			gravity = b2Vec2(0.0f, 91.8f);
 			world = new b2World(gravity);
 			// contact_listener = new b2_contact_listener();
 		}
@@ -98,6 +98,7 @@ namespace game
 			fixtureDef.shape = &chain;
 			fixtureDef.density = 0.0f;
 			fixtureDef.friction = 0.73f;
+			fixtureDef.restitution = 0.15f;
 			b2FixtureUserData fixtureUserData;
 			fixtureUserData.pointer = (uintptr_t)new b2_user_data(ent, b2fixture_types::TERRAIN);
 			fixtureDef.userData = fixtureUserData;
@@ -166,6 +167,7 @@ namespace game
 					fixtureDef.shape = &chain;
 					fixtureDef.density = 0.0f;
 					fixtureDef.friction = 0.73f;
+					fixtureDef.restitution = 0.15f;
 					fixtureDef.isSensor = true;
 					b2FixtureUserData fixtureUserData;
 					// fixtureUserData.pointer = b2fixture_types::TERRAIN;
@@ -221,7 +223,7 @@ namespace game
 					fixtureDef.shape = &chain;
 					fixtureDef.density = 1.0f;
 					fixtureDef.friction = 0.9f;
-					fixtureDef.restitution = 0.5f;
+					fixtureDef.restitution = 0.15f;
 					b2FixtureUserData fixtureUserData;
 						// fixtureUserData.pointer = b2fixture_types::TERRAIN;
 					fixtureUserData.pointer = (uintptr_t)new b2_user_data(ent, b2fixture_types::TERRAIN);
@@ -301,9 +303,9 @@ namespace game
 				dynamic_box.Set(vertices, 3);
 				b2FixtureDef fixture_def;
 				fixture_def.shape = &dynamic_box;
-				fixture_def.density = 1.f;
+				fixture_def.density = 0.5f;
 				fixture_def.friction = 0.5f;
-				// fixture_def.restitution = .20f;
+				fixture_def.restitution = .001f;
 				b2FixtureUserData fixtureUserData;
 				// fixtureUserData.pointer = b2fixture_types::PLAYER;
 				fixtureUserData.pointer = (uintptr_t)new b2_user_data(ent, b2fixture_types::PLAYER);
@@ -429,16 +431,25 @@ namespace game
 			std::vector<entity> entities = projectiles.get_entities();
 			// box2d_system *box2d_system_pointer = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()));
 			game_engine::box_system *bo_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
+			game_engine::render_system *render_system_pointer = ((game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
 
 			// retrieve all projectiles' locations from the box2d world, and update their positions in the game
 			// for (auto &proj : projectiles)
 			for (auto &proj : entities)
 			{
+				b2_user_data *ud = (b2_user_data *)(projectiles.get(proj).body->GetFixtureList()->GetUserData().pointer);
+				if (ud && ud->type == b2fixture_types::EMPTY)
+				{
+					remove_projectile(proj);
+					bo_system_pointer->remove(proj);
+					render_system_pointer->remove(proj);
+					// free entity
+					game_engine::game_engine_pointer->remove_entity(proj);
+
+					continue;
+				}
 				b2Vec2 position = projectiles.get(proj).body->GetPosition();
-				// b2Body *body = proj.second.body;
-				// b2Vec2 position = body->GetPosition();
-				// printf("x: %f, y: %f\n", position.x, position.y);
-				// get box position
+				
 				game_engine::box b = bo_system_pointer->get(proj);
 				b.x = position.x - glsl_helper::projectile_width / 2.0f;
 				b.y = position.y - glsl_helper::projectile_height / 2.0f;
@@ -465,7 +476,7 @@ namespace game
 			fixture_def.restitution = 0.89f;
 			
 			b2FixtureUserData fixtureUserData;
-			// fixtureUserData.pointer = b2fixture_types::PROJECTILE;
+			fixtureUserData.pointer = b2fixture_types::PROJECTILE;
 			fixtureUserData.pointer = (uintptr_t)new b2_user_data(ent, b2fixture_types::PROJECTILE);
 			fixture_def.userData = fixtureUserData;
 
@@ -495,9 +506,9 @@ namespace game
 			}
 
 			// destroy box2d body
-			b2d_mutex.lock();
+			// b2d_mutex.lock();
 			((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()))->world->DestroyBody(projectiles.get(ent).body);
-			b2d_mutex.unlock();
+			// b2d_mutex.unlock();
 			projectiles.remove(ent);
 		}
 
@@ -847,25 +858,32 @@ namespace game
 				}
 				if(ud_a->type == b2fixture_types::TERRAIN || ud_b->type == b2fixture_types::TERRAIN)
 				{
+					uint16_t explosion_radius = 10;
 					// printf("Terrain hit\n");
 					if(ud_a->type == b2fixture_types::PROJECTILE)
 					{
 						// delete circle shape around projectile
-						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2, fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2, 5);
+						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2, fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2, explosion_radius);
+
+						// set projectile type to empty in ud_a
+						ud_a->type = b2fixture_types::EMPTY;
+						// (*ud_a).type = b2fixture_types::EMPTY;
+
+
 						// void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
 
 						// ((projectile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<projectile_system>()))->remove_projectile(ud_a->ent);
 						// remove from box2d world
-						
-						// b2d_mutex.lock();
-						// ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>())) ->
-						// b2d_mutex.unlock();
+
 					}
 					else
 					{
 						// delete circle shape around projectile
-						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle(fixture_b->GetBody()->GetPosition().x, fixture_b->GetBody()->GetPosition().y, 5);
+						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2, fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2, explosion_radius);
 						// void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
+
+						// set projectile type to empty in ud_b
+						ud_b->type = b2fixture_types::EMPTY;
 
 						// ((projectile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<projectile_system>()))->remove_projectile(ud_b->ent);
 						// remove from box2d world

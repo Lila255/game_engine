@@ -32,7 +32,7 @@ namespace game_engine
 		static uint32_t generate() noexcept ;// {
 			// static uint32_t current_max = 0;
 			// static std::priority_queue<uint32_t> free_ids;
-			
+
 			// printf("Free is empty: %d\n", free_ids.empty());
 			// if (free_ids.empty()) {
 			//     return current_max++;

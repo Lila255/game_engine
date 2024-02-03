@@ -18,7 +18,7 @@ namespace game
 	static siv::PerlinNoise perlin_noise_2(perlin_noise_seed + 1);
 	static siv::PerlinNoise perlin_noise_3(perlin_noise_seed + 2);
 
-	const uint16_t CHUNK_SIZE = 64; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
+	const uint16_t CHUNK_SIZE = 100; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 	
 	const uint16_t SOLID_TILE_START_INDEX = 3;
 	// enum for tile types
