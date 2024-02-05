@@ -16,16 +16,16 @@ namespace game
 				double noise_2 = perlin_noise_2.noise2D_01(n_x, n_y);
 				double noise_3 = perlin_noise_3.noise2D_01(n_x, n_y);
 
-				if (noise_1 * noise_2 > .250)
+				if (noise_1 * noise_2 > .30)
 				// if (noise_1 + noise_2 > .970)
 				{ // solid
-					if (noise_2 > 0.625)
+					if (noise_2 > 0.725)
 					{
 						data[y][x] = game::STONE;
 					}
 					else
 					{
-						if (noise_3 > 0.58)
+						if (noise_3 > 0.558)
 						{
 							data[y][x] = game::SAND;
 						}

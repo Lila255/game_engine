@@ -203,6 +203,12 @@ std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
 
 void start_physics_thread()
 {
+
+	for(int i = 0; i < 256; i++)
+	{
+		printf("\t\t%0.4ff, %0.4ff, %0.4ff, %0.4ff,\t//%d\n", i / 255.0, 1.0, 1.0, 1.0, i);
+	}
+
 	game_engine::engine * engine_ptr = game_engine::game_engine_pointer;
 	game::box2d_system *b2d_sys = (game::box2d_system *)(engine_ptr->get_system(game_engine::family::type<game::box2d_system>()));
 	game::world_tile_system *world_sys = (game::world_tile_system *)(engine_ptr->get_system(game_engine::family::type<game::world_tile_system>()));
@@ -319,12 +325,31 @@ void run_game(GLFWwindow *window)
 	{
 		for(int x = 0; x < game::CHUNK_SIZE * game::CHUNKS_WIDTH; x++)
 		{
-			if((x % 8) == 0 || (y % 3) == 0) {
-				(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = 102;
+			// if((x % 12) == 0 || (y % 5) == 0) {
+			if(((x + 8 * abs(((y / 6) % 6) - 3)) % 16) == 0 || (y % 6) == 0) {
+				(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::MORTAR;
 			} else {
-
-				(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = 103;
+				if(((x + 8 * abs(((y / 6) % 6) - 3)) / 16) % 2 == 0)
+					(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::BRICK_3;
+				else
+					(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::BRICK_4;
 			}
+			// if(((x + 8 * ((y / 6) % 16) + 16 * ((y / 6) % 6 - 3)) % 16) == 0 || (y % 6) == 0) {
+			// 	(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::MORTAR;
+			// } else {
+			// 	if(((x + 8 * ((y / 6) % 16) + 16 * ((y / 6) % 6 - 3)) / 16) % 2 == 0)
+			// 		(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::BRICK_3;
+			// 	else
+			// 		(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::BRICK_4;
+			// }
+			// if(((x + 6 * ((y / 5) % 12) + 24 * ((y / 15) % 12 - 6)) % 12) == 0 || (y % 5) == 0) {
+			// 	(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::MORTAR;
+			// } else {
+			// 	if(((x + 6 * ((y / 5) % 12) + 24 * ((y / 15) % 12 - 6)) / 12) % 2 == 0)
+			// 		(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::BRICK_3;
+			// 	else
+			// 		(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::BRICK_4;
+			// }
 		}
 	}
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED, GL_UNSIGNED_BYTE, background_data->data());
@@ -623,7 +648,7 @@ void run_game(GLFWwindow *window)
 		// printf("after_binding_col_texture: %d\n", glGetError());
 		
 		
-		glDispatchCompute(36000, 1, 1);
+		glDispatchCompute(24000, 1, 1);
 		// printf("after dispatch: %d\n", glGetError());
 		glFinish();
 

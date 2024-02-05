@@ -18,7 +18,7 @@
 #define radians(x) ((x) * M_PI / 180.0) // degrees to radians
 // #define raise(x) (1 << x)
 
-#define PIXEL_SCALE 7
+#define PIXEL_SCALE 6
 
 // typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 // typedef K::Point_2 point_2;
@@ -867,7 +867,7 @@ namespace game
 				}
 				if(ud_a->type == b2fixture_types::TERRAIN || ud_b->type == b2fixture_types::TERRAIN)
 				{
-					uint16_t explosion_radius = 10;
+					uint16_t explosion_radius = 16;
 					// printf("Terrain hit\n");
 					if(ud_a->type == b2fixture_types::PROJECTILE)
 					{
