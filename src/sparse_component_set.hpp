@@ -15,8 +15,8 @@ namespace game_engine
 		std::vector<uint32_t> m_sparse;
 		std::vector<uint32_t> m_dense;
 		std::vector<component_type> m_components;
-		uint16_t m_entity_capacity = 3;
-		uint16_t m_component_count = 0;
+		uint32_t m_entity_capacity = 3;
+		uint32_t m_component_count = 0;
 
 	public:
 		sparse_component_set()
@@ -136,9 +136,8 @@ namespace game_engine
 		{
 			if (!contains(ent))
 			{
-				char *error_string = (char *)malloc(100);
-				sprintf(error_string, "sparse_component_set<%s> does not contain entity: %d\n", typeid(component_type).name(), ent);
-				throw std::runtime_error(error_string);
+				printf("sparse_component_set<%s> does not contain entity: %d\n", typeid(component_type).name(), ent);
+				throw std::runtime_error("sparse_component_set<" + std::string(typeid(component_type).name()) + "> does not contain entity: " + std::to_string(ent) + "\n");
 			}
 			return m_components[m_sparse[ent]];
 		}

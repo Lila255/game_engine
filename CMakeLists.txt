@@ -26,7 +26,7 @@ find_package(box2d CONFIG REQUIRED)
 
 
 # Set compiler options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest /Zi /EHsc /nologo")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20 /Zi /EHsc /nologo")
 
 # Set source files
 file(GLOB SOURCES src/*.cpp)
@@ -65,7 +65,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 	add_custom_command(TARGET game POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different
 		# project root directory
-		"${CMAKE_SOURCE_DIR}/../../src/normal_vectors.txt"
+		"${CMAKE_SOURCE_DIR}/src/normal_vectors.txt"
 		# "../../src/normal_vectors.txt"
 		"$<TARGET_FILE_DIR:game>"
 		DEPENDS game)

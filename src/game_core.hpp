@@ -16,13 +16,20 @@
 
 #define M_PI 3.14159265358979323846		/* pi */
 #define radians(x) ((x) * M_PI / 180.0) // degrees to radians
-#define raise(x) (1 << x)
+// #define raise(x) (1 << x)
+
 #define PIXEL_SCALE 7
 
 // typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 // typedef K::Point_2 point_2;
 // typedef CGAL::Delaunay_triangulation_2<K>  Triangulation;
 // typedef Triangulation::Edge_iterator  Edge_iterator;
+
+template <typename t, typename... args>
+bool in_set(t val, args... set)
+{
+	return ((val == set) || ...);
+}
 
 namespace game
 {
@@ -93,7 +100,7 @@ namespace game
 			{
 				vertices[i].Set(mesh[i].first, mesh[i].second);
 			}
-			chain.CreateLoop(vertices, mesh.size());
+			chain.CreateLoop(vertices, (int32)(mesh.size()));
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &chain;
 			fixtureDef.density = 0.0f;
@@ -377,7 +384,7 @@ namespace game
 		void update(uint64_t time_to_step)
 		{
 
-			world->Step((double)time_to_step / 1000000.0, 6, 2);
+			world->Step(time_to_step / 1000000.f, 6, 2);
 			// world->Step(1.0f / 144.0f, 6, 2);
 
 			b2Body *body = dynamic_bodies.get(game_engine::game_engine_pointer->player_entitiy);
@@ -518,6 +525,8 @@ namespace game
 		}
 	};
 
+
+
 	struct world_tile_system : public game_engine::system
 	{
 	private:
@@ -608,7 +617,7 @@ namespace game
 					// 	{
 					// 		set_tile_at(x, y-1, SMOKE);
 					// 		set_tile_at(x, y, AIR);
-					// 		break;
+					// 		break;IN_SET
 					// 	}
 					// 	if (get_tile_at(x-1, y-1) == AIR)
 					// 	{
@@ -624,31 +633,31 @@ namespace game
 					// 	}
 					// 	break;
 					case WATER:
-						if (raise(get_tile_at(x, y + 1)) & (raise(AIR) | raise(SMOKE)))
+						if (in_set(get_tile_at(x, y + 1), AIR, SMOKE))
 						{
 							set_tile_at(x, y, get_tile_at(x, y + 1));
 							set_tile_at(x, y + 1, WATER);
 							break;
 						}
-						if (raise(get_tile_at(x - 1, y + 1)) & (raise(AIR) | raise(SMOKE)))
+						if (in_set(get_tile_at(x - 1, y + 1), AIR, SMOKE))
 						{
 							set_tile_at(x, y, get_tile_at(x - 1, y + 1));
 							set_tile_at(x - 1, y + 1, WATER);
 							break;
 						}
-						if (raise(get_tile_at(x + 1, y + 1)) & (raise(AIR) | raise(SMOKE)))
+						if (in_set(get_tile_at(x + 1, y + 1), AIR, SMOKE))
 						{
 							set_tile_at(x, y, get_tile_at(x + 1, y + 1));
 							set_tile_at(x + 1, y + 1, WATER);
 							break;
 						}
-						if (raise(get_tile_at(x - 1, y)) & (raise(AIR) | raise(SMOKE)))
+						if (in_set(get_tile_at(x - 1, y), AIR, SMOKE))
 						{
 							set_tile_at(x - 1, y, WATER);
 							set_tile_at(x, y, AIR);
 							break;
 						}
-						if (raise(get_tile_at(x + 1, y)) & (raise(AIR) | raise(SMOKE)))
+						if (in_set(get_tile_at(x + 1, y), AIR, SMOKE))
 						{
 							set_tile_at(x + 1, y, WATER);
 							set_tile_at(x, y, AIR);
@@ -678,17 +687,17 @@ namespace game
 						break;
 
 					case SAND:
-						if (raise(get_tile_at(x, y + 1)) & (raise(AIR) | raise(SMOKE) | raise(WATER)))
+						if (in_set(get_tile_at(x, y + 1), AIR, SMOKE, WATER))
 						{
 							set_tile_at(x, y, get_tile_at(x, y + 1));
 							set_tile_at(x, y + 1, SAND);
 						}
-						else if (raise(get_tile_at(x - 1, y + 1)) & (raise(AIR) | raise(SMOKE) | raise(WATER)))
+						else if (in_set(get_tile_at(x - 1, y + 1), AIR, SMOKE, WATER))
 						{
 							set_tile_at(x, y, get_tile_at(x - 1, y + 1));
 							set_tile_at(x - 1, y + 1, SAND);
 						}
-						else if (raise(get_tile_at(x + 1, y + 1)) & (raise(AIR) | raise(SMOKE) | raise(WATER)))
+						else if (in_set(get_tile_at(x + 1, y + 1), AIR, SMOKE, WATER))
 						{
 							set_tile_at(x, y, get_tile_at(x + 1, y + 1));
 							set_tile_at(x + 1, y + 1, SAND);
@@ -712,27 +721,27 @@ namespace game
 					switch (tile_type)
 					{
 					case SMOKE:
-						if (raise(get_tile_at(x, y - 1)) & (raise(AIR) | raise(WATER)))
+						if (in_set(get_tile_at(x, y - 1), AIR, WATER))
 						{
 							set_tile_at(x, y, get_tile_at(x, y - 1));
 							set_tile_at(x, y - 1, SMOKE);
 						}
-						else if (raise(get_tile_at(x - 1, y - 1)) & (raise(AIR) | raise(WATER)))
+						else if (in_set(get_tile_at(x - 1, y - 1), AIR, WATER))
 						{
 							set_tile_at(x, y, get_tile_at(x - 1, y - 1));
 							set_tile_at(x - 1, y - 1, SMOKE);
 						}
-						else if (raise(get_tile_at(x + 1, y - 1)) & (raise(AIR) | raise(WATER)))
+						else if (in_set(get_tile_at(x + 1, y - 1), AIR, WATER))
 						{
 							set_tile_at(x, y, get_tile_at(x + 1, y - 1));
 							set_tile_at(x + 1, y - 1, SMOKE);
 						}
-						else if (raise(get_tile_at(x - 1, y)) & (raise(AIR) | raise(WATER)))
+						else if (in_set(get_tile_at(x - 1, y), AIR, WATER))
 						{
 							set_tile_at(x, y, get_tile_at(x - 1, y));
 							set_tile_at(x - 1, y, SMOKE);
 						}
-						else if (raise(get_tile_at(x + 1, y)) & (raise(AIR) | raise(WATER)))
+						else if (in_set(get_tile_at(x + 1, y), AIR, WATER))
 						{
 							set_tile_at(x, y, get_tile_at(x + 1, y));
 							set_tile_at(x + 1, y, SMOKE);
@@ -863,7 +872,7 @@ namespace game
 					if(ud_a->type == b2fixture_types::PROJECTILE)
 					{
 						// delete circle shape around projectile
-						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2, fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2, explosion_radius);
+						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
 
 						// set projectile type to empty in ud_a
 						ud_a->type = b2fixture_types::EMPTY;
@@ -879,7 +888,7 @@ namespace game
 					else
 					{
 						// delete circle shape around projectile
-						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2, fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2, explosion_radius);
+						((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()))->delete_circle((int)(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
 						// void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
 
 						// set projectile type to empty in ud_b

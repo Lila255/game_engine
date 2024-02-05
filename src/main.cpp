@@ -164,7 +164,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		// create b2d projectile
 		//start away from player
 		// player_pos.x += cos(angle) * 0.5;
-		b2Body *projectile_body  = projectile_sys->create_projectile(projectile_entity, player_pos.x + cos(angle) * 3.0, player_pos.y + sin(angle) * 3.0, angle, 250);
+		b2Body *projectile_body  = projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x + cos(angle) * 3.0f), (float)(player_pos.y + sin(angle) * 3.0f), float(angle), 250.f);
 		// create sprite for projectile
 		game_engine::render_system *render_sys = (game_engine::render_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
 		game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
@@ -216,7 +216,7 @@ void start_physics_thread()
 		auto start = std::chrono::high_resolution_clock::now();
 
 		world_sys->update(tick_count++);
-		printf("Tile movements took %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count());
+		// printf("Tile movements took %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count());
 		std::array<entity, game::NUM_CHUNKS> chunk_entities = world_sys->get_chunk_entities();
 		std::array<game::chunk *, game::NUM_CHUNKS> * chunks = world_sys->get_chunks();
 		
@@ -241,7 +241,7 @@ void start_physics_thread()
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		// printf("Physics loop took %lld ms\n", duration);
-		printf("Physics loop took %lld ms\n", duration);
+		// printf("Physics loop took %lld ms\n", duration);
 		
 		
 		// sleep for 1 / tick_rate seconds
@@ -271,7 +271,7 @@ void run_game(GLFWwindow *window)
 	// use the shader program
 	glUseProgram(game_engine::shader_programs[0]);
 	GLint colours_location = glGetUniformLocation(game_engine::shader_programs[0], "colours");
-	glUniform4fv(colours_location, glsl_helper::colours.size() / 4, glsl_helper::colours.data());
+	glUniform4fv(colours_location, (GLsizei)glsl_helper::colours.size() / 4, glsl_helper::colours.data());
 
 	// generic shader
 	game_engine::shader_programs.push_back(load_shaders(glsl_helper::vert_1(), glsl_helper::frag_1())[0]);
@@ -386,8 +386,8 @@ void run_game(GLFWwindow *window)
 			delete outlines;
 			// chunk_outlines.push_back(outlines);
 			// chunk_outlines.push_back(world_sys->create_outlines(x, y));
-			float top_left_x = game::CHUNK_SIZE * x * 1.0;
-			float top_left_y = game::CHUNK_SIZE * y * 1.0;
+			float top_left_x = game::CHUNK_SIZE * x * 1.0f;
+			float top_left_y = game::CHUNK_SIZE * y * 1.0f;
 			// float top_left_x = 2 * x * game::CHUNK_SIZE;
 			// float top_left_y = 2 * y * game::CHUNK_SIZE;
 
@@ -426,11 +426,11 @@ void run_game(GLFWwindow *window)
 	// 	{0.f, glsl_helper::character_height}};
 	std::vector<std::pair<float, float>> player_shape = {
 		{0.f, 0.f},
-		{glsl_helper::character_width, glsl_helper::character_height},
-		{glsl_helper::character_width, 0.f},
-		{glsl_helper::character_width, glsl_helper::character_height},
+		{(float)glsl_helper::character_width, (float)glsl_helper::character_height},
+		{(float)glsl_helper::character_width, 0.f},
+		{(float)glsl_helper::character_width, (float)glsl_helper::character_height},
 		{0.f, 0.f},
-		{0.f, glsl_helper::character_height}};
+		{0.f, (float)glsl_helper::character_height}};
 
 	chunk_outlines.push_back({player_shape});
 	box2d_sys->create_dynamic_body(player_entity, player_shape);
@@ -589,8 +589,8 @@ void run_game(GLFWwindow *window)
 		// printf("b2d_time: %lums\n", duration_b2d.count() / 1000);
 
 		game_engine::box &b = box_sys->get(player_entity);
-		game_engine::view_matrix[12] = -b.x - 0.5 * glsl_helper::character_width + game_engine::window_width * (1.0 / (2 * PIXEL_SCALE));
-		game_engine::view_matrix[13] = -b.y - 0.5 * glsl_helper::character_height + game_engine::window_height * (1.0 / (2 * PIXEL_SCALE));
+		game_engine::view_matrix[12] = float(-b.x - 0.5 * glsl_helper::character_width + game_engine::window_width * (1.0 / (2 * PIXEL_SCALE)));
+		game_engine::view_matrix[13] = float(-b.y - 0.5 * glsl_helper::character_height + game_engine::window_height * (1.0 / (2 * PIXEL_SCALE)));
 
 		// printf("before_update_call: %d\n", glGetError());
 
@@ -771,9 +771,9 @@ int main()
 	}
 
 	// // Create window
-	// GLFWwindow *window = glfwCreateWindow(game_engine::window_width, game_engine::window_height, "Game", NULL, NULL);
+	GLFWwindow *window = glfwCreateWindow(game_engine::window_width, game_engine::window_height, "Game", NULL, NULL);
 	// Create window
-	GLFWwindow *window = glfwCreateWindow(game_engine::window_width, game_engine::window_height, "Game", glfwGetPrimaryMonitor(), NULL);
+	// GLFWwindow *window = glfwCreateWindow(game_engine::window_width, game_engine::window_height, "Game", glfwGetPrimaryMonitor(), NULL);
 	
 	if (window == NULL)
 	{
