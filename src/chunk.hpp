@@ -91,13 +91,13 @@ namespace game
 		FLUID_30,	// 62
 		FLUID_31,	// 63
 		// solid tiles
-		STONE,	// 64
-		DIRT,	// 65
-		SAND,	// 66
-		GRASS,	// 67
-		GLASS,	// 68
-		WOOD,	// 69
-		LEAF,	// 70
+		GLASS,	// 64
+		LEAF,	// 65
+		STONE,	// 66
+		DIRT,	// 67
+		SAND,	// 68
+		GRASS,	// 69
+		WOOD,	// 70
 		GOLD,	// 71
 		SOLID_8,	// 72
 		SOLID_9,	// 73

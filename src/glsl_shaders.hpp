@@ -9,262 +9,6 @@
 namespace glsl_helper
 {
 	std::array<float, 256 * 4> colours {
-		// 0.0000f, 0.0000f, 0.0000f, 0.0000f,	// 0: AIR
-		// 0.15f, 0.15f, 0.15f, 0.65f,			// 1: SMOKE
-		// 0.01f, 0.01f, 0.98f, 0.65f,			// 2: 
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.9425f, 1.0f,
-		// 0.077f, 0.66f, 0.10f, 1.0f,
-		// 0.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.6102f, 0.988f, 1.0f, 1.0f,
-		// 0.102f, 0.988f, 1.0f, 1.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.123f, 0.8f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.123f, 0.8f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.123f, 0.8f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.123f, 0.8f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.977f, 0.66f, 0.10f, 1.0f,
-		// 1.0f, 0.7647058824f, 0.0f, 1.0f,
-		// 0.9f, 0.7f, 0.4f, 1.0f,
-		// 0.19f, 0.09f, 0.197f, 1.0f,
-		// 0.7f, 0.7f, 0.7f, 1.0f,
-		// 0.319f, 0.319f, 0.352f, 1.0f,
-		// 0.0f, 0.0f, 0.0f, 0.0f,
-		// 0.15f, 0.15f, 0.15f, 0.65f,
-		// 0.01f, 0.01f, 0.98f, 0.65f,
-		// 1.0f, 1.0f, 1.0f, 0.2f,
-		// 1.0f, 0.861f, 0.360f, 1.0f,
-		// 0.45f, 0.157f, 0.039f, 1.0f,
-		// 0.5f, 0.446f, 0.425f, 1.0f,
-		// 0.102f, 0.988f, 1.0f, 1.0f
 		0.0000f, 0.0000f, 0.0000f, 0.0000f,     //0: AIR
 		0.1500f, 0.1500f, 0.1500f, 0.6500f,     //1: SMOKE
 		0.4000f, 1.0000f, 1.0000f, 0.6500f,     //2: STEAM
@@ -329,13 +73,13 @@ namespace glsl_helper
 		0.2392f, 1.0000f, 1.0000f, 1.0000f,     //61
 		0.2431f, 1.0000f, 1.0000f, 1.0000f,     //62
 		0.2471f, 1.0000f, 1.0000f, 1.0000f,     //63
-		0.5600f, 0.5600f, 0.4900f, 1.0000f,     //64: STONE
-		0.4800f, 0.3600f, 0.2600f, 1.0000f,     //65: DIRT
-		0.9300f, 0.8400f, 0.2500f, 1.0000f,     //66: SAND
-		0.2700f, 0.8000f, 0.0000f, 1.0000f,     //67: GRASS
-		0.6000f, 1.0000f, 1.0000f, 0.1000f,     //68: GLASS
-		0.3200f, 0.1600f, 0.0000f, 1.0000f,     //69: WOOD
-		0.0000f, 0.3000f, 0.0500f, 1.0000f,     //70: LEAF
+		0.6000f, 1.0000f, 1.0000f, 0.2000f,     //64: GLASS
+		0.0000f, 0.3000f, 0.0500f, 0.8000f,     //65: LEAF
+		0.5600f, 0.5600f, 0.4900f, 1.0000f,     //66: STONE
+		0.4800f, 0.3600f, 0.2600f, 1.0000f,     //67: DIRT
+		0.9300f, 0.8400f, 0.2500f, 1.0000f,     //68: SAND
+		0.2700f, 0.8000f, 0.0000f, 1.0000f,     //69: GRASS
+		0.3200f, 0.1600f, 0.0000f, 1.0000f,     //70: WOOD
 		0.8000f, 0.6700f, 0.0000f, 1.0000f,     //71: GOLD
 		0.2824f, 1.0000f, 1.0000f, 1.0000f,     //72
 		0.2863f, 1.0000f, 1.0000f, 1.0000f,     //73
@@ -817,9 +561,9 @@ namespace glsl_helper
 				float inverse_alpha = 0.0;
 				uint world_value = sampleWorld(v_TexCoord * texture_size);
 				if(world_value < 3) {
-					inverse_alpha = value / 128000.0;// + blurred_value / 512000.0;
+					inverse_alpha = value / 100000.0;// + blurred_value / 512000.0;
 				} else {
-					inverse_alpha = blurred_value / 128000.0;
+					inverse_alpha = blurred_value / 100000.0;
 				}
 				
 				if(inverse_alpha > 1.0)
@@ -891,7 +635,7 @@ namespace glsl_helper
 			float step_distance = 1.0;
 			
 			const int max_ray_length = 512;
-			const float ior_values[6] = float[6](1.0, 1.01, 1.33, 1.52, 1.62, 1.65);
+			// const float ior_values[6] = float[6](1.0, 1.01, 1.33, 1.52, 1.62, 1.65);
 
 			// raycast from player_pos to the edge of the screen, 24000 invocations
 			layout(local_size_x = 1, local_size_y = 1) in;
@@ -917,23 +661,23 @@ namespace glsl_helper
 
 				// loop until we hit something or we reach max_ray_length
 				for (int i = 0; i < max_ray_length;) {
-					ivec2 ray_pos_int = ivec2(ray_pos);
+					// ivec2 ray_pos_int = ivec2(ray_pos);
 					uint sample_v0 = sampleWorld(ray_pos);
 					// while (ray_pos_int == ivec2(ray_pos)) { // if we're still in the same pixel, move forward a bit
-						ray_pos += step_distance * ray_dir;
-						i++;
+					ray_pos += step_distance * ray_dir;
+					i++;
 					// }
 
 					// ray_pos += ray_dir;
 					uint sample_v = sampleWorld(ray_pos);
 					
-					if(sample_v == 1 && sample_v0 != 1)
-					{
-						refracted_bounces = 1;
-					}
-					else if(sample_v == 2)
-					{
-						refracted_bounces = 1;
+					// if(sample_v == 1 && sample_v0 != 1)
+					// {
+					// 	refracted_bounces = 1;
+					// }
+					// else if(sample_v == 2)
+					// {
+					// 	refracted_bounces = 1;
 						
 					// 	// hit water, refract
 					// 	// ray_dir = refract_ray(ray_dir, 1.0003, 1.33);
@@ -941,65 +685,74 @@ namespace glsl_helper
 					//	{
 					//		ray_dir = refract_ray(ray_dir, ior_values[sample_v0], ior_values[sample_v]);
 					//	}
-
 					// 		ray_dir = refract_ray(ray_dir, 1.0003, 1.33);
 					// 		ray_pos += step_distance * ray_dir;
 					// }
-					} else
-					if (sample_v >= 3) {     // hit something, bounce
-						if(sample_v == 10) {
-							metal_bounces = 1;
-						}
+					// } else
 
-						uint surround_values = 0;
-						// for(int j = 0; j < 9; j++)
-						// {
-						// 	if(j == 4) continue; // skip center
-						// 	int x = j % 3;
-						// 	int y = j / 3;
-						// 	uint world_sample = sampleWorld(ray_pos + vec2(x - 1, y - 1));
-						// 	if(world_sample > 0) {
-						// 		uint bit_to_shift_by = j;
-						// 		if(j > 4) bit_to_shift_by--;
-						// 		surround_values |= 1 << (8-bit_to_shift_by);
-						// 	}
-						// }
-						uint counter = 0;
-						for(int y = 0; y < 3; y++)
+					if (sample_v >= 64) {     // hit something solid
+
+						if (sample_v < 66)	// can pass through
 						{
-							for(int x = 0; x < 3; x++)
-							{
-								if(x == 1 && y == 1) continue;
-								counter++;
-								uint world_sample = sampleWorld(ray_pos + vec2(x - 1, y - 1));
-								if(world_sample > 0) {
-									surround_values |= 1 << (8-counter);
-								}
-
+							// if (sample_v0 != sample_v) {
+							// 	ray_dir = refract_ray(ray_dir, 1.00, 1.10);
+							// }
+						}
+						else {
+							if(sample_v == 10) {
+								metal_bounces = 1;
 							}
+
+							uint surround_values = 0;
+							// for(int j = 0; j < 9; j++)
+							// {
+							// 	if(j == 4) continue; // skip center
+							// 	int x = j % 3;
+							// 	int y = j / 3;
+							// 	uint world_sample = sampleWorld(ray_pos + vec2(x - 1, y - 1));
+							// 	if(world_sample > 0) {
+							// 		uint bit_to_shift_by = j;
+							// 		if(j > 4) bit_to_shift_by--;
+							// 		surround_values |= 1 << (8-bit_to_shift_by);
+							// 	}
+							// }
+							uint counter = 0;
+							for(int y = 0; y < 3; y++)
+							{
+								for(int x = 0; x < 3; x++)
+								{
+									if(x == 1 && y == 1) continue;
+									counter++;
+									uint world_sample = sampleWorld(ray_pos + vec2(x - 1, y - 1));
+									if(world_sample > 0) {
+										surround_values |= 1 << (8-counter);
+									}
+
+								}
+							}
+
+							vec2 normal_vec = imageLoad(normal_vectors, int(surround_values)).rg;
+
+							float dot_val = dot(normal_vec, ray_dir);
+
+							if(dot_val < 0.0) {
+								normal_vec = -normal_vec;
+								dot_val = -dot_val;
+							}
+							vec2 reflection = ray_dir - 2.0 * dot_val * normal_vec;
+
+							// Add a small random variation
+							float noise_scale = 0.42; 
+							reflection += noise_scale * ((ray_index % 100 - 50) / float(50.0));
+
+							ray_dir = reflection;
+							ray_pos += 2 * ray_dir;
+							if(sampleWorld(ray_pos) > 0) {
+								break;
+							}
+							bounces++;
+							i++;
 						}
-
-						vec2 normal_vec = imageLoad(normal_vectors, int(surround_values)).rg;
-
-						float dot_val = dot(normal_vec, ray_dir);
-
-						if(dot_val < 0.0) {
-							normal_vec = -normal_vec;
-							dot_val = -dot_val;
-						}
-						vec2 reflection = ray_dir - 2.0 * dot_val * normal_vec;
-
-						// Add a small random variation
-						float noise_scale = 0.42; 
-						reflection += noise_scale * ((ray_index % 100 - 50) / float(50.0));
-
-						ray_dir = reflection;
-						ray_pos += 2 * ray_dir;
-						if(sampleWorld(ray_pos) > 0) {
-							break;
-						}
-						bounces++;
-						i++;
 					}
 					// if(bounces > 8) {
 					// 	break;
@@ -1016,9 +769,10 @@ namespace glsl_helper
 					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  bounces > 0 ? 0.5 : 1); 
 					if(bounces > 0)
 					{
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 + metal_bounces - refracted_bounces); 
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5); 
+						// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 + metal_bounces - refracted_bounces); 
 					} else {
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - refracted_bounces);
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5);
 					}
 				}
 			};

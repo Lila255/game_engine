@@ -10,8 +10,8 @@ namespace game
 		{
 			for (int x = 0; x < CHUNK_SIZE; x++)
 			{
-				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 25.0;
-				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 25.0;
+				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 16.0;
+				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 16.0;
 				double noise_1 = perlin_noise_1.noise2D_01(n_x, n_y);
 				double noise_2 = perlin_noise_2.noise2D_01(n_x, n_y);
 				double noise_3 = perlin_noise_3.noise2D_01(n_x, n_y);
@@ -97,8 +97,8 @@ namespace game
 
 	bool chunk::isBoundaryTile(int x, int y)
 	{
-		int rows = data.size();
-		int cols = data[0].size();
+		uint16_t rows = (uint16_t)data.size();
+		uint16_t cols = (uint16_t)data[0].size();
 		for (int i = -1; i <= 1; i++)
 		{
 			for (int j = -1; j <= 1; j++)
@@ -118,8 +118,8 @@ namespace game
 	{
 		// check N, NE, E, SE, S, SW, W, NW
 		// The first direction that is a boundary tile is the next boundary tile
-		int rows = data.size();
-		int cols = data[0].size();
+		uint16_t rows = (uint16_t)data.size();
+		uint16_t cols = (uint16_t)data[0].size();
 		int newX;
 		int newY;
 		for (int i = 0; i < sizeof(dx); i++)
@@ -644,8 +644,8 @@ namespace game
 
 	struct line_mapping_pair
 	{
-		std::pair<float, float> p1{-1, -1};
-		std::pair<float, float> p2{-1, -1};
+		std::pair<float, float> p1{-1.f, -1.f};
+		std::pair<float, float> p2{-1.f, -1.f};
 
 		line_mapping_pair() {}
 		line_mapping_pair(std::pair<float, float> p)
@@ -673,19 +673,19 @@ namespace game
 			if (p2.first != -1)
 			{
 				std::pair<float, float> p = p2;
-				p2 = {-1, -1};
+				p2 = {-1.f, -1.f};
 				return p;
 			}
 			else if (p1.first != -1)
 			{
 				std::pair<float, float> p = p1;
-				p1 = {-1, -1};
+				p1 = {-1.f, -1.f};
 				return p;
 			}
 			else
 			{
 				printf("Error: line_mapping_pair has no points\n");
-				return {-1, -1};
+				return {-1.f, -1.f};
 			}
 		}
 		void remove_point(std::pair<float, float> p)
@@ -695,14 +695,14 @@ namespace game
 				if (p2.first != -1)
 				{
 					p1 = p2;
-					p2 = {-1, -1};
+					p2 = {-1.f, -1.f};
 				}
 				else
-					p1 = {-1, -1};
+					p1 = {-1.f, -1.f};
 			}
 			else if (p2 == p)
 			{
-				p2 = {-1, -1};
+				p2 = {-1.f, -1.f};
 			}
 			else
 			{
@@ -944,9 +944,9 @@ namespace game
 					p2t::Point *p2 = triangles[j]->GetPoint(1);
 					p2t::Point *p3 = triangles[j]->GetPoint(2);
 
-					outline_triangles.push_back(std::make_pair(p1->x + chunk_x * CHUNK_SIZE, p1->y + chunk_y * CHUNK_SIZE));
-					outline_triangles.push_back(std::make_pair(p2->x + chunk_x * CHUNK_SIZE, p2->y + chunk_y * CHUNK_SIZE));
-					outline_triangles.push_back(std::make_pair(p3->x + chunk_x * CHUNK_SIZE, p3->y + chunk_y * CHUNK_SIZE));
+					outline_triangles.push_back(std::make_pair((float)(p1->x + chunk_x * CHUNK_SIZE), (float)(p1->y + chunk_y * CHUNK_SIZE)));
+					outline_triangles.push_back(std::make_pair((float)(p2->x + chunk_x * CHUNK_SIZE), (float)(p2->y + chunk_y * CHUNK_SIZE)));
+					outline_triangles.push_back(std::make_pair((float)(p3->x + chunk_x * CHUNK_SIZE), (float)(p3->y + chunk_y * CHUNK_SIZE)));
 				}
 
 				chunk_outline -> push_back(outline_triangles);

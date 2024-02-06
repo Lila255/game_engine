@@ -204,10 +204,10 @@ std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
 void start_physics_thread()
 {
 
-	for(int i = 0; i < 256; i++)
-	{
-		printf("\t\t%0.4ff, %0.4ff, %0.4ff, %0.4ff,\t//%d\n", i / 255.0, 1.0, 1.0, 1.0, i);
-	}
+	// for(int i = 0; i < 256; i++)
+	// {
+	// 	printf("\t\t%0.4ff, %0.4ff, %0.4ff, %0.4ff,\t//%d\n", i / 255.0, 1.0, 1.0, 1.0, i);
+	// }
 
 	game_engine::engine * engine_ptr = game_engine::game_engine_pointer;
 	game::box2d_system *b2d_sys = (game::box2d_system *)(engine_ptr->get_system(game_engine::family::type<game::box2d_system>()));
@@ -217,36 +217,44 @@ void start_physics_thread()
 	start_time = std::chrono::high_resolution_clock::now();
 	const int tick_rate = 20;
 	uint64_t tick_count = 0;
+	// std::array<std::array<uint8_t, game::CHUNKS_WIDTH>, game::CHUNKS_WIDTH> modified_chunks;
+
 	while (physics_loop_running)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
 
-		world_sys->update(tick_count++);
+		world_sys->update(tick_count++, &(world_sys -> modified_chunks));
 		// printf("Tile movements took %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count());
 		std::array<entity, game::NUM_CHUNKS> chunk_entities = world_sys->get_chunk_entities();
 		std::array<game::chunk *, game::NUM_CHUNKS> * chunks = world_sys->get_chunks();
 		
-		std::vector<std::vector<std::vector<std::pair<float, float>>> *> chunks_outlines;
-		std::vector<std::thread> threads;
+		std::array<std::vector<std::vector<std::pair<float, float>>> *, game::NUM_CHUNKS> chunks_outlines;
+		std::array<std::thread, game::NUM_CHUNKS> threads;
+
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
+			if((world_sys -> modified_chunks)[i / game::CHUNKS_WIDTH][i % game::CHUNKS_WIDTH] == 0)
+				continue;
 			game::chunk *c = chunks->at(i);
-			chunks_outlines.push_back(new std::vector<std::vector<std::pair<float, float>>>());
-			threads.push_back(std::thread(do_outlining, c, chunks_outlines[i]));
+			chunks_outlines[i] = new std::vector<std::vector<std::pair<float, float>>>();
+			threads[i] = std::thread(do_outlining, c, chunks_outlines[i]);
 			// threads.push_back(std::thread((c->create_outlines), chunks_outlines[i]));
 		}
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
+			if((world_sys -> modified_chunks)[i / game::CHUNKS_WIDTH][i % game::CHUNKS_WIDTH] == 0)
+				continue;
+
+			(world_sys -> modified_chunks)[i / game::CHUNKS_WIDTH][i % game::CHUNKS_WIDTH] = 0;
 			entity e = chunk_entities[i];
 			threads[i].join();
 			b2d_sys->update_static_outlines(e, chunks_outlines[i]);
 			delete chunks_outlines[i];
 		}
-		
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		// printf("Physics loop took %lld ms\n", duration);
+		printf("Physics loop took %lld ms\n", duration);
 		// printf("Physics loop took %lld ms\n", duration);
 		
 		
@@ -334,6 +342,8 @@ void run_game(GLFWwindow *window)
 				else
 					(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::BRICK_4;
 			}
+			// (*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::STONE;
+
 			// if(((x + 8 * ((y / 6) % 16) + 16 * ((y / 6) % 6 - 3)) % 16) == 0 || (y % 6) == 0) {
 			// 	(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::MORTAR;
 			// } else {
@@ -383,6 +393,7 @@ void run_game(GLFWwindow *window)
 
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x * game::CHUNK_SIZE, y * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE, GL_RED, GL_UNSIGNED_BYTE, chunks_data[i]->data());
 	}
+
 	printf("after settingh chunk textures: %d\n", glGetError());
 
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -755,6 +766,15 @@ void run_game(GLFWwindow *window)
 		last_time_taken_micro = loop_duration.count();
 		counter++;
 	}
+
+	delete projectile_sys;
+	delete box2d_sys;
+	delete world_sys;
+	delete texture_vbo_sys;
+	delete render_sys;
+	delete box_sys;
+
+
 	physics_loop_running = false;
 	world_thread.join();
 }

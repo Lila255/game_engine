@@ -33,8 +33,8 @@ bool in_set(t val, args... set)
 
 namespace game
 {
-	const uint16_t NUM_CHUNKS = 9; // 3x3 chunks in world
-	const uint16_t CHUNKS_WIDTH = 3;
+	const uint16_t NUM_CHUNKS = 16; // 3x3 chunks in world
+	const uint16_t CHUNKS_WIDTH = 4;
 	// const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
 	std::mutex b2d_mutex;
@@ -79,6 +79,37 @@ namespace game
 			gravity = b2Vec2(0.0f, 91.8f);
 			world = new b2World(gravity);
 			// contact_listener = new b2_contact_listener();
+		}
+
+		~box2d_system()
+		{
+			// delete user data from fixtures
+			for (auto &ent : static_bodies.get_entities())
+			{
+				b2Body *body = static_bodies.get(ent);
+				b2Fixture *fixtures = body->GetFixtureList();
+				while (fixtures)
+				{
+					b2Fixture *next = fixtures->GetNext();
+					if(fixtures->GetUserData().pointer != 0)
+						delete (b2_user_data *)(fixtures->GetUserData().pointer);
+					fixtures = next;
+				}
+			}
+			for (auto &ent : dynamic_bodies.get_entities())
+			{
+				b2Body *body = dynamic_bodies.get(ent);
+				b2Fixture *fixtures = body->GetFixtureList();
+				while (fixtures)
+				{
+					b2Fixture *next = fixtures->GetNext();
+					if(fixtures->GetUserData().pointer != 0)
+						delete (b2_user_data *)(fixtures->GetUserData().pointer);
+					fixtures = next;
+				}
+			}
+
+			delete world;
 		}
 
 		/// @brief Create and add a static body to the b2d world
@@ -200,6 +231,7 @@ namespace game
 			while (fixtures)
 			{
 				b2Fixture *next = fixtures->GetNext();
+				delete (b2_user_data *)(fixtures->GetUserData().pointer);
 				body->DestroyFixture(fixtures);
 				// fixtures = body->GetFixtureList();
 				fixtures = next;
@@ -447,6 +479,7 @@ namespace game
 				b2_user_data *ud = (b2_user_data *)(projectiles.get(proj).body->GetFixtureList()->GetUserData().pointer);
 				if (ud && ud->type == b2fixture_types::EMPTY)
 				{
+
 					remove_projectile(proj);
 					bo_system_pointer->remove(proj);
 					render_system_pointer->remove(proj);
@@ -483,7 +516,7 @@ namespace game
 			fixture_def.restitution = 0.89f;
 			
 			b2FixtureUserData fixtureUserData;
-			fixtureUserData.pointer = b2fixture_types::PROJECTILE;
+			// fixtureUserData.pointer = b2fixture_types::PROJECTILE;
 			fixtureUserData.pointer = (uintptr_t)new b2_user_data(ent, b2fixture_types::PROJECTILE);
 			fixture_def.userData = fixtureUserData;
 
@@ -533,7 +566,10 @@ namespace game
 		std::array<chunk *, NUM_CHUNKS> chunk_data{};
 		std::array<entity, NUM_CHUNKS> chunk_entities;
 
+
 	public:
+		std::array<std::array<uint8_t, game::CHUNKS_WIDTH>, game::CHUNKS_WIDTH> modified_chunks;
+	
 		entity all_chunk_ent;
 
 		world_tile_system()
@@ -546,7 +582,11 @@ namespace game
 				int chunk_y = i / CHUNKS_WIDTH;
 				chunk_data[i] = new chunk(chunk_x, chunk_y);
 				// chunk_data[i] = new std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
+
+				modified_chunks[chunk_y][chunk_x] = 1;
 			}
+
+
 		}
 
 		~world_tile_system()
@@ -596,15 +636,16 @@ namespace game
 
 		void update() {}
 
-		void update(uint64_t tick_count)
+		void update(uint64_t tick_count, std::array<std::array<uint8_t, CHUNKS_WIDTH>, CHUNKS_WIDTH> * modified_chunks)
 		{
 			uint8_t direction = tick_count % 2;
 			for (int y = CHUNKS_WIDTH * CHUNK_SIZE - 1; y >= 0; y--)
 			{
+				int chunk_y = y / CHUNK_SIZE;
+				
 				for (int x = direction ? 0 : CHUNKS_WIDTH * CHUNK_SIZE - 1; x < CHUNKS_WIDTH * CHUNK_SIZE && x >= 0; x += direction ? 1 : -1)
 				{
 					int chunk_x = x / CHUNK_SIZE;
-					int chunk_y = y / CHUNK_SIZE;
 					int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
 					int tile_x = x % CHUNK_SIZE;
 					int tile_y = y % CHUNK_SIZE;
@@ -691,16 +732,19 @@ namespace game
 						{
 							set_tile_at(x, y, get_tile_at(x, y + 1));
 							set_tile_at(x, y + 1, SAND);
+							(*modified_chunks)[chunk_y][chunk_x] = 1;
 						}
 						else if (in_set(get_tile_at(x - 1, y + 1), AIR, SMOKE, WATER))
 						{
 							set_tile_at(x, y, get_tile_at(x - 1, y + 1));
 							set_tile_at(x - 1, y + 1, SAND);
+							(*modified_chunks)[chunk_y][chunk_x] = 1;
 						}
 						else if (in_set(get_tile_at(x + 1, y + 1), AIR, SMOKE, WATER))
 						{
 							set_tile_at(x, y, get_tile_at(x + 1, y + 1));
 							set_tile_at(x + 1, y + 1, SAND);
+							(*modified_chunks)[chunk_y][chunk_x] = 1;
 						}
 						break;
 					}
@@ -822,7 +866,11 @@ namespace game
 			for (int i = 0; i < NUM_CHUNKS; i++)
 			{
 				bool modified = chunk_data[i]->delete_circle(x, y, radius);
-				// if (modified)
+				if (modified)
+				{
+					modified_chunks[i / CHUNKS_WIDTH][i % CHUNKS_WIDTH] = 1;
+				}
+ 				// if (modified)
 				// {
 					// std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *tile_data = chunk_data[i]->get_data();
 					// entity ent = chunk_entities[i];
