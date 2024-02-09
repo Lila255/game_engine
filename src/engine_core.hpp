@@ -12,15 +12,15 @@
 
 #include "util.hpp"
 #include "opengl_util.hpp"
-#include "glsl_shaders.hpp"
+#include "glsl_helper.hpp"
 
 namespace game_engine
 {
 	struct engine;
-	engine *game_engine_pointer;
-	std::vector<GLuint> shader_programs;
-	const uint16_t window_width = 2000;
-	const uint16_t window_height = 900;
+	extern engine *game_engine_pointer;
+	extern std::vector<GLuint> shader_programs;
+	extern const uint16_t window_width;
+	extern const uint16_t window_height;
 
 	// float projection_matrix[16]{
 	//     //};
@@ -33,16 +33,9 @@ namespace game_engine
 	//     // 0.000000, 0.000000, -0.020000, 0.000000,
 	//     // -1.000000, 1.000000, -1.000000, 1.000000
 	// };
-	float projection_matrix[16] = {
-		8.0f / window_width, 0.0f, 0.0f, 0.0f,
-		0.0f, 8.0f / window_height, 0.0f, 0.0f,
-		0.0f, 0.0f, -1.0f, 0.0f,
-		-8.0f, -8.0f, 0.0f, 1.0f};
-	float view_matrix[16]{
-		1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f};
+	extern float projection_matrix[16];
+	
+	extern float view_matrix[16];
 
 	struct component
 	{

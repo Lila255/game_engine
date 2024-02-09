@@ -9,10 +9,12 @@
 #include <poly2tri/poly2tri.h>
 // box2d
 #define b2_maxPolygonVertices 8
-#include <box2d/box2d.h>
+// #include <box2d/box2d.h>
 
 #include "engine_comp.hpp"
 #include "chunk.hpp"
+#include "projectile_system.hpp"
+#include "world_tile_system.hpp"
 
 #define M_PI 3.14159265358979323846		/* pi */
 #define radians(x) ((x) * M_PI / 180.0) // degrees to radians
@@ -25,19 +27,13 @@
 // typedef CGAL::Delaunay_triangulation_2<K>  Triangulation;
 // typedef Triangulation::Edge_iterator  Edge_iterator;
 
-template <typename t, typename... args>
-bool in_set(t val, args... set)
-{
-	return ((val == set) || ...);
-}
 
 namespace game
 {
-	const uint16_t NUM_CHUNKS = 16; // 3x3 chunks in world
-	const uint16_t CHUNKS_WIDTH = 4;
+
 	// const uint16_t CHUNK_SIZE = 128; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 
-	std::mutex b2d_mutex;
+	extern std::mutex b2d_mutex;
 
 	// pre-declare world_tile_system, with a delete_circle function
 	// struct b2_contact_listener : public b2ContactListener;
@@ -447,450 +443,50 @@ namespace game
 		}
 	};
 
-	// projectile
-	struct projectile : public game_engine::component
-	{
-		b2Body *body;
-		projectile() = default;
-		projectile(b2Body *b) : body(b) {}
-	};
-
-	// projectile system
-	struct projectile_system : public game_engine::system
-	{
-	private:
-		game_engine::sparse_component_set<projectile> projectiles;
-
-	public:
-		projectile_system() = default;
-
-		void update() {}
-
-		void update(uint64_t time_to_step) // updating projectiles requires stepping time in box2d first
-		{
-			std::vector<entity> entities = projectiles.get_entities();
-			// box2d_system *box2d_system_pointer = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()));
-			game_engine::box_system *bo_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
-			game_engine::render_system *render_system_pointer = ((game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
-
-			// retrieve all projectiles' locations from the box2d world, and update their positions in the game
-			// for (auto &proj : projectiles)
-			for (auto &proj : entities)
-			{
-				b2_user_data *ud = (b2_user_data *)(projectiles.get(proj).body->GetFixtureList()->GetUserData().pointer);
-				if (ud && ud->type == b2fixture_types::EMPTY)
-				{
-
-					remove_projectile(proj);
-					bo_system_pointer->remove(proj);
-					render_system_pointer->remove(proj);
-					// free entity
-					game_engine::game_engine_pointer->remove_entity(proj);
-
-					continue;
-				}
-				b2Vec2 position = projectiles.get(proj).body->GetPosition();
-				
-				game_engine::box b = bo_system_pointer->get(proj);
-				b.x = position.x - glsl_helper::projectile_width / 2.0f;
-				b.y = position.y - glsl_helper::projectile_height / 2.0f;
-				bo_system_pointer->update_box(proj, b);
-				game_engine::texture_vbo_system *tex_vbo_system_pointer = ((game_engine::texture_vbo_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
-				tex_vbo_system_pointer->update(proj);
-			}
-		}
-
-		b2Body *create_projectile(entity ent, float x, float y, float ang, float vel, float radius)
-		{
-			// create small circle projectile
-			b2BodyDef body_def;
-			body_def.type = b2_dynamicBody;
-			body_def.position.Set(x, y);
-			// body_def.angle = ang;
-			b2Body *body = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()))->world->CreateBody(&body_def);
-			b2CircleShape circle;
-			circle.m_radius = radius;
-			b2FixtureDef fixture_def;
-			fixture_def.shape = &circle;
-			fixture_def.density = 0.2f;
-			fixture_def.friction = 0.3f;
-			fixture_def.restitution = 0.89f;
-			
-			b2FixtureUserData fixtureUserData;
-			// fixtureUserData.pointer = b2fixture_types::PROJECTILE;
-			fixtureUserData.pointer = (uintptr_t)new b2_user_data(ent, b2fixture_types::PROJECTILE);
-			fixture_def.userData = fixtureUserData;
-
-
-			b2d_mutex.lock();
-			body->CreateFixture(&fixture_def);
-			body->SetLinearVelocity(b2Vec2(vel * cos(ang), -vel * sin(ang)));
-			b2d_mutex.unlock();
-			projectile proj(body);
-			projectiles.add(ent, proj);
-			return body;
-		}
-
-		void add_projectile(entity ent, projectile proj)
-		{
-			projectiles.add(ent, proj);
-		}
-
-		/// @brief Remove the projectile from the system, and destroy the box2d body
-		/// @param ent 
-		void remove_projectile(entity ent)
-		{
-			// if userdata is not null, delete it
-			if ((projectiles.get(ent).body)->GetUserData().pointer != 0)
-			{
-				delete (b2_user_data *)(projectiles.get(ent).body->GetUserData().pointer);
-			}
-
-			// destroy box2d body
-			// b2d_mutex.lock();
-			((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()))->world->DestroyBody(projectiles.get(ent).body);
-			// b2d_mutex.unlock();
-			projectiles.remove(ent);
-		}
-
-		projectile &get_projectile(entity ent)
-		{
-			return projectiles.get(ent);
-		}
-	};
-
-
-
-	struct world_tile_system : public game_engine::system
-	{
-	private:
-		std::array<chunk *, NUM_CHUNKS> chunk_data{};
-		std::array<entity, NUM_CHUNKS> chunk_entities;
-
-
-	public:
-		std::array<std::array<uint8_t, game::CHUNKS_WIDTH>, game::CHUNKS_WIDTH> modified_chunks;
 	
-		entity all_chunk_ent;
 
-		world_tile_system()
-		{
-			// chunk_data = new uint8_t[NUM_CHUNKS];
-
-			for (int i = 0; i < NUM_CHUNKS; i++)
-			{
-				int chunk_x = i % CHUNKS_WIDTH;
-				int chunk_y = i / CHUNKS_WIDTH;
-				chunk_data[i] = new chunk(chunk_x, chunk_y);
-				// chunk_data[i] = new std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
-
-				modified_chunks[chunk_y][chunk_x] = 1;
-			}
+	// struct world_tile_system : public game_engine::system
+	// {
+	// private:
+	// 	std::array<chunk *, NUM_CHUNKS> chunk_data{};
+	// 	std::array<entity, NUM_CHUNKS> chunk_entities;
 
 
-		}
+	// public:
+	// 	std::array<std::array<uint8_t, game::CHUNKS_WIDTH>, game::CHUNKS_WIDTH> modified_chunks;
+	
+	// 	entity all_chunk_ent;
 
-		~world_tile_system()
-		{
-			for (int i = 0; i < NUM_CHUNKS; i++)
-			{
-				delete chunk_data[i];
-			}
-		}
+	// 	world_tile_system();
 
-		void set_all_chunk_ent(entity ent)
-		{
-			all_chunk_ent = ent;
-		}
+	// 	~world_tile_system();
 
-		uint8_t get_tile_at(int x, int y)
-		{
-			int chunk_x = x / CHUNK_SIZE;
-			int chunk_y = y / CHUNK_SIZE;
-			int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
-			int tile_x = x % CHUNK_SIZE;
-			int tile_y = y % CHUNK_SIZE;
-			if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
-				return (tile_type)0;
-			if (tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
-				return (tile_type)0;
-			return (chunk_data[chunk])->get_tile(tile_x, tile_y);
-		}
+	// 	void set_all_chunk_ent(entity ent);
 
-		void set_tile_at(int x, int y, uint8_t tile_type)
-		{
-			int chunk_x = x / CHUNK_SIZE;
-			int chunk_y = y / CHUNK_SIZE;
-			int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
-			int tile_x = x % CHUNK_SIZE;
-			int tile_y = y % CHUNK_SIZE;
-			if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
-				return;
+	// 	uint8_t get_tile_at(int x, int y);
 
-			(chunk_data[chunk])->set_tile(tile_x, tile_y, tile_type);
-		}
+	// 	void set_tile_at(int x, int y, uint8_t tile_type);
 
-		std::array<entity, NUM_CHUNKS> get_chunk_entities()
-		{
-			return chunk_entities;
-		}
+	// 	std::array<entity, NUM_CHUNKS> get_chunk_entities();
 
-		void update() {}
+	// 	// void update() {}
 
-		void update(uint64_t tick_count, std::array<std::array<uint8_t, CHUNKS_WIDTH>, CHUNKS_WIDTH> * modified_chunks)
-		{
-			uint8_t direction = tick_count % 2;
-			for (int y = CHUNKS_WIDTH * CHUNK_SIZE - 1; y >= 0; y--)
-			{
-				int chunk_y = y / CHUNK_SIZE;
-				
-				for (int x = direction ? 0 : CHUNKS_WIDTH * CHUNK_SIZE - 1; x < CHUNKS_WIDTH * CHUNK_SIZE && x >= 0; x += direction ? 1 : -1)
-				{
-					int chunk_x = x / CHUNK_SIZE;
-					int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
-					int tile_x = x % CHUNK_SIZE;
-					int tile_y = y % CHUNK_SIZE;
+	// 	void update(uint64_t tick_count, std::array<std::array<uint8_t, CHUNKS_WIDTH>, CHUNKS_WIDTH> * modified_chunks);
 
-					uint8_t tile_type = get_tile_at(x, y);
-					switch (tile_type)
-					{
-					// case SMOKE:
-					// 	if (get_tile_at(x, y-1) == AIR)
-					// 	{
-					// 		set_tile_at(x, y-1, SMOKE);
-					// 		set_tile_at(x, y, AIR);
-					// 		break;IN_SET
-					// 	}
-					// 	if (get_tile_at(x-1, y-1) == AIR)
-					// 	{
-					// 		set_tile_at(x-1, y-1, SMOKE);
-					// 		set_tile_at(x, y, AIR);
-					// 		break;
-					// 	}
-					// 	if (get_tile_at(x+1, y-1) == AIR)
-					// 	{
-					// 		set_tile_at(x+1, y-1, SMOKE);
-					// 		set_tile_at(x, y, AIR);
-					// 		break;
-					// 	}
-					// 	break;
-					case WATER:
-						if (in_set(get_tile_at(x, y + 1), AIR, SMOKE))
-						{
-							set_tile_at(x, y, get_tile_at(x, y + 1));
-							set_tile_at(x, y + 1, WATER);
-							break;
-						}
-						if (in_set(get_tile_at(x - 1, y + 1), AIR, SMOKE))
-						{
-							set_tile_at(x, y, get_tile_at(x - 1, y + 1));
-							set_tile_at(x - 1, y + 1, WATER);
-							break;
-						}
-						if (in_set(get_tile_at(x + 1, y + 1), AIR, SMOKE))
-						{
-							set_tile_at(x, y, get_tile_at(x + 1, y + 1));
-							set_tile_at(x + 1, y + 1, WATER);
-							break;
-						}
-						if (in_set(get_tile_at(x - 1, y), AIR, SMOKE))
-						{
-							set_tile_at(x - 1, y, WATER);
-							set_tile_at(x, y, AIR);
-							break;
-						}
-						if (in_set(get_tile_at(x + 1, y), AIR, SMOKE))
-						{
-							set_tile_at(x + 1, y, WATER);
-							set_tile_at(x, y, AIR);
-							break;
-						}
-					case GRASS:
-						if (rand() % 20 == 0)
-						{
-							int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
-							int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
-							int r = rand() % 8;
-							for (int i = 0; i < 8; i++)
-							{
-								int xx = x + dx[(r + i) % 8];
-								int yy = y + dy[(r + i) % 8];
-								if (get_tile_at(xx, yy) == DIRT && get_tile_at(xx, yy - 1) == AIR)
-								{
-									set_tile_at(xx, yy, GRASS);
-									break;
-								}
-							}
-						}
-						if (get_tile_at(x, y - 1) == AIR && rand() % 100 == 0)
-						{
-							set_tile_at(x, y, DIRT);
-						}
-						break;
+	// 	void generate_world();
 
-					case SAND:
-						if (in_set(get_tile_at(x, y + 1), AIR, SMOKE, WATER))
-						{
-							set_tile_at(x, y, get_tile_at(x, y + 1));
-							set_tile_at(x, y + 1, SAND);
-							(*modified_chunks)[chunk_y][chunk_x] = 1;
-						}
-						else if (in_set(get_tile_at(x - 1, y + 1), AIR, SMOKE, WATER))
-						{
-							set_tile_at(x, y, get_tile_at(x - 1, y + 1));
-							set_tile_at(x - 1, y + 1, SAND);
-							(*modified_chunks)[chunk_y][chunk_x] = 1;
-						}
-						else if (in_set(get_tile_at(x + 1, y + 1), AIR, SMOKE, WATER))
-						{
-							set_tile_at(x, y, get_tile_at(x + 1, y + 1));
-							set_tile_at(x + 1, y + 1, SAND);
-							(*modified_chunks)[chunk_y][chunk_x] = 1;
-						}
-						break;
-					}
-				}
-			}
+	// 	entity get_chunk_entity(int x, int y);
 
-			for (int y = 0; y < CHUNKS_WIDTH * CHUNK_SIZE; y++)
-			{
-				for (int x = direction ? 0 : CHUNKS_WIDTH * CHUNK_SIZE - 1; x < CHUNKS_WIDTH * CHUNK_SIZE && x >= 0; x += direction ? 1 : -1)
-				{
-					int chunk_x = x / CHUNK_SIZE;
-					int chunk_y = y / CHUNK_SIZE;
-					int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
-					int tile_x = x % CHUNK_SIZE;
-					int tile_y = y % CHUNK_SIZE;
+	// 	entity get_chunk_entity(int chunk);
 
-					uint8_t tile_type = get_tile_at(x, y);
-					switch (tile_type)
-					{
-					case SMOKE:
-						if (in_set(get_tile_at(x, y - 1), AIR, WATER))
-						{
-							set_tile_at(x, y, get_tile_at(x, y - 1));
-							set_tile_at(x, y - 1, SMOKE);
-						}
-						else if (in_set(get_tile_at(x - 1, y - 1), AIR, WATER))
-						{
-							set_tile_at(x, y, get_tile_at(x - 1, y - 1));
-							set_tile_at(x - 1, y - 1, SMOKE);
-						}
-						else if (in_set(get_tile_at(x + 1, y - 1), AIR, WATER))
-						{
-							set_tile_at(x, y, get_tile_at(x + 1, y - 1));
-							set_tile_at(x + 1, y - 1, SMOKE);
-						}
-						else if (in_set(get_tile_at(x - 1, y), AIR, WATER))
-						{
-							set_tile_at(x, y, get_tile_at(x - 1, y));
-							set_tile_at(x - 1, y, SMOKE);
-						}
-						else if (in_set(get_tile_at(x + 1, y), AIR, WATER))
-						{
-							set_tile_at(x, y, get_tile_at(x + 1, y));
-							set_tile_at(x + 1, y, SMOKE);
-						}
-						break;
-					}
-				}
-			}
+	// 	std::array<chunk *, NUM_CHUNKS> *get_chunks();
 
-			// update textures
-			for (int chunk = 0; chunk < NUM_CHUNKS; chunk++)
-			{
-				entity chunk_ent = chunk_entities[chunk];
-				int chunk_x = chunk % CHUNKS_WIDTH;
-				int chunk_y = chunk / CHUNKS_WIDTH;
-				game_engine::render_system *render_system_pointer = ((game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
-				render_system_pointer->update_texture_section(all_chunk_ent, (uint8_t *)(chunk_data[chunk]->get_data()), chunk_x * CHUNK_SIZE, chunk_y * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
-			}
-		}
+	// 	std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *, NUM_CHUNKS> get_chunks_data();
 
-		void generate_world()
-		{
-			for (int chunk = 0; chunk < NUM_CHUNKS; chunk++)
-			{
-				chunk_data[chunk]->create_chunk();
-				chunk_entities[chunk] = game_engine::game_engine_pointer->create_entity();
-			}
-			// create solid border around world
-			for (int x = 0; x < CHUNKS_WIDTH * CHUNK_SIZE; x++)
-			{
-				set_tile_at(x, 0, BEDROCK);
-				set_tile_at(x, CHUNKS_WIDTH * CHUNK_SIZE - 1, BEDROCK);
-			}
-			for (int y = 0; y < CHUNKS_WIDTH * CHUNK_SIZE; y++)
-			{
-				set_tile_at(0, y, BEDROCK);
-				set_tile_at(CHUNKS_WIDTH * CHUNK_SIZE - 1, y, BEDROCK);
-			}
-		}
-		entity get_chunk_entity(int x, int y)
-		{
-			return chunk_entities[x + y * CHUNKS_WIDTH];
-		}
-		entity get_chunk_entity(int chunk)
-		{
-			return chunk_entities[chunk];
-		}
-		std::array<chunk *, NUM_CHUNKS> *get_chunks()
-		{
-			return &chunk_data;
-		}
-		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *, NUM_CHUNKS> get_chunks_data()
-		{
-			std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *, NUM_CHUNKS> chunks_data;
-			for (int chunk = 0; chunk < NUM_CHUNKS; chunk++)
-			{
-				// chunk_data[chunk]->create_texture_from_chunk(textures[chunk]);
-				chunks_data[chunk] = chunk_data[chunk]->get_data();
-			}
-			return chunks_data;
-		}
+	// 	std::vector<std::vector<std::pair<float, float>>> *create_outlines(int x, int y);
 
-		std::vector<std::vector<std::pair<float, float>>> *create_outlines(int x, int y)
-		{
-			std::vector<std::vector<std::pair<float, float>>> *outlines = new std::vector<std::vector<std::pair<float, float>>>;
-			chunk_data[x + y * CHUNKS_WIDTH]->create_outlines(outlines);
-			return outlines;
-		}
-
-		void delete_circle(int x, int y, int radius)
-		{
-
-			// get texture system
-			// auto texture_system = (game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>());
-			// get b2d system
-			// auto b2d_system = (box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>());
-
-			for (int i = 0; i < NUM_CHUNKS; i++)
-			{
-				bool modified = chunk_data[i]->delete_circle(x, y, radius);
-				if (modified)
-				{
-					modified_chunks[i / CHUNKS_WIDTH][i % CHUNKS_WIDTH] = 1;
-				}
- 				// if (modified)
-				// {
-					// std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *tile_data = chunk_data[i]->get_data();
-					// entity ent = chunk_entities[i];
-					// texture_system->update_texture(ent, (uint8_t *)tile_data->data(), CHUNK_SIZE, CHUNK_SIZE, game_engine::shader_programs[0]);
-					// int chunkx = i % CHUNKS_WIDTH;
-					// int chunky = i / CHUNKS_WIDTH;
-					// texture_system->update_texture_section(all_chunk_ent, (uint8_t *)tile_data->data(), chunkx * CHUNK_SIZE, chunky * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
-					// std::vector<std::vector<std::pair<float, float>>> * outlines = new std::vector<std::vector<std::pair<float, float>>>;
-					// chunk_data[i]->create_outlines(outlines);
-					// (*chunk_outlines)[i] = outlines;
-					// chunk_outlines->at(i) = outlines;
-
-					// b2d_system->update_static_outlines(ent, outlines);
-					// delete outlines;
-				// }
-			}
-			//
-		}
-	};
+	// 	void delete_circle(int x, int y, int radius);
+	// };
 
 	struct b2_contact_listener : public b2ContactListener
 	{
@@ -945,30 +541,6 @@ namespace game
 
 	// misc
 
-	std::vector<game_engine::vec2> load_normal_vectors()
-	{
-		std::string path = "normal_vectors.txt";
-		// stored in csv format: float, float,\n
-		std::vector<game_engine::vec2> normal_vectors;
+	std::vector<game_engine::vec2> load_normal_vectors();
 
-		std::fstream newfile;
-		newfile.open(path, std::ios::in); // open a file to perform read operation using file object
-		if (newfile.is_open())
-		{ // checking whether the file is open
-			std::string tp;
-			while (getline(newfile, tp))
-			{ // read data from file object and put it into string.
-				std::stringstream ss(tp);
-				std::string token;
-				std::vector<std::string> tokens;
-				while (getline(ss, token, ','))
-				{
-					tokens.push_back(token);
-				}
-				normal_vectors.push_back(game_engine::vec2(std::stof(tokens[0]), std::stof(tokens[1])));
-			}
-			newfile.close(); // close the file object.
-		}
-		return normal_vectors;
-	}
 } // namespace game

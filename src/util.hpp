@@ -56,5 +56,10 @@ namespace game_engine
 	};
 
 
+	template <typename t, typename... args>
+	bool in_set(t val, args... set)
+	{
+		return ((val == set) || ...);
+	}
 
 }

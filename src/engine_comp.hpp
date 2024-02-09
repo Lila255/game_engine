@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <stdexcept>
+#include <box2d/box2d.h>
 
 #include "engine_core.hpp"
 #include "sparse_component_set.hpp"
@@ -9,6 +10,7 @@
 namespace game_engine
 {
 	
+
 	// std::mutex rendering_mutex;
 
 	////////////////

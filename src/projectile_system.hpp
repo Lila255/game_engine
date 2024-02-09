@@ -1,0 +1,29 @@
+#pragma once
+
+#include "engine_comp.hpp"
+
+namespace game
+{
+	struct projectile : public game_engine::component
+	{
+		b2Body *body;
+		projectile() = default;
+		projectile(b2Body *b) : body(b) {}
+	};
+
+	struct projectile_system : public game_engine::system
+	{
+	private:
+		game_engine::sparse_component_set<projectile> projectiles;
+
+	public:
+		projectile_system() = default;
+		void update() {}
+		void update(uint64_t time_to_step);
+
+		b2Body *create_projectile(entity ent, float x, float y, float ang, float vel, float radius);
+		void add_projectile(entity ent, projectile proj);
+		void remove_projectile(entity ent);
+		projectile &get_projectile(entity ent);
+	};
+}
