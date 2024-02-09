@@ -141,7 +141,7 @@ namespace glsl_helper
 		0.7400f, 0.2600f, 0.2100f, 1.0000f,     //129
 		0.6800f, 0.7000f, 0.7400f, 1.0000f,     //130
 		0.5100f, 0.5200f, 0.5500f, 1.0000f,     //131
-		0.6784f, 0.6274f, 0.5843f, 1.0000f,     //132
+		0.6784f, 0.6274f, 0.5843f, 1.0000f,     //132: Mortar
 		0.5216f, 1.0000f, 1.0000f, 1.0000f,     //133
 		0.5255f, 1.0000f, 1.0000f, 1.0000f,     //134
 		0.5294f, 1.0000f, 1.0000f, 1.0000f,     //135
@@ -563,7 +563,7 @@ namespace glsl_helper
 				if(world_value < 3) {
 					inverse_alpha = value / 100000.0;// + blurred_value / 512000.0;
 				} else {
-					inverse_alpha = blurred_value / 100000.0;
+					inverse_alpha = blurred_value / 75000.0;
 				}
 				
 				if(inverse_alpha > 1.0)

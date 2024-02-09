@@ -46,10 +46,11 @@ namespace game
 
 	enum b2fixture_types
 	{
-		EMPTY = 0x00,	// set to this to delete fixture
-		PLAYER = 0x01,
-		TERRAIN = 0x02,
-		PROJECTILE = 0x04,
+		EMPTY,	// set to this to delete fixture
+		PLAYER,
+		TERRAIN,
+		PROJECTILE,
+		DEBRIS
 	};
 
 	struct b2_user_data
@@ -499,7 +500,7 @@ namespace game
 			}
 		}
 
-		b2Body *create_projectile(entity ent, float x, float y, float ang, float vel)
+		b2Body *create_projectile(entity ent, float x, float y, float ang, float vel, float radius)
 		{
 			// create small circle projectile
 			b2BodyDef body_def;
@@ -508,7 +509,7 @@ namespace game
 			// body_def.angle = ang;
 			b2Body *body = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()))->world->CreateBody(&body_def);
 			b2CircleShape circle;
-			circle.m_radius = glsl_helper::projectile_width / 2.0f;
+			circle.m_radius = radius;
 			b2FixtureDef fixture_def;
 			fixture_def.shape = &circle;
 			fixture_def.density = 0.2f;
@@ -915,7 +916,7 @@ namespace game
 				}
 				if(ud_a->type == b2fixture_types::TERRAIN || ud_b->type == b2fixture_types::TERRAIN)
 				{
-					uint16_t explosion_radius = 16;
+					uint16_t explosion_radius = 8;
 					// printf("Terrain hit\n");
 					if(ud_a->type == b2fixture_types::PROJECTILE)
 					{
@@ -924,14 +925,7 @@ namespace game
 
 						// set projectile type to empty in ud_a
 						ud_a->type = b2fixture_types::EMPTY;
-						// (*ud_a).type = b2fixture_types::EMPTY;
-
-
-						// void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
-
-						// ((projectile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<projectile_system>()))->remove_projectile(ud_a->ent);
-						// remove from box2d world
-
+						
 					}
 					else
 					{
@@ -942,11 +936,6 @@ namespace game
 						// set projectile type to empty in ud_b
 						ud_b->type = b2fixture_types::EMPTY;
 
-						// ((projectile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<projectile_system>()))->remove_projectile(ud_b->ent);
-						// remove from box2d world
-						// b2d_mutex.lock();
-						// ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()))->world->DestroyBody(fixture_b->GetBody());
-						// b2d_mutex.unlock();
 					}
 					return;
 				}

@@ -164,7 +164,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		// create b2d projectile
 		//start away from player
 		// player_pos.x += cos(angle) * 0.5;
-		b2Body *projectile_body  = projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x + cos(angle) * 3.0f), (float)(player_pos.y + sin(angle) * 3.0f), float(angle), 250.f);
+		b2Body *projectile_body  = projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x + cos(angle) * 3.0f), (float)(player_pos.y + sin(angle) * 3.0f), float(angle), 250.f, glsl_helper::projectile_width / 2.0f);
 		// create sprite for projectile
 		game_engine::render_system *render_sys = (game_engine::render_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
 		game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
@@ -342,7 +342,7 @@ void run_game(GLFWwindow *window)
 				else
 					(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::BRICK_4;
 			}
-			// (*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::STONE;
+			// (*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = 55;
 
 			// if(((x + 8 * ((y / 6) % 16) + 16 * ((y / 6) % 6 - 3)) % 16) == 0 || (y % 6) == 0) {
 			// 	(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::MORTAR;
