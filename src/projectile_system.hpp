@@ -1,6 +1,7 @@
 #pragma once
 
 #include "engine_comp.hpp"
+#include "box2d_system.hpp"
 
 namespace game
 {
@@ -9,6 +10,7 @@ namespace game
 		b2Body *body;
 		projectile() = default;
 		projectile(b2Body *b) : body(b) {}
+
 	};
 
 	struct projectile_system : public game_engine::system
@@ -21,7 +23,7 @@ namespace game
 		void update() {}
 		void update(uint64_t time_to_step);
 
-		b2Body *create_projectile(entity ent, float x, float y, float ang, float vel, float radius);
+		b2Body *create_projectile(entity ent, float x, float y, float ang, float vel, float radius, b2fixture_types projectile_type);
 		void add_projectile(entity ent, projectile proj);
 		void remove_projectile(entity ent);
 		projectile &get_projectile(entity ent);

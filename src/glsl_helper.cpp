@@ -6,7 +6,7 @@ namespace glsl_helper
 		0.0000f, 0.0000f, 0.0000f, 0.0000f, // 0: AIR
 		0.1500f, 0.1500f, 0.1500f, 0.6500f, // 1: SMOKE
 		0.4000f, 1.0000f, 1.0000f, 0.6500f, // 2: STEAM
-		0.0118f, 1.0000f, 1.0000f, 1.0000f, // 3
+		0.1500f, 0.1500f, 0.1500f, 0.5500f, // 3: TEMPORARY_SMOKE
 		0.0157f, 1.0000f, 1.0000f, 1.0000f, // 4
 		0.0196f, 1.0000f, 1.0000f, 1.0000f, // 5
 		0.0235f, 1.0000f, 1.0000f, 1.0000f, // 6
@@ -503,9 +503,9 @@ namespace glsl_helper
 				uint metal_bounces = 0;
 				uint refracted_bounces = 0;
 
-				if (sampleWorld(ray_pos) > 0 && sampleWorld(ray_pos) < 3) {
-					refracted_bounces = 1;
-				}
+				// if (sampleWorld(ray_pos) > 0 && sampleWorld(ray_pos) < 64) {
+				// 	refracted_bounces = 1;
+				// }
 
 				// loop until we hit something or we reach max_ray_length
 				for (int i = 0; i < max_ray_length;) {
@@ -515,6 +515,10 @@ namespace glsl_helper
 					ray_pos += step_distance * ray_dir;
 					i++;
 					// }
+
+					if (sample_v0 > 0 && sample_v0 < 64) {
+						refracted_bounces = 1;
+					}
 
 					// ray_pos += ray_dir;
 					uint sample_v = sampleWorld(ray_pos);
@@ -617,10 +621,10 @@ namespace glsl_helper
 					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  bounces > 0 ? 0.5 : 1); 
 					if(bounces > 0)
 					{
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5); 
-						// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 + metal_bounces - refracted_bounces); 
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - 2 * refracted_bounces); 
+						// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 + metal_bounces -  2 * refracted_bounces); 
 					} else {
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5);
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - refracted_bounces);
 					}
 				}
 			};

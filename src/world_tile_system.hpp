@@ -22,6 +22,7 @@ namespace game
 	public:
 		std::array<std::array<uint8_t, game::CHUNKS_WIDTH>, game::CHUNKS_WIDTH> modified_chunks;
 		entity all_chunk_ent;
+		std::mutex tile_mutex;
 
 		world_tile_system();
 		~world_tile_system();

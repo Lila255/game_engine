@@ -144,7 +144,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		printf("Cursor pos: x: %f, y: %f\n", xpos, ypos);
 
 		// get angle from center of screen to mouse
-		double angle = atan2(ypos - game_engine::window_height / 2.0, xpos - game_engine::window_width / 2.0);
+		double angle = atan2(game_engine::window_height / 2.0 - ypos, xpos - game_engine::window_width / 2.0);
 		printf("Angle: %f\n", angle);
 
 		// lock b2d mutex
@@ -164,7 +164,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		// create b2d projectile
 		//start away from player
 		// player_pos.x += cos(angle) * 0.5;
-		b2Body *projectile_body  = projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x + cos(angle) * 3.0f), (float)(player_pos.y + sin(angle) * 3.0f), float(angle), 250.f, glsl_helper::projectile_width / 2.0f);
+		b2Body *projectile_body  = projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x + cos(angle) * 5.0f), (float)(player_pos.y + sin(angle) * 5.0f), float(angle), 250.f, glsl_helper::projectile_width / 2.0f, game::b2fixture_types::PROJECTILE);
 		// create sprite for projectile
 		game_engine::render_system *render_sys = (game_engine::render_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
 		game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
@@ -254,7 +254,7 @@ void start_physics_thread()
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		printf("Physics loop took %lld ms\n", duration);
+		// printf("Physics loop took %lld ms\n", duration);
 		// printf("Physics loop took %lld ms\n", duration);
 		
 		
@@ -280,6 +280,12 @@ void run_game(GLFWwindow *window)
 {
 	// Create the engine and systems
 	game_engine::engine eng;
+
+	game_engine::task_scheduler task_sc;
+	game_engine::task_scheduler_pointer = &task_sc;
+	
+	std::thread task_runner(&game_engine::task_scheduler::start, &task_sc);
+
 	game_engine::shader_programs = load_shaders(glsl_helper::vert_0(), glsl_helper::frag_0());
 
 	// use the shader program
@@ -311,12 +317,12 @@ void run_game(GLFWwindow *window)
 	game::world_tile_system *world_sys = new game::world_tile_system();
 	eng.add_system(game_engine::family::type<game::world_tile_system>(), world_sys);
 
+	game::projectile_system *projectile_sys = new game::projectile_system();
+	eng.add_system(game_engine::family::type<game::projectile_system>(), projectile_sys);
+
 	game::box2d_system *box2d_sys = new game::box2d_system();
 	box2d_sys->world -> SetContactListener(new game::b2_contact_listener());
 	eng.add_system(game_engine::family::type<game::box2d_system>(), box2d_sys);
-
-	game::projectile_system *projectile_sys = new game::projectile_system();
-	eng.add_system(game_engine::family::type<game::projectile_system>(), projectile_sys);
 
 	world_sys->generate_world();
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
@@ -774,6 +780,8 @@ void run_game(GLFWwindow *window)
 	delete render_sys;
 	delete box_sys;
 
+	task_sc.shutdown({&game::shutdown_task_schedular_task,0});
+	task_runner.join();
 
 	physics_loop_running = false;
 	world_thread.join();

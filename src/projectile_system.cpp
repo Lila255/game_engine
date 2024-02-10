@@ -1,5 +1,7 @@
 #include "projectile_system.hpp"
-#include "game_core.hpp"
+#include "box2d_system.hpp"
+#include "world_tile_system.hpp"
+
 
 namespace game
 {
@@ -9,7 +11,7 @@ namespace game
 		// box2d_system *box2d_system_pointer = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()));
 		game_engine::box_system *bo_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
 		game_engine::render_system *render_system_pointer = ((game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
-
+		world_tile_system *world_tiles = ((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()));
 		// retrieve all projectiles' locations from the box2d world, and update their positions in the game
 		// for (auto &proj : projectiles)
 		for (auto &proj : entities)
@@ -17,7 +19,6 @@ namespace game
 			b2_user_data *ud = (b2_user_data *)(projectiles.get(proj).body->GetFixtureList()->GetUserData().pointer);
 			if (ud && ud->type == b2fixture_types::EMPTY)
 			{
-
 				remove_projectile(proj);
 				bo_system_pointer->remove(proj);
 				render_system_pointer->remove(proj);
@@ -28,16 +29,23 @@ namespace game
 			}
 			b2Vec2 position = projectiles.get(proj).body->GetPosition();
 
-			game_engine::box b = bo_system_pointer->get(proj);
-			b.x = position.x - glsl_helper::projectile_width / 2.0f;
-			b.y = position.y - glsl_helper::projectile_height / 2.0f;
-			bo_system_pointer->update_box(proj, b);
-			game_engine::texture_vbo_system *tex_vbo_system_pointer = ((game_engine::texture_vbo_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
-			tex_vbo_system_pointer->update(proj);
+			if(ud->type == b2fixture_types::PROJECTILE)
+			{
+				game_engine::box b = bo_system_pointer->get(proj);
+				b.x = position.x - glsl_helper::projectile_width / 2.0f;
+				b.y = position.y - glsl_helper::projectile_height / 2.0f;
+				bo_system_pointer->update_box(proj, b);
+				game_engine::texture_vbo_system *tex_vbo_system_pointer = ((game_engine::texture_vbo_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
+				tex_vbo_system_pointer->update(proj);
+			} else if(ud->type == b2fixture_types::DEBRIS)
+			{
+				world_tiles->set_tile_at(position.x, position.y, tile_type::TEMPORARY_SMOKE);
+			}
 		}
 	}
-	b2Body *projectile_system::create_projectile(entity ent, float x, float y, float ang, float vel, float radius)
+	b2Body *projectile_system::create_projectile(entity ent, float x, float y, float ang, float vel, float radius, b2fixture_types projectile_type)
 	{
+		b2d_mutex.lock();
 		// create small circle projectile
 		b2BodyDef body_def;
 		body_def.type = b2_dynamicBody;
@@ -54,10 +62,9 @@ namespace game
 
 		b2FixtureUserData fixtureUserData;
 		// fixtureUserData.pointer = b2fixture_types::PROJECTILE;
-		fixtureUserData.pointer = (uintptr_t) new b2_user_data(ent, b2fixture_types::PROJECTILE);
+		fixtureUserData.pointer = (uintptr_t) new b2_user_data(ent, projectile_type);
 		fixture_def.userData = fixtureUserData;
 
-		b2d_mutex.lock();
 		body->CreateFixture(&fixture_def);
 		body->SetLinearVelocity(b2Vec2(vel * cos(ang), -vel * sin(ang)));
 		b2d_mutex.unlock();

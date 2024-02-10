@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <unordered_set>
 #include <unordered_map>
+#include <mutex>
 
 #include "util.hpp"
 #include "opengl_util.hpp"
@@ -17,7 +18,9 @@
 namespace game_engine
 {
 	struct engine;
+	struct task_scheduler;
 	extern engine *game_engine_pointer;
+	extern task_scheduler *task_scheduler_pointer;
 	extern std::vector<GLuint> shader_programs;
 	extern const uint16_t window_width;
 	extern const uint16_t window_height;
@@ -195,13 +198,74 @@ namespace game_engine
 			}
 		}
 	};
+	
 	void static static_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
 		game_engine_pointer->key_callback(window, key, scancode, action, mods);
 	}
+	
 	void static static_mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
 	{
 		printf("Mouse button callback called %d \n", button);
 		game_engine_pointer->mouse_button_callback(window, button, action, mods);
 	}
+
+	template<typename T>
+	struct thread_safe_queue
+	{
+	private:
+		std::queue<T> queue;
+		std::mutex mutex;
+		std::condition_variable cond;
+
+	public:
+		void push(T t)
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			queue.push(t);
+			cond.notify_one();
+		}
+		T pop()
+		{
+			std::unique_lock<std::mutex> lock(mutex);
+			cond.wait(lock, [this] {return !queue.empty();});
+			T value = queue.front();
+			queue.pop();
+			return value;
+		}
+	};
+
+	struct task
+	{
+		void (* function_pointer)(void *);
+		void * task_parameters;
+	};
+	
+	struct task_scheduler
+	{
+	private:
+		thread_safe_queue<task> task_queue;
+		bool shutdown_flag = false;
+	public:
+		void start()
+		{
+			while(!shutdown_flag)
+			{
+				task t = task_queue.pop();
+				t.function_pointer(t.task_parameters);
+				delete t.task_parameters;
+			}
+		}
+
+		void add_task(task t)
+		{
+			task_queue.push(t);
+		}
+
+		void shutdown(task t)
+		{
+			shutdown_flag = true;
+			add_task(t);
+		}
+	};
 }

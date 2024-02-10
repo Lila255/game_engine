@@ -6,8 +6,6 @@
 
 #include "util.hpp"
 
-// #include "game_core.hpp"
-// #include "engine_comp.hpp"
 #define entity uint32_t
 
 
@@ -20,7 +18,6 @@ namespace game
 
 	const uint16_t CHUNK_SIZE = 100; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 	
-	const uint16_t SOLID_TILE_START_INDEX = 3;
 	// enum for tile types
 	enum tile_type
 	{
@@ -28,7 +25,7 @@ namespace game
 		AIR,	// 0
 		SMOKE,	// 1
 		STEAM,	// 2
-		GAS_03,	// 3
+		TEMPORARY_SMOKE,	// 3
 		GAS_04,	// 4
 		GAS_05,	// 5
 		GAS_06,	// 6
@@ -166,6 +163,7 @@ namespace game
 		BEDROCK,
 
 	};
+	const uint16_t SOLID_TILE_START_INDEX = tile_type::GLASS;
 
 	struct tile_linef
 	{

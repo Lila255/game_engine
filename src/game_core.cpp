@@ -1,7 +1,6 @@
 #include "game_core.hpp"
 
 namespace game {
-	std::mutex b2d_mutex;
 
 	std::vector<game_engine::vec2> load_normal_vectors()
 	{

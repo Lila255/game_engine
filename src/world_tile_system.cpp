@@ -64,6 +64,7 @@ namespace game
 
 	void world_tile_system::update(uint64_t tick_count, std::array<std::array<uint8_t, CHUNKS_WIDTH>, CHUNKS_WIDTH> *modified_chunks)
 	{
+		tile_mutex.lock();
 		uint8_t direction = tick_count % 2;
 		for (int y = CHUNKS_WIDTH * CHUNK_SIZE - 1; y >= 0; y--)
 		{
@@ -99,38 +100,39 @@ namespace game
 				// 		break;
 				// 	}
 				// 	break;
-				
+
 				case WATER:
-					if (game_engine::in_set(get_tile_at(x, y + 1), AIR, SMOKE))
+					if (game_engine::in_set(get_tile_at(x, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
 						set_tile_at(x, y, get_tile_at(x, y + 1));
 						set_tile_at(x, y + 1, WATER);
 						break;
 					}
-					if (game_engine::in_set(get_tile_at(x - 1, y + 1), AIR, SMOKE))
+					if (game_engine::in_set(get_tile_at(x - 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
 						set_tile_at(x, y, get_tile_at(x - 1, y + 1));
 						set_tile_at(x - 1, y + 1, WATER);
 						break;
 					}
-					if (game_engine::in_set(get_tile_at(x + 1, y + 1), AIR, SMOKE))
+					if (game_engine::in_set(get_tile_at(x + 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
 						set_tile_at(x, y, get_tile_at(x + 1, y + 1));
 						set_tile_at(x + 1, y + 1, WATER);
 						break;
 					}
-					if (game_engine::in_set(get_tile_at(x - 1, y), AIR, SMOKE))
+					if (game_engine::in_set(get_tile_at(x - 1, y), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
 						set_tile_at(x - 1, y, WATER);
 						set_tile_at(x, y, AIR);
 						break;
 					}
-					if (game_engine::in_set(get_tile_at(x + 1, y), AIR, SMOKE))
+					if (game_engine::in_set(get_tile_at(x + 1, y), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
 						set_tile_at(x + 1, y, WATER);
 						set_tile_at(x, y, AIR);
 						break;
 					}
+
 				case GRASS:
 					if (rand() % 20 == 0)
 					{
@@ -155,19 +157,19 @@ namespace game
 					break;
 
 				case SAND:
-					if (game_engine::in_set(get_tile_at(x, y + 1), AIR, SMOKE, WATER))
+					if (game_engine::in_set(get_tile_at(x, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
 					{
 						set_tile_at(x, y, get_tile_at(x, y + 1));
 						set_tile_at(x, y + 1, SAND);
 						(*modified_chunks)[chunk_y][chunk_x] = 1;
 					}
-					else if (game_engine::in_set(get_tile_at(x - 1, y + 1), AIR, SMOKE, WATER))
+					else if (game_engine::in_set(get_tile_at(x - 1, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
 					{
 						set_tile_at(x, y, get_tile_at(x - 1, y + 1));
 						set_tile_at(x - 1, y + 1, SAND);
 						(*modified_chunks)[chunk_y][chunk_x] = 1;
 					}
-					else if (game_engine::in_set(get_tile_at(x + 1, y + 1), AIR, SMOKE, WATER))
+					else if (game_engine::in_set(get_tile_at(x + 1, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
 					{
 						set_tile_at(x, y, get_tile_at(x + 1, y + 1));
 						set_tile_at(x + 1, y + 1, SAND);
@@ -218,6 +220,37 @@ namespace game
 						set_tile_at(x + 1, y, SMOKE);
 					}
 					break;
+				case TEMPORARY_SMOKE:
+					if(rand()%5 == 0)
+					{
+						set_tile_at(x,y,AIR);
+					}
+					else if (game_engine::in_set(get_tile_at(x, y - 1), AIR, WATER))
+					{
+						set_tile_at(x, y, get_tile_at(x, y - 1));
+						set_tile_at(x, y - 1, TEMPORARY_SMOKE);
+					}
+					else if (game_engine::in_set(get_tile_at(x - 1, y - 1), AIR, WATER))
+					{
+						set_tile_at(x, y, get_tile_at(x - 1, y - 1));
+						set_tile_at(x - 1, y - 1, TEMPORARY_SMOKE);
+					}
+					else if (game_engine::in_set(get_tile_at(x + 1, y - 1), AIR, WATER))
+					{
+						set_tile_at(x, y, get_tile_at(x + 1, y - 1));
+						set_tile_at(x + 1, y - 1, TEMPORARY_SMOKE);
+					}
+					else if (game_engine::in_set(get_tile_at(x - 1, y), AIR, WATER))
+					{
+						set_tile_at(x, y, get_tile_at(x - 1, y));
+						set_tile_at(x - 1, y, TEMPORARY_SMOKE);
+					}
+					else if (game_engine::in_set(get_tile_at(x + 1, y), AIR, WATER))
+					{
+						set_tile_at(x, y, get_tile_at(x + 1, y));
+						set_tile_at(x + 1, y, TEMPORARY_SMOKE);
+					}
+					break;
 				}
 			}
 		}
@@ -231,6 +264,7 @@ namespace game
 			game_engine::render_system *render_system_pointer = ((game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
 			render_system_pointer->update_texture_section(all_chunk_ent, (uint8_t *)(chunk_data[chunk]->get_data()), chunk_x * CHUNK_SIZE, chunk_y * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
 		}
+		tile_mutex.unlock();
 	}
 
 	void world_tile_system::generate_world()
@@ -262,6 +296,7 @@ namespace game
 	{
 		return chunk_entities[chunk];
 	}
+	
 	std::array<chunk *, NUM_CHUNKS> *world_tile_system::get_chunks()
 	{
 		return &chunk_data;

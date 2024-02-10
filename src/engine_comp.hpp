@@ -101,6 +101,11 @@ namespace game_engine
 		{
 			m_boxes.update(ent, b);
 		}
+
+		bool contains_ent(entity ent)
+		{
+			return m_boxes.contains(ent);
+		}
 	};
 
 	struct texture_vbo_system : public system
