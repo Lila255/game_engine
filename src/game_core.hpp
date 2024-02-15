@@ -18,8 +18,8 @@
 #include "box2d_system.hpp"
 #include "tasks.hpp"
 
-#define M_PI 3.14159265358979323846		/* pi */
-#define radians(x) ((x) * M_PI / 180.0) // degrees to radians
+// #define M_PI 3.14159265358979323846		/* pi */
+// #define radians(x) ((x) * M_PI / 180.0) // degrees to radians
 // #define raise(x) (1 << x)
 
 #define PIXEL_SCALE 6
@@ -72,7 +72,7 @@ namespace game
 						// delete circle shape around projectile
 						world_tiles->delete_circle((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
 
-						game_engine::task_scheduler_pointer->add_task({(&create_debris_task), new create_debris_params(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 50.f, 1.f)});
+						game_engine::task_scheduler_pointer->add_task({(&create_debris_task), new create_debris_params(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 50.f, 0.5f)});
 						// for (int i = 0; i < explosion_radius; i++)
 						// {
 						// 	entity e = game_engine::game_engine_pointer->create_entity();

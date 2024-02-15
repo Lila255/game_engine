@@ -480,21 +480,21 @@ namespace glsl_helper
 			}
 
 			uniform vec2 player_pos;    // relative to the lighting texture, center of the screen but not center of lighting texture
-			float step_distance = 1.0;
+			float step_distance = .919191911919;
 			
 			const int max_ray_length = 512;
 			// const float ior_values[6] = float[6](1.0, 1.01, 1.33, 1.52, 1.62, 1.65);
 
-			// raycast from player_pos to the edge of the screen, 24000 invocations
+			// raycast from player_pos to the edge of the screen, 16000 invocations
 			layout(local_size_x = 1, local_size_y = 1) in;
 			void main() {
 				if(player_pos.x < 0.0 || player_pos.x > texture_size.x || player_pos.y < 0.0 || player_pos.y > texture_size.y) {
 					return;
 				}
 				int ray_index = int(gl_GlobalInvocationID.x);
-				float ray_decimal = float(ray_index) / float(24000);
-				float ray_angle = float(ray_index) / float(24000) * 2.0 * 3.1415926535897932384626433832795;
-				// uint hue_val = uint((float(ray_index) / 24000.0) * 4294967295.0);
+				float ray_decimal = float(ray_index) / float(16000);
+				float ray_angle = float(ray_index) / float(16000) * 2.0 * 3.1415926535897932384626433832795;
+				// uint hue_val = uint((float(ray_index) / 16000.0) * 4294967295.0);
 				vec2 ray_dir = vec2(cos(ray_angle), sin(ray_angle));
 
 				vec2 ray_pos = player_pos;
@@ -621,10 +621,10 @@ namespace glsl_helper
 					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  bounces > 0 ? 0.5 : 1); 
 					if(bounces > 0)
 					{
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - 2 * refracted_bounces); 
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 7 - 2 * refracted_bounces); 
 						// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 + metal_bounces -  2 * refracted_bounces); 
 					} else {
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - refracted_bounces);
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - 2 * refracted_bounces);
 					}
 				}
 			};

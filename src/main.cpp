@@ -254,7 +254,7 @@ void start_physics_thread()
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		// printf("Physics loop took %lld ms\n", duration);
+		printf("Physics loop took %lld ms\n", duration);
 		// printf("Physics loop took %lld ms\n", duration);
 		
 		
@@ -655,7 +655,7 @@ void run_game(GLFWwindow *window)
 		glUniform2i(texture_size, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH);
 
 		GLint player_pos = glGetUniformLocation(compute_shader, "player_pos");
-		glUniform2f(player_pos, (float)(player_body->GetPosition().x + glsl_helper::character_width / 2.0), (float)(player_body->GetPosition().y + glsl_helper::character_width / 2.0));
+		glUniform2f(player_pos, (float)(player_body->GetPosition().x + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0), (float)(player_body->GetPosition().y + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0));
 
 		// GLint vector_location = glGetUniformLocation(compute_shader, "normal_vectors");
 		// glUniform2fv(vector_location, 256, (GLfloat*)game::noramal_vectors.data());
@@ -665,7 +665,7 @@ void run_game(GLFWwindow *window)
 		// printf("after_binding_col_texture: %d\n", glGetError());
 		
 		
-		glDispatchCompute(24000, 1, 1);
+		glDispatchCompute(16000, 1, 1);
 		// printf("after dispatch: %d\n", glGetError());
 		glFinish();
 

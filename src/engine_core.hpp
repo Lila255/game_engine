@@ -15,6 +15,10 @@
 #include "opengl_util.hpp"
 #include "glsl_helper.hpp"
 
+#define M_PI 3.14159265358979323846		/* pi */
+#define radians(x) ((x) * M_PI / 180.0) // degrees to radians
+
+
 namespace game_engine
 {
 	struct engine;
