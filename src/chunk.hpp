@@ -57,7 +57,7 @@ namespace game
 		// fluid tiles
 		WATER,	// 32
 		LAVA,	// 33
-		FLUID_02,	// 34
+		ACID,	// 34
 		FLUID_03,	// 35
 		FLUID_04,	// 36
 		FLUID_05,	// 37
@@ -96,7 +96,7 @@ namespace game
 		GRASS,	// 69
 		WOOD,	// 70
 		GOLD,	// 71
-		SOLID_8,	// 72
+		TREE_SEED,	// 72
 		SOLID_9,	// 73
 		SOLID_10,	// 74
 		SOLID_11,	// 75

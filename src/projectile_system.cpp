@@ -14,36 +14,41 @@ namespace game
 		world_tile_system *world_tiles = ((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()));
 		// retrieve all projectiles' locations from the box2d world, and update their positions in the game
 		// for (auto &proj : projectiles)
-		for (auto &proj : entities)
+		for (auto &proj_entity : entities)
 		{
-			b2_user_data *ud = (b2_user_data *)(projectiles.get(proj).body->GetFixtureList()->GetUserData().pointer);
+			projectile & projectile = projectiles.get(proj_entity);
+
+			b2_user_data *ud = (b2_user_data *)(projectile.body->GetFixtureList()->GetUserData().pointer);
 			if (ud && ud->type == b2fixture_types::EMPTY)
 			{
-				remove_projectile(proj);
-				bo_system_pointer->remove(proj);
-				render_system_pointer->remove(proj);
+				remove_projectile(proj_entity);
+				bo_system_pointer->remove(proj_entity);
+				render_system_pointer->remove(proj_entity);
 				// free entity
-				game_engine::game_engine_pointer->remove_entity(proj);
+				game_engine::game_engine_pointer->remove_entity(proj_entity);
 
 				continue;
 			}
-			b2Vec2 position = projectiles.get(proj).body->GetPosition();
+			b2Vec2 position = projectile.body->GetPosition();
 
 			if(ud->type == b2fixture_types::PROJECTILE)
 			{
-				game_engine::box b = bo_system_pointer->get(proj);
+				game_engine::box b = bo_system_pointer->get(proj_entity);
 				b.x = position.x - glsl_helper::projectile_width / 2.0f;
 				b.y = position.y - glsl_helper::projectile_height / 2.0f;
-				bo_system_pointer->update_box(proj, b);
+				bo_system_pointer->update_box(proj_entity, b);
 				game_engine::texture_vbo_system *tex_vbo_system_pointer = ((game_engine::texture_vbo_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
-				tex_vbo_system_pointer->update(proj);
+				tex_vbo_system_pointer->update(proj_entity);
 			} else if(ud->type == b2fixture_types::DEBRIS)
 			{
-				world_tiles->set_tile_at(position.x, position.y, tile_type::TEMPORARY_SMOKE);
+				if(projectile.trail_tile_type != 0)
+				{
+					world_tiles->set_tile_at(position.x, position.y, projectile.trail_tile_type);
+				}
 			}
 		}
 	}
-	b2Body *projectile_system::create_projectile(entity ent, float x, float y, float ang, float vel, float radius, b2fixture_types projectile_type)
+	projectile &projectile_system::create_projectile(entity ent, float x, float y, float ang, float vel, float radius, b2fixture_types projectile_type)
 	{
 		b2d_mutex.lock();
 		// create small circle projectile
@@ -70,7 +75,7 @@ namespace game
 		b2d_mutex.unlock();
 		projectile proj(body);
 		projectiles.add(ent, proj);
-		return body;
+		return projectiles.get(ent);
 	}
 
 	void projectile_system::add_projectile(entity ent, projectile proj)

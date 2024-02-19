@@ -70,8 +70,8 @@ namespace game
 					if (ud_a->type == b2fixture_types::PROJECTILE)
 					{
 						// delete circle shape around projectile
-						world_tiles->delete_circle((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
-
+						// world_tiles->delete_circle((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
+						game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius)});
 						game_engine::task_scheduler_pointer->add_task({(&create_debris_task), new create_debris_params(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 50.f, 0.5f)});
 						// for (int i = 0; i < explosion_radius; i++)
 						// {
@@ -85,8 +85,8 @@ namespace game
 					else
 					{
 						// delete circle shape around projectile
-						world_tiles->delete_circle((int)(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
-						// void delete_circle(int x, int y, int radius, std::vector<std::vector<std::vector<std::pair<float, float>>>> *chunk_outlines)
+						// world_tiles->delete_circle((int)(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
+						game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius)});
 						game_engine::task_scheduler_pointer->add_task({&create_debris_task, new create_debris_params(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 50.f, 0.5f)});
 
 						// for (int i = 0; i < explosion_radius; i++)
@@ -112,11 +112,21 @@ namespace game
 					if (ud_a->type == b2fixture_types::DEBRIS)
 					{
 						// world_tiles->set_tile_at((int)(fixture_a->GetBody()->GetPosition().x), (int)(fixture_a->GetBody()->GetPosition().y), tile_type::SAND);
+						tile_type debri_tile_type = (proj_system -> get_projectile(((b2_user_data *)(fixture_a->GetUserData().pointer)) -> ent)).debri_tile_type;
+
+						if(debri_tile_type != 0) {
+							game_engine::task_scheduler_pointer -> add_task({update_tile_task, new update_tile_params(fixture_a->GetBody()->GetPosition().x, fixture_a->GetBody()->GetPosition().y, debri_tile_type)});
+						}
 						ud_a->type = b2fixture_types::EMPTY;
 					}
 					else
 					{
 						// world_tiles->set_tile_at((int)(fixture_b->GetBody()->GetPosition().x), (int)(fixture_b->GetBody()->GetPosition().y), tile_type::SAND);
+						tile_type debri_tile_type = (proj_system -> get_projectile(((b2_user_data *)(fixture_b->GetUserData().pointer)) -> ent)).debri_tile_type;
+
+						if(debri_tile_type != 0) {
+							game_engine::task_scheduler_pointer -> add_task({update_tile_task, new update_tile_params(fixture_b->GetBody()->GetPosition().x, fixture_b->GetBody()->GetPosition().y, debri_tile_type)});
+						}
 						ud_b->type = b2fixture_types::EMPTY;
 					}
 				}

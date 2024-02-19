@@ -122,19 +122,79 @@ namespace game
 					}
 					if (game_engine::in_set(get_tile_at(x - 1, y), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
+						set_tile_at(x, y, get_tile_at(x - 1, y));
 						set_tile_at(x - 1, y, WATER);
-						set_tile_at(x, y, AIR);
 						break;
 					}
 					if (game_engine::in_set(get_tile_at(x + 1, y), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
+						set_tile_at(x, y, get_tile_at(x + 1, y));
 						set_tile_at(x + 1, y, WATER);
+						break;
+					}
+					break;
+				case ACID:
+					if (rand() % 10 == 0 && get_tile_at(x, y + 1) >= GLASS && get_tile_at(x, y + 1) < BEDROCK) {
+						set_tile_at(x, y + 1, AIR);
 						set_tile_at(x, y, AIR);
+						(*modified_chunks)[chunk_y][chunk_x] = 1;
 						break;
 					}
 
+					if (game_engine::in_set(get_tile_at(x, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
+					{
+						set_tile_at(x, y, get_tile_at(x, y + 1));
+						set_tile_at(x, y + 1, ACID);
+						break;
+					}
+					if (game_engine::in_set(get_tile_at(x - 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
+					{
+						set_tile_at(x, y, get_tile_at(x - 1, y + 1));
+						set_tile_at(x - 1, y + 1, ACID);
+						break;
+					}
+					if (game_engine::in_set(get_tile_at(x + 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
+					{
+						set_tile_at(x, y, get_tile_at(x + 1, y + 1));
+						set_tile_at(x + 1, y + 1, ACID);
+						break;
+					}
+					if (game_engine::in_set(get_tile_at(x - 1, y), AIR, SMOKE, TEMPORARY_SMOKE))
+					{
+						set_tile_at(x, y, get_tile_at(x - 1, y));
+						set_tile_at(x - 1, y, ACID);
+						break;
+					}
+					if (game_engine::in_set(get_tile_at(x + 1, y), AIR, SMOKE, TEMPORARY_SMOKE))
+					{
+						set_tile_at(x, y, get_tile_at(x + 1, y));
+						set_tile_at(x + 1, y, ACID);
+						break;
+					}
+					if (rand() % 3 == 0 && get_tile_at(x, y + 1) >= GLASS && get_tile_at(x, y + 1) < BEDROCK)
+					{
+						set_tile_at(x, y + 1, AIR);
+						set_tile_at(x, y, AIR);
+						(*modified_chunks)[chunk_y][chunk_x] = 1;
+						break;
+					}
+					if (rand() % 12 == 0 && get_tile_at(x - 1, y) >= GLASS && get_tile_at(x - 1, y) < BEDROCK)
+					{
+						set_tile_at(x - 1, y, AIR);
+						set_tile_at(x, y, AIR);
+						(*modified_chunks)[chunk_y][chunk_x] = 1;
+						break;
+					}
+					if (rand() % 12 == 0 && get_tile_at(x + 1, y) >= GLASS && get_tile_at(x + 1, y) < BEDROCK)
+					{
+						set_tile_at(x + 1, y, AIR);
+						set_tile_at(x, y, AIR);
+						(*modified_chunks)[chunk_y][chunk_x] = 1;
+						break;
+					}
+					break;
 				case GRASS:
-					if (rand() % 20 == 0)
+					if (rand() % 10 == 0)
 					{
 						int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
 						int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
@@ -150,10 +210,10 @@ namespace game
 							}
 						}
 					}
-					if (get_tile_at(x, y - 1) == AIR && rand() % 100 == 0)
-					{
-						set_tile_at(x, y, DIRT);
-					}
+					// if (get_tile_at(x, y - 1) == AIR && rand() % 100 == 0)
+					// {
+					// 	set_tile_at(x, y, DIRT);
+					// }
 					break;
 
 				case SAND:
@@ -176,6 +236,7 @@ namespace game
 						(*modified_chunks)[chunk_y][chunk_x] = 1;
 					}
 					break;
+				
 				}
 			}
 		}

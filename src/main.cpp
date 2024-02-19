@@ -164,7 +164,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		// create b2d projectile
 		//start away from player
 		// player_pos.x += cos(angle) * 0.5;
-		b2Body *projectile_body  = projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x + cos(angle) * 5.0f), (float)(player_pos.y + sin(angle) * 5.0f), float(angle), 250.f, glsl_helper::projectile_width / 2.0f, game::b2fixture_types::PROJECTILE);
+		projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x + cos(angle) * 5.0f), (float)(player_pos.y + sin(angle) * 5.0f), float(angle), 250.f, glsl_helper::projectile_width / 2.0f, game::b2fixture_types::PROJECTILE);
 		// create sprite for projectile
 		game_engine::render_system *render_sys = (game_engine::render_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
 		game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
@@ -611,6 +611,12 @@ void run_game(GLFWwindow *window)
 	uint64_t last_time_taken_micro = 0;
 	uint64_t counter = 0;
 	b2Vec2 player_vel = b2Vec2(0.0f, 0.0f);
+
+	uint16_t frame_c = 0;
+	// store start time
+	auto last_fps_start = std::chrono::high_resolution_clock::now();
+	
+
 	// Run the game loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -653,6 +659,10 @@ void run_game(GLFWwindow *window)
 		glBindImageTexture(1, chunk_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
 		GLuint texture_size = glGetUniformLocation(compute_shader, "texture_size");
 		glUniform2i(texture_size, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH);
+		GLuint frame_count = glGetUniformLocation(compute_shader, "frame_count");
+		
+		glUniform1ui(frame_count, (uint32_t)counter);
+
 
 		GLint player_pos = glGetUniformLocation(compute_shader, "player_pos");
 		glUniform2f(player_pos, (float)(player_body->GetPosition().x + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0), (float)(player_body->GetPosition().y + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0));
@@ -767,6 +777,15 @@ void run_game(GLFWwindow *window)
 		
 		auto end_rendering_loop = std::chrono::high_resolution_clock::now();
 		
+		frame_c++;
+		// if more than one second
+		if(std::chrono::duration_cast<std::chrono::milliseconds>(end_rendering_loop - last_fps_start) >= std::chrono::milliseconds(1000))
+		{
+			printf("fps: %d\n", frame_c);
+			frame_c = 0;
+			last_fps_start = end_rendering_loop;
+		}
+
 		auto loop_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_rendering_loop - start_rendering_loop);
 
 		last_time_taken_micro = loop_duration.count();
@@ -804,6 +823,12 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 	// if (key == GLFW_KEY_W && action == GLFW_PRESS) {
 	//     printf("W pressed\n");
 	// }
+}
+
+void print_hello_world()
+{
+	printf("Hello World!\n");
+
 }
 
 int main()

@@ -26,7 +26,7 @@ namespace game
 					}
 					else
 					{
-						if (noise_3 > 0.558)
+						if (noise_3 > 0.758)
 						{
 							data[y][x] = game::SAND;
 						}

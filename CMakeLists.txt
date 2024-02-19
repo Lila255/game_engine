@@ -6,14 +6,14 @@ set(CMAKE_CXX_STANDARD 20)
 
 # Set vcpkg root directory
 set(VCPKG_ROOT "$ENV{VCPKG_ROOT}")
+set(CMAKE_PREFIX_PATH VCPKG_ROOT)
 
-# Set vcpkg toolchain file
-if(DEFINED ENV{VCPKG_ROOT})
-		set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
-endif()
+include("$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 
 set(VCPKG_TARGET_TRIPLET "x64-windows")
 set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+
+
 # Use vcpkg to find packages
 find_package(glfw3 CONFIG REQUIRED)
 include_directories(${GLFW_INCLUDE_DIRS})

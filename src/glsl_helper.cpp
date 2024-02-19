@@ -37,7 +37,7 @@ namespace glsl_helper
 		0.1216f, 1.0000f, 1.0000f, 1.0000f, // 31
 		0.0100f, 0.0100f, 0.9800f, 0.7500f, // 32: WATER
 		1.0000f, 0.5500f, 0.1000f, 1.0000f, // 33: LAVA
-		0.1333f, 1.0000f, 1.0000f, 1.0000f, // 34
+		0.0333f, 1.0000f, 0.0333f, 0.7000f, // 34: ACID
 		0.1373f, 1.0000f, 1.0000f, 1.0000f, // 35
 		0.1412f, 1.0000f, 1.0000f, 1.0000f, // 36
 		0.1451f, 1.0000f, 1.0000f, 1.0000f, // 37
@@ -75,7 +75,7 @@ namespace glsl_helper
 		0.2700f, 0.8000f, 0.0000f, 1.0000f, // 69: GRASS
 		0.3200f, 0.1600f, 0.0000f, 1.0000f, // 70: WOOD
 		0.8000f, 0.6700f, 0.0000f, 1.0000f, // 71: GOLD
-		0.2824f, 1.0000f, 1.0000f, 1.0000f, // 72
+		0.9988f, 0.1000f, 0.1000f, 1.0000f, // 72: TREE_SEED
 		0.2863f, 1.0000f, 1.0000f, 1.0000f, // 73
 		0.2902f, 1.0000f, 1.0000f, 1.0000f, // 74
 		0.2941f, 1.0000f, 1.0000f, 1.0000f, // 75
@@ -438,6 +438,7 @@ namespace glsl_helper
 			const int CHUNKS_WIDTH = 3;	// number of chunks in a row
 
 			uniform ivec2 texture_size; // size of the lighting texture
+			uniform uint frame_count;
 
 			// layout(binding = 2) uniform NormalVectors {
     		// 	vec2 data[256];
@@ -594,7 +595,7 @@ namespace glsl_helper
 							vec2 reflection = ray_dir - 2.0 * dot_val * normal_vec;
 
 							// Add a small random variation
-							float noise_scale = 0.42; 
+							float noise_scale = 0.62; 
 							reflection += noise_scale * ((ray_index % 100 - 50) / float(50.0));
 
 							ray_dir = reflection;
@@ -621,10 +622,10 @@ namespace glsl_helper
 					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  bounces > 0 ? 0.5 : 1); 
 					if(bounces > 0)
 					{
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 7 - 2 * refracted_bounces); 
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - 2 * refracted_bounces); 
 						// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 + metal_bounces -  2 * refracted_bounces); 
 					} else {
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - 2 * refracted_bounces);
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 6 - 2 * refracted_bounces);
 					}
 				}
 			};
