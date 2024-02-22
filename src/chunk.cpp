@@ -820,7 +820,12 @@ namespace game
 					continue;
 				if ((x - local_x) * (x - local_x) + (y - local_y) * (y - local_y) <= radius * radius)
 				{
-					data[y][x] = 1;
+					if(game_engine::in_set(data[y][x], ROOT, WOOD, LEAF))
+					{
+						data[y][x] = EMBER;
+					} else {
+						data[y][x] = 1;
+					}
 				}
 			}
 		}

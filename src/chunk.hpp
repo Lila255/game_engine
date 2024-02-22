@@ -98,7 +98,7 @@ namespace game
 		GOLD,	// 71
 		TREE_SEED,	// 72
 		ROOT,	// 73
-		SOLID_10,	// 74
+		EMBER,	// 74
 		SOLID_11,	// 75
 		SOLID_12,	// 76
 		SOLID_13,	// 77

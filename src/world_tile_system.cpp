@@ -287,6 +287,53 @@ namespace game
 						(*modified_chunks)[chunk_y][chunk_x] = 1;
 					}
 					break;
+
+				case EMBER:
+
+					if (get_write_tile_at(x, y - 1) == AIR)
+					{
+						set_tile_at_no_lock(x, y - 1, TEMPORARY_SMOKE);
+					}
+					else if (get_write_tile_at(x, y + 1) == AIR)
+					{
+						set_tile_at_no_lock(x, y + 1, TEMPORARY_SMOKE);
+					}
+					else if (get_write_tile_at(x - 1, y) == AIR)
+					{
+						set_tile_at_no_lock(x - 1, y, TEMPORARY_SMOKE);
+					}
+					else if (get_write_tile_at(x + 1, y) == AIR)
+					{
+						set_tile_at_no_lock(x + 1, y, TEMPORARY_SMOKE);
+					}
+
+					if (rand() % 25 == 0)
+					{
+						set_tile_at_no_lock(x, y, TEMPORARY_SMOKE);
+					}
+					else
+					{
+						if (rand() % 2 == 0) // try spread
+						{
+							if (game_engine::in_set(get_write_tile_at(x, y - 1), WOOD, ROOT, LEAF))
+							{
+								set_tile_at_no_lock(x, y - 1, EMBER);
+							}
+							else if (game_engine::in_set(get_write_tile_at(x, y + 1), WOOD, ROOT, LEAF))
+							{
+								set_tile_at_no_lock(x, y + 1, EMBER);
+							}
+							else if (game_engine::in_set(get_write_tile_at(x - 1, y), WOOD, ROOT, LEAF))
+							{
+								set_tile_at_no_lock(x - 1, y, EMBER);
+							}
+							else if (game_engine::in_set(get_write_tile_at(x + 1, y), WOOD, ROOT, LEAF))
+							{
+								set_tile_at_no_lock(x + 1, y, EMBER);
+							}
+						}
+					}
+					break;
 				}
 			}
 		}
@@ -456,7 +503,7 @@ namespace game
 	{
 		std::vector<std::vector<std::pair<float, float>>> *outlines = new std::vector<std::vector<std::pair<float, float>>>;
 		std::shared_lock<std::shared_mutex> lock(read_chunk_mutex);
-		if(read_buffer == 0)
+		if (read_buffer == 0)
 		{
 			chunk_data_0[x + y * CHUNKS_WIDTH]->create_outlines(outlines);
 		}
@@ -473,11 +520,11 @@ namespace game
 		for (int i = 0; i < NUM_CHUNKS; i++)
 		{
 			bool modified;
-			if(read_buffer == 1)
+			if (read_buffer == 1)
 			{
 				modified = chunk_data_0[i]->delete_circle(x, y, radius);
 			}
-			else 
+			else
 			{
 				modified = chunk_data_1[i]->delete_circle(x, y, radius);
 			}
