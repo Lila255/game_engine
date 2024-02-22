@@ -54,6 +54,11 @@ namespace game
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 			return;
 
+		// if(tile_type >= GLASS)
+		// {
+		// 	modified_chunks[chunk_y][chunk_x] = 1;
+		// }
+
 		(chunk_data[chunk])->set_tile(tile_x, tile_y, tile_type);
 	}
 

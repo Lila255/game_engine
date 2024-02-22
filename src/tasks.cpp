@@ -3,6 +3,7 @@
 #include "projectile_system.hpp"
 #include "box2d_system.hpp"
 #include "world_tile_system.hpp"
+#include "tree_system.hpp"
 
 namespace game
 {
@@ -16,7 +17,7 @@ namespace game
 		create_debris_params * params = (create_debris_params*)(parameters);
 		projectile_system *proj_sys = (projectile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<projectile_system>());
 
-		for (int i = 0; i < 64; i++)
+		for (int i = 0; i < 8; i++)
 		{
 			entity e = game_engine::game_engine_pointer->create_entity();
 			// proj_system->create_projectile(e, (fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), (rand() % 360) / 360.0f, 250.f, 1.f, b2fixture_types::DEBRIS);
@@ -41,5 +42,15 @@ namespace game
 		update_tile_params * params = (update_tile_params *) parameters;
 		world_tile_system *world_tiles = ((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()));
 		world_tiles -> set_tile_at(params -> x, params -> y, params -> m_tile_type);
+
+		if(params -> m_tile_type == TREE_SEED)
+		{
+			tree_system *tree_sys = ((tree_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<tree_system>()));
+			tree t;
+			t.seed_x = params -> x;
+			t.seed_y = params -> y;
+			t.root_tiles[tile_coord{t.seed_x, t.seed_y}] = tree_tracer{0, 0, 0, 0};
+			tree_sys -> add_tree(game_engine::game_engine_pointer -> create_entity(), t);
+		}
 	}
 }

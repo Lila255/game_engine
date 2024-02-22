@@ -20,8 +20,12 @@ namespace game
 	{
 		entity ent;
 		b2fixture_types type;
-		b2_user_data() = default;
-		b2_user_data(entity e, b2fixture_types t) : ent(e), type(t) {}
+		std::chrono::time_point<std::chrono::steady_clock>  spawn_time;
+		uint16_t lifetime = 500;
+		b2_user_data() = delete;
+		b2_user_data(entity e, b2fixture_types t) : ent(e), type(t) {
+			spawn_time = std::chrono::steady_clock::now();
+		}
 	};
 
 	struct box2d_system : public game_engine::system

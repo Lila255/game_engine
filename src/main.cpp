@@ -254,7 +254,7 @@ void start_physics_thread()
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		printf("Physics loop took %lld ms\n", duration);
+		// printf("Physics loop took %lld ms\n", duration);
 		// printf("Physics loop took %lld ms\n", duration);
 		
 		
@@ -323,6 +323,11 @@ void run_game(GLFWwindow *window)
 	game::box2d_system *box2d_sys = new game::box2d_system();
 	box2d_sys->world -> SetContactListener(new game::b2_contact_listener());
 	eng.add_system(game_engine::family::type<game::box2d_system>(), box2d_sys);
+
+	game::tree_system *tree_sys = new game::tree_system(world_sys);
+	eng.add_system(game_engine::family::type<game::tree_system>(), tree_sys);
+
+	std::thread tree_thread(&game::tree_system::start, tree_sys);
 
 	world_sys->generate_world();
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
@@ -792,18 +797,22 @@ void run_game(GLFWwindow *window)
 		counter++;
 	}
 
+	physics_loop_running = false;
+	world_thread.join();
+	tree_sys->set_running(false);
+	tree_thread.join();
+
 	delete projectile_sys;
 	delete box2d_sys;
 	delete world_sys;
 	delete texture_vbo_sys;
 	delete render_sys;
 	delete box_sys;
+	delete tree_sys;
 
 	task_sc.shutdown({&game::shutdown_task_schedular_task,0});
 	task_runner.join();
 
-	physics_loop_running = false;
-	world_thread.join();
 }
 
 void error_callback(int error, const char *description)

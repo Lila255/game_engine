@@ -16,6 +16,8 @@
 #include "projectile_system.hpp"
 #include "world_tile_system.hpp"
 #include "box2d_system.hpp"
+#include "tree_system.hpp"
+
 #include "tasks.hpp"
 
 // #define M_PI 3.14159265358979323846		/* pi */
@@ -32,6 +34,9 @@
 
 namespace game
 {
+
+
+
 	struct b2_contact_listener : public b2ContactListener
 	{
 		world_tile_system *world_tiles;
@@ -111,8 +116,12 @@ namespace game
 				{
 					if (ud_a->type == b2fixture_types::DEBRIS)
 					{
-						// world_tiles->set_tile_at((int)(fixture_a->GetBody()->GetPosition().x), (int)(fixture_a->GetBody()->GetPosition().y), tile_type::SAND);
-						tile_type debri_tile_type = (proj_system -> get_projectile(((b2_user_data *)(fixture_a->GetUserData().pointer)) -> ent)).debri_tile_type;
+						b2_user_data * proj_ud = (b2_user_data *)(fixture_a->GetUserData().pointer);
+						
+						if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - proj_ud -> spawn_time).count() < proj_ud -> lifetime)
+							return;
+
+						tile_type debri_tile_type = (proj_system -> get_projectile(proj_ud -> ent)).debri_tile_type;
 
 						if(debri_tile_type != 0) {
 							game_engine::task_scheduler_pointer -> add_task({update_tile_task, new update_tile_params(fixture_a->GetBody()->GetPosition().x, fixture_a->GetBody()->GetPosition().y, debri_tile_type)});
@@ -121,8 +130,12 @@ namespace game
 					}
 					else
 					{
-						// world_tiles->set_tile_at((int)(fixture_b->GetBody()->GetPosition().x), (int)(fixture_b->GetBody()->GetPosition().y), tile_type::SAND);
-						tile_type debri_tile_type = (proj_system -> get_projectile(((b2_user_data *)(fixture_b->GetUserData().pointer)) -> ent)).debri_tile_type;
+						b2_user_data * proj_ud = (b2_user_data *)(fixture_b->GetUserData().pointer);
+
+						if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - proj_ud -> spawn_time).count() < proj_ud -> lifetime)
+							return;
+
+						tile_type debri_tile_type = (proj_system -> get_projectile(proj_ud -> ent)).debri_tile_type;
 
 						if(debri_tile_type != 0) {
 							game_engine::task_scheduler_pointer -> add_task({update_tile_task, new update_tile_params(fixture_b->GetBody()->GetPosition().x, fixture_b->GetBody()->GetPosition().y, debri_tile_type)});

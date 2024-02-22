@@ -13,6 +13,27 @@ namespace game
 	const uint16_t NUM_CHUNKS = 16; 
 	const uint16_t CHUNKS_WIDTH = 4;
 
+	// coordinate pair with hash
+	struct tile_coord
+	{
+		uint32_t x, y;
+		tile_coord(uint32_t x, uint32_t y) : x(x), y(y) {}
+		tile_coord() : x(0), y(0) {}
+		bool operator==(const tile_coord &other) const
+		{
+			return x == other.x && y == other.y;
+		}
+	};
+	// hash function for tile_coord
+	struct tile_coord_hash
+	{
+		std::size_t operator()(const tile_coord &tc) const
+		{
+			return std::hash<uint32_t>()(tc.x) + std::hash<uint32_t>()(tc.y * CHUNK_SIZE * CHUNKS_WIDTH);
+		}
+	};
+	
+
 	struct world_tile_system : public game_engine::system
 	{
 	private:
