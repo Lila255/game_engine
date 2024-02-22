@@ -267,22 +267,22 @@ namespace game
 				{
 					t.root_tiles[last_tile].up = 1;
 					t.root_tiles[current_tile] = tree_tracer{0, 2, 0, 0};
-					world_tiles->set_tile_at(current_tile.x, current_tile.y, ROOT);
+					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
 				} else if(last_tile.y < current_tile.y)	// moved down
 				{
 					t.root_tiles[last_tile].down = 1;
 					t.root_tiles[current_tile] = tree_tracer{2, 0, 0, 0};
-					world_tiles->set_tile_at(current_tile.x, current_tile.y, ROOT);
+					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
 				} else if(last_tile.x > current_tile.x)	// moved left
 				{
 					t.root_tiles[last_tile].left = 1;
 					t.root_tiles[current_tile] = tree_tracer{0, 0, 0, 2};
-					world_tiles->set_tile_at(current_tile.x, current_tile.y, ROOT);
+					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
 				} else if(last_tile.x < current_tile.x)	// moved right
 				{
 					t.root_tiles[last_tile].right = 1;
 					t.root_tiles[current_tile] = tree_tracer{0, 0, 2, 0};
-					world_tiles->set_tile_at(current_tile.x, current_tile.y, ROOT);
+					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
 				}
 			}
 		}

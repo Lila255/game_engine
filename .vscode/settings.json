@@ -78,6 +78,8 @@
         "fstream": "cpp",
         "source_location": "cpp",
         "strstream": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "shared_mutex": "cpp",
+        "condition_variable": "cpp"
     }
 }

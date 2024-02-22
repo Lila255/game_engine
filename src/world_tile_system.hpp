@@ -1,9 +1,10 @@
 #pragma once
 
+#include <array>
+#include <shared_mutex>
+
 #include "engine_comp.hpp"
 #include "chunk.hpp"
-
-#include <array>
 
 namespace game
 {
@@ -37,20 +38,26 @@ namespace game
 	struct world_tile_system : public game_engine::system
 	{
 	private:
-		std::array<chunk *, NUM_CHUNKS> chunk_data{};
 		std::array<entity, NUM_CHUNKS> chunk_entities;
+		std::array<chunk *, NUM_CHUNKS> chunk_data_0{};
+		std::array<chunk *, NUM_CHUNKS> chunk_data_1{};
+		uint8_t read_buffer = 0;
+		std::shared_mutex read_chunk_mutex;
+		std::shared_mutex write_chunk_mutex;
+		uint8_t get_write_tile_at(int x, int y);
+		void set_tile_at_no_lock(int x, int y, uint8_t tile_type);
 
 	public:
 		std::array<std::array<uint8_t, game::CHUNKS_WIDTH>, game::CHUNKS_WIDTH> modified_chunks;
 		entity all_chunk_ent;
-		std::mutex tile_mutex;
+		// std::mutex tile_mutex;
 
 		world_tile_system();
 		~world_tile_system();
 
 		void set_all_chunk_ent(entity ent);
 		uint8_t get_tile_at(int x, int y);
-		void set_tile_at(int x, int y, uint8_t tile_type);
+		void set_tile_at_with_lock(int x, int y, uint8_t tile_type);
 		std::array<entity, NUM_CHUNKS> get_chunk_entities();
 		void update(){};
 		void update(uint64_t tick_count, std::array<std::array<uint8_t, CHUNKS_WIDTH>, CHUNKS_WIDTH> * modified_chunks);

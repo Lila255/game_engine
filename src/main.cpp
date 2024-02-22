@@ -331,7 +331,7 @@ void run_game(GLFWwindow *window)
 
 	world_sys->generate_world();
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
-	std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
+	// std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
 
 	GLuint background_texture;
 	glGenTextures(1, &background_texture);
@@ -397,13 +397,13 @@ void run_game(GLFWwindow *window)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
 	printf("before settingh chunk textures: %d\n", glGetError());
 
-	for (int i = 0; i < game::NUM_CHUNKS; i++)
-	{
-		int x = i % game::CHUNKS_WIDTH;
-		int y = i / game::CHUNKS_WIDTH;
+	// for (int i = 0; i < game::NUM_CHUNKS; i++)
+	// {
+	// 	int x = i % game::CHUNKS_WIDTH;
+	// 	int y = i / game::CHUNKS_WIDTH;
 
-		glTexSubImage2D(GL_TEXTURE_2D, 0, x * game::CHUNK_SIZE, y * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE, GL_RED, GL_UNSIGNED_BYTE, chunks_data[i]->data());
-	}
+	// 	glTexSubImage2D(GL_TEXTURE_2D, 0, x * game::CHUNK_SIZE, y * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE, GL_RED, GL_UNSIGNED_BYTE, chunks_data[i]->data());
+	// }
 
 	printf("after settingh chunk textures: %d\n", glGetError());
 

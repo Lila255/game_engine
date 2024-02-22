@@ -43,7 +43,7 @@ namespace game
 			{
 				if(projectile.trail_tile_type != 0)
 				{
-					world_tiles->set_tile_at(position.x, position.y, projectile.trail_tile_type);
+					world_tiles->set_tile_at_with_lock(position.x, position.y, projectile.trail_tile_type);
 				}
 			}
 		}
