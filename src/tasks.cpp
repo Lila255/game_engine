@@ -41,6 +41,12 @@ namespace game
 	{
 		update_tile_params * params = (update_tile_params *) parameters;
 		world_tile_system *world_tiles = ((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()));
+		
+		if(params -> m_tile_type == TREE_SEED && world_tiles -> get_tile_at(params -> x, params -> y) == TREE_SEED)
+		{
+			return;
+		}
+		
 		world_tiles -> set_tile_at_with_lock(params -> x, params -> y, params -> m_tile_type);
 
 		if(params -> m_tile_type == TREE_SEED)

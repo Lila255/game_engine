@@ -223,7 +223,7 @@ void start_physics_thread()
 	{
 		auto start = std::chrono::high_resolution_clock::now();
 
-		world_sys->update(tick_count++, &(world_sys -> modified_chunks));
+		world_sys->update(tick_count++);
 		// printf("Tile movements took %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count());
 		std::array<entity, game::NUM_CHUNKS> chunk_entities = world_sys->get_chunk_entities();
 		std::array<game::chunk *, game::NUM_CHUNKS> * chunks = world_sys->get_chunks();
@@ -231,21 +231,25 @@ void start_physics_thread()
 		std::array<std::vector<std::vector<std::pair<float, float>>> *, game::NUM_CHUNKS> chunks_outlines;
 		std::array<std::thread, game::NUM_CHUNKS> threads;
 
+		std::array<uint8_t, game::NUM_CHUNKS> * modified_chunks = world_sys -> get_modified_chunks();
+
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
-			if((world_sys -> modified_chunks)[i / game::CHUNKS_WIDTH][i % game::CHUNKS_WIDTH] == 0)
+			if(modified_chunks -> at(i) == 0)
 				continue;
 			game::chunk *c = chunks->at(i);
 			chunks_outlines[i] = new std::vector<std::vector<std::pair<float, float>>>();
 			threads[i] = std::thread(do_outlining, c, chunks_outlines[i]);
 			// threads.push_back(std::thread((c->create_outlines), chunks_outlines[i]));
 		}
+		
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
-			if((world_sys -> modified_chunks)[i / game::CHUNKS_WIDTH][i % game::CHUNKS_WIDTH] == 0)
+			if(modified_chunks -> at(i) == 0)
 				continue;
 
-			(world_sys -> modified_chunks)[i / game::CHUNKS_WIDTH][i % game::CHUNKS_WIDTH] = 0;
+			world_sys -> set_modified_chunk(i % game::CHUNKS_WIDTH, i / game::CHUNKS_WIDTH, 0);
+			
 			entity e = chunk_entities[i];
 			threads[i].join();
 			b2d_sys->update_static_outlines(e, chunks_outlines[i]);

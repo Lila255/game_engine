@@ -40,7 +40,9 @@ namespace game
 	private:
 		std::array<entity, NUM_CHUNKS> chunk_entities;
 		std::array<chunk *, NUM_CHUNKS> chunk_data_0{};
+		std::array<uint8_t, game::NUM_CHUNKS> modified_chunks_0;
 		std::array<chunk *, NUM_CHUNKS> chunk_data_1{};
+		std::array<uint8_t, game::NUM_CHUNKS>  modified_chunks_1;
 		uint8_t read_buffer = 0;
 		std::shared_mutex read_chunk_mutex;
 		std::shared_mutex write_chunk_mutex;
@@ -48,7 +50,6 @@ namespace game
 		void set_tile_at_no_lock(int x, int y, uint8_t tile_type);
 
 	public:
-		std::array<std::array<uint8_t, game::CHUNKS_WIDTH>, game::CHUNKS_WIDTH> modified_chunks;
 		entity all_chunk_ent;
 		// std::mutex tile_mutex;
 
@@ -60,7 +61,7 @@ namespace game
 		void set_tile_at_with_lock(int x, int y, uint8_t tile_type);
 		std::array<entity, NUM_CHUNKS> get_chunk_entities();
 		void update(){};
-		void update(uint64_t tick_count, std::array<std::array<uint8_t, CHUNKS_WIDTH>, CHUNKS_WIDTH> * modified_chunks);
+		void update(uint64_t tick_count);
 		void generate_world();
 		entity get_chunk_entity(int x, int y);
 		entity get_chunk_entity(int chunk);
@@ -68,5 +69,7 @@ namespace game
 		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *, NUM_CHUNKS> get_chunks_data();
 		std::vector<std::vector<std::pair<float, float>>> *create_outlines(int x, int y);
 		void delete_circle(int x, int y, int radius);
+		std::array<uint8_t, game::NUM_CHUNKS> *get_modified_chunks();
+		void set_modified_chunk(int x, int y, uint8_t value);
 	};
 }

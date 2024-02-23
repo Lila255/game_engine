@@ -537,100 +537,8 @@ namespace game
 
 	void chunk::create_outlines(std::vector<std::vector<std::pair<float, float>>> * chunk_outline)
 	{
-		/*std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines;
-		std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines_other_way;
-		std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines_II;
-		std::unordered_map<std::pair<float, float>, std::pair<float, float>, chunk_coord_pair_hash> edge_lines_other_way_II;
-
-		for (int y = 0; y < CHUNK_SIZE; y++)
-		{
-			for (int x = 0; x < CHUNK_SIZE; x++)
-			{
-				if (data[y][x] >= SOLID_TILE_START_INDEX)
-				{
-					uint16_t edginess = get_tile_edginess(x, y);
-					for (tile_linef line : edges_lines[edginess])
-					{
-						line.x1 += x;
-						line.y1 += y;
-						line.x2 += x;
-						line.y2 += y;
-						if (!edge_lines.count({line.x1, line.y1}))
-						{
-							edge_lines[{line.x1, line.y1}] = {line.x2, line.y2};
-							// edge_lines_other_way[{line.x2, line.y2}] = {line.x1, line.y1};
-						} else {
-							edge_lines_II[{line.x1, line.y1}] = {line.x2, line.y2};
-							// edge_lines_other_way_II[{line.x2, line.y2}] = {line.x1, line.y1};
-						}
-
-					}
-				}
-			}
-		}
-
-		// add lines in reverse direction to other_way maps
-		for (auto it = edge_lines.begin(); it != edge_lines.end(); ++it)
-		{
-			// edge_lines_other_way[it->second] = it->first;
-			if(edge_lines_other_way.count(it->second) && edge_lines_other_way[it->second] == it->first)
-				continue;	// already added
-
-		}
-
-		std::vector<std::vector<std::pair<float, float>>> outlines;
-		while (!edge_lines.empty())
-		{
-			std::vector<std::pair<float, float>> current_outline;
-
-			std::pair<float, float> start_point = edge_lines.begin()->first;
-			current_outline.push_back(start_point);
-			std::pair<float, float> current_point = edge_lines.begin()->second;
-			edge_lines.erase(start_point);
-			if (edge_lines_other_way.count(current_point) && edge_lines_other_way[current_point] == start_point)
-			{
-				edge_lines_other_way.erase(current_point);
-			}
-
-			do
-			{
-				current_outline.push_back(current_point);
-				if (edge_lines.count(current_point))
-				{
-					std::pair<float, float> next_point = edge_lines[current_point];
-					edge_lines.erase(current_point);
-
-					if (edge_lines_other_way.count(next_point) && edge_lines_other_way[next_point] == current_point)
-					{
-						edge_lines_other_way.erase(next_point);
-					}
-					current_point = next_point;
-				}
-				else if (edge_lines_other_way.count(current_point))
-				{
-					std::pair<float, float> next_point = edge_lines_other_way[current_point];
-					edge_lines_other_way.erase(current_point);
-					if (edge_lines.count(next_point) && edge_lines[next_point] == current_point)
-					{
-						edge_lines.erase(next_point);
-					}
-					current_point = next_point;
-				}
-				else
-				{
-					// printf("Error: outline ended prematurely\n");
-					break;
-				}
-
-			} while (1);
-
-			// current_outline.push_back(current_point);
-			outlines.push_back(current_outline);
-		}
-		*/
-
 		// start time
-		// auto start = std::chrono::high_resolution_clock::now();
+		auto start = std::chrono::high_resolution_clock::now();
 		std::unordered_map<std::pair<float, float>, line_mapping_pair, chunk_coord_pair_hash> edge_lines;
 		std::unordered_map<std::pair<float, float>, line_mapping_pair, chunk_coord_pair_hash> edge_lines_reverse;
 
@@ -668,9 +576,9 @@ namespace game
 				// }
 			}
 		}
-		// auto last_time = std::chrono::high_resolution_clock::now();
-		// auto running_duration = last_time - start;
-		// printf("		marching squares: %f mis\n", running_duration.count() / 1000.0);
+		auto last_time = std::chrono::high_resolution_clock::now();
+		auto running_duration = last_time - start;
+		printf("		marching squares: %f mis\n", running_duration.count() / 1000.0);
 
 		std::vector<std::vector<std::pair<float, float>>> outlines;
 		while (1)
@@ -733,9 +641,9 @@ namespace game
 			outlines.push_back(current_outline);
 		}
 
-		// running_duration = std::chrono::high_resolution_clock::now() - last_time;
+		running_duration = std::chrono::high_resolution_clock::now() - last_time;
 		// last_time = std::chrono::high_resolution_clock::now();
-		// printf("		Connecting edges: %f mis\n", running_duration.count() / 1000.0);
+		printf("		Connecting edges: %f mis\n", running_duration.count() / 1000.0);
 
 		// std::vector<std::vector<std::pair<float, float>>> * outlines_triangles = new std::vector<std::vector<std::pair<float, float>>>();
 		int vert_retention_count = 4;
@@ -785,9 +693,9 @@ namespace game
 			}
 		}
 
-		// running_duration = std::chrono::high_resolution_clock::now() - last_time;
+		running_duration = std::chrono::high_resolution_clock::now() - last_time;
 		// last_time = std::chrono::high_resolution_clock::now();
-		// printf("		triangulating: %f mis\n", running_duration.count() / 1000.0);
+		printf("		triangulating: %f mis\n", running_duration.count() / 1000.0);
 
 
 		// auto end = std::chrono::high_resolution_clock::now();

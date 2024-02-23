@@ -14,7 +14,7 @@ namespace game
 			chunk_data_0[i] = new chunk(chunk_x, chunk_y);
 			chunk_data_1[i] = new chunk(chunk_x, chunk_y);
 			// chunk_data[i] = new std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
-			modified_chunks[chunk_y][chunk_x] = 1;
+			set_modified_chunk(chunk_x, chunk_y, 1);
 		}
 	}
 
@@ -86,11 +86,11 @@ namespace game
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 			return;
 
-		// std::unique_lock<std::shared_mutex> lock(write_chunk_mutex);
-		// if(tile_type >= GLASS)
-		// {
-		// 	modified_chunks[chunk_y][chunk_x] = 1;
-		// }
+		std::unique_lock<std::shared_mutex> lock(write_chunk_mutex);
+		if((tile_type >= GLASS) != (get_tile_at(x, y) >= GLASS))
+		{
+			set_modified_chunk(chunk_x, chunk_y, 1);
+		}
 
 		if (read_buffer == 0)
 		{
@@ -112,10 +112,11 @@ namespace game
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 			return;
 
-		// if(tile_type >= GLASS)
-		// {
-		// 	modified_chunks[chunk_y][chunk_x] = 1;
-		// }
+		if((tile_type >= GLASS) != (get_tile_at(x, y) >= GLASS))
+		{
+			set_modified_chunk(chunk_x, chunk_y, 1);
+		}
+		
 		// std::shared_lock<std::shared_mutex> lock(chunk_mutex);
 		if (read_buffer == 0)
 		{
@@ -132,7 +133,7 @@ namespace game
 		return chunk_entities;
 	}
 
-	void world_tile_system::update(uint64_t tick_count, std::array<std::array<uint8_t, CHUNKS_WIDTH>, CHUNKS_WIDTH> *modified_chunks)
+	void world_tile_system::update(uint64_t tick_count)
 	{
 		write_chunk_mutex.lock();
 
@@ -188,7 +189,6 @@ namespace game
 					{
 						set_tile_at_no_lock(x, y + 1, AIR);
 						set_tile_at_no_lock(x, y, AIR);
-						(*modified_chunks)[chunk_y][chunk_x] = 1;
 						break;
 					}
 
@@ -226,21 +226,18 @@ namespace game
 					{
 						set_tile_at_no_lock(x, y + 1, AIR);
 						set_tile_at_no_lock(x, y, AIR);
-						(*modified_chunks)[chunk_y][chunk_x] = 1;
 						break;
 					}
 					if (rand() % 12 == 0 && get_write_tile_at(x - 1, y) >= GLASS && get_write_tile_at(x - 1, y) < BEDROCK)
 					{
 						set_tile_at_no_lock(x - 1, y, AIR);
 						set_tile_at_no_lock(x, y, AIR);
-						(*modified_chunks)[chunk_y][chunk_x] = 1;
 						break;
 					}
 					if (rand() % 12 == 0 && get_write_tile_at(x + 1, y) >= GLASS && get_write_tile_at(x + 1, y) < BEDROCK)
 					{
 						set_tile_at_no_lock(x + 1, y, AIR);
 						set_tile_at_no_lock(x, y, AIR);
-						(*modified_chunks)[chunk_y][chunk_x] = 1;
 						break;
 					}
 					break;
@@ -272,19 +269,16 @@ namespace game
 					{
 						set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
 						set_tile_at_no_lock(x, y + 1, SAND);
-						(*modified_chunks)[chunk_y][chunk_x] = 1;
 					}
 					else if (game_engine::in_set(get_write_tile_at(x - 1, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
 					{
 						set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y + 1));
 						set_tile_at_no_lock(x - 1, y + 1, SAND);
-						(*modified_chunks)[chunk_y][chunk_x] = 1;
 					}
 					else if (game_engine::in_set(get_write_tile_at(x + 1, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
 					{
 						set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
 						set_tile_at_no_lock(x + 1, y + 1, SAND);
-						(*modified_chunks)[chunk_y][chunk_x] = 1;
 					}
 					break;
 
@@ -420,10 +414,12 @@ namespace game
 			if (read_buffer == 0)
 			{
 				memcpy(chunk_data_0[i]->get_data(), chunk_data_1[i]->get_data(), CHUNK_SIZE * CHUNK_SIZE);
+				memcpy(modified_chunks_0.data(), modified_chunks_1.data(), NUM_CHUNKS);
 			}
 			else
 			{
 				memcpy(chunk_data_1[i]->get_data(), chunk_data_0[i]->get_data(), CHUNK_SIZE * CHUNK_SIZE);
+				memcpy(modified_chunks_1.data(), modified_chunks_0.data(), NUM_CHUNKS);
 			}
 		}
 		read_buffer = !read_buffer;
@@ -531,8 +527,25 @@ namespace game
 
 			if (modified)
 			{
-				modified_chunks[i / CHUNKS_WIDTH][i % CHUNKS_WIDTH] = 1;
+				set_modified_chunk(i % CHUNKS_WIDTH, i / CHUNKS_WIDTH, 1);
 			}
 		}
 	}
+
+	std::array<uint8_t, game::NUM_CHUNKS> *world_tile_system::get_modified_chunks()
+	{
+		if(read_buffer == 0)
+			return &modified_chunks_0;
+		else
+			return &modified_chunks_1;
+	}
+
+	void world_tile_system::set_modified_chunk(int x, int y, uint8_t value)
+	{
+		if(read_buffer == 1)
+			modified_chunks_0[y * CHUNKS_WIDTH + x] = value;
+		else
+			modified_chunks_1[y * CHUNKS_WIDTH + x] = value;
+	}
+
 }

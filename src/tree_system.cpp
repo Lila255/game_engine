@@ -7,11 +7,13 @@ namespace game
 
 	void tree_system::add_tree(entity ent, tree t)
 	{
+		std::lock_guard<std::mutex> lock(tree_mutex);
 		trees.add(ent, t);
 	}
 
 	void tree_system::remove_tree(entity ent)
 	{
+		std::lock_guard<std::mutex> lock(tree_mutex);
 		trees.remove(ent);
 	}
 
@@ -25,7 +27,7 @@ namespace game
 		if (x < 0 || x >= CHUNKS_WIDTH * CHUNK_SIZE || y < 0 || y >= CHUNKS_WIDTH * CHUNK_SIZE)
 			return false;
 
-		if (world_tiles->get_tile_at(x, y) == BEDROCK)
+		if (game_engine::in_set(world_tiles->get_tile_at(x, y), BEDROCK, WOOD, ROOT, TREE_SEED))
 			return false;
 
 		uint16_t adjacent_tiles = 0;
@@ -41,7 +43,10 @@ namespace game
 		if (world_tiles->get_tile_at(x, y) <= GLASS && rand() % 10 != 0)
 			return false;
 
-		return adjacent_tiles < 2;
+		if (adjacent_tiles < 2)
+			return true;
+		else
+			return rand() % 20 == 0;
 	}
 
 	void tree_system::trim_tree(tree &t, tile_coord start_tile)
@@ -177,17 +182,17 @@ namespace game
 
 		for (int i = 0; i < 4; i++)
 		{
-			// if (dirs[i] == 0 && tt.up == 1)
-			// {
+			if (dirs[i] == 0 && tt.up == 1)
+			{
 
-			// 	tile_coord new_current_tile = tile_coord(current_tile.x, current_tile.y - 1);
-			// 	if (find_tile_to_grow_to(t, new_current_tile, last_tile))
-			// 	{
-			// 		current_tile = new_current_tile;
-			// 		return true;
-			// 	}
-			// }
-			// else
+				tile_coord new_current_tile = tile_coord(current_tile.x, current_tile.y - 1);
+				if (find_tile_to_grow_to(t, new_current_tile, last_tile))
+				{
+					current_tile = new_current_tile;
+					return true;
+				}
+			}
+			else
 			if (dirs[i] == 1 && tt.down == 1)
 			{
 				tile_coord new_current_tile = tile_coord(current_tile.x, current_tile.y + 1);
@@ -228,14 +233,14 @@ namespace game
 			// Update the tree
 
 			// check if seed is still there
-			if (world_tiles->get_tile_at(t.seed_x, t.seed_y) != TREE_SEED)
-			{
-				remove_tree(tree_entity);
-				game_engine::game_engine_pointer->remove_entity(tree_entity);
-				continue;
-			}
+			// if (world_tiles->get_tile_at(t.seed_x, t.seed_y) != TREE_SEED)
+			// {
+			// 	remove_tree(tree_entity);
+			// 	game_engine::game_engine_pointer->remove_entity(tree_entity);
+			// 	continue;
+			// }
 
-			if (t.root_tiles.size() < 256 && rand() % 3 == 0)
+			if (t.root_tiles.size() < 48 && rand() % 3 == 0)
 			{ // grow roots
 				tile_coord current_tile = tile_coord(t.seed_x, t.seed_y);
 				tile_coord last_tile = tile_coord(t.seed_x, t.seed_y);
