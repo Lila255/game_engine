@@ -64,6 +64,7 @@ namespace game
 		fixtureDef.density = 0.0f;
 		fixtureDef.friction = 0.73f;
 		fixtureDef.restitution = 0.15f;
+		fixtureDef.filter.categoryBits = b2fixture_types::TERRAIN;
 		b2FixtureUserData fixtureUserData;
 		fixtureUserData.pointer = (uintptr_t) new b2_user_data(ent, b2fixture_types::TERRAIN);
 		fixtureDef.userData = fixtureUserData;
@@ -103,7 +104,9 @@ namespace game
 				fixtureDef.density = 0.0f;
 				fixtureDef.friction = 0.73f;
 				fixtureDef.restitution = 0.15f;
-				fixtureDef.isSensor = true;
+
+				fixtureDef.filter.categoryBits = b2fixture_types::TERRAIN;
+
 				b2FixtureUserData fixtureUserData;
 				// fixtureUserData.pointer = b2fixture_types::TERRAIN;
 				fixtureUserData.pointer = (uintptr_t) new b2_user_data(ent, b2fixture_types::TERRAIN);
@@ -160,6 +163,8 @@ namespace game
 				fixtureDef.density = 1.0f;
 				fixtureDef.friction = 0.9f;
 				fixtureDef.restitution = 0.15f;
+				fixtureDef.filter.categoryBits = b2fixture_types::TERRAIN;
+
 				b2FixtureUserData fixtureUserData;
 				// fixtureUserData.pointer = b2fixture_types::TERRAIN;
 				fixtureUserData.pointer = (uintptr_t) new b2_user_data(ent, b2fixture_types::TERRAIN);
@@ -206,6 +211,7 @@ namespace game
 			fixture_def.density = 0.5f;
 			fixture_def.friction = 0.5f;
 			fixture_def.restitution = .001f;
+			fixture_def.filter.categoryBits = b2fixture_types::PLAYER;
 			b2FixtureUserData fixtureUserData;
 			// fixtureUserData.pointer = b2fixture_types::PLAYER;
 			fixtureUserData.pointer = (uintptr_t) new b2_user_data(ent, b2fixture_types::PLAYER);

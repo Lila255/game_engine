@@ -27,7 +27,7 @@ namespace game
 		bool running = true;
 
 		bool can_place_tree_tile_at(int x, int y, tile_type tile_type);
-		bool find_tile_to_grow_to(tree &t, tile_coord &current_tile, tile_coord &last_tile);
+		bool find_tile_to_grow_to(tree &t, tile_coord &current_tile, tile_coord &last_tile, tile_type tree_tile_type);
 		void trim_tree(tree &t, tile_coord start_tile);
 		std::mutex tree_mutex;
 

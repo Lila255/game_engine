@@ -59,6 +59,7 @@ namespace game
 		void set_all_chunk_ent(entity ent);
 		uint8_t get_tile_at(int x, int y);
 		void set_tile_at_with_lock(int x, int y, uint8_t tile_type);
+		void set_tile_at_with_search_and_lock(int x, int y, uint8_t tile_type);
 		std::array<entity, NUM_CHUNKS> get_chunk_entities();
 		void update(){};
 		void update(uint64_t tick_count);

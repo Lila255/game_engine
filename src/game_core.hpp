@@ -31,11 +31,8 @@
 // typedef CGAL::Delaunay_triangulation_2<K>  Triangulation;
 // typedef Triangulation::Edge_iterator  Edge_iterator;
 
-
 namespace game
 {
-
-
 
 	struct b2_contact_listener : public b2ContactListener
 	{
@@ -77,7 +74,7 @@ namespace game
 						// delete circle shape around projectile
 						// world_tiles->delete_circle((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
 						game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius)});
-						game_engine::task_scheduler_pointer->add_task({(&create_debris_task), new create_debris_params(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 50.f, 0.5f)});
+						game_engine::task_scheduler_pointer->add_task({(&create_debris_task), new create_debris_params(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 40.f, 40.f, 0.5f, SNOW, SNOW)});
 						// for (int i = 0; i < explosion_radius; i++)
 						// {
 						// 	entity e = game_engine::game_engine_pointer->create_entity();
@@ -92,7 +89,7 @@ namespace game
 						// delete circle shape around projectile
 						// world_tiles->delete_circle((int)(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
 						game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius)});
-						game_engine::task_scheduler_pointer->add_task({&create_debris_task, new create_debris_params(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 50.f, 0.5f)});
+						game_engine::task_scheduler_pointer->add_task({&create_debris_task, new create_debris_params(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 40.f, 40.f, 0.5f, SNOW, SNOW)});
 
 						// for (int i = 0; i < explosion_radius; i++)
 						// {
@@ -116,29 +113,31 @@ namespace game
 				{
 					if (ud_a->type == b2fixture_types::DEBRIS)
 					{
-						b2_user_data * proj_ud = (b2_user_data *)(fixture_a->GetUserData().pointer);
-						
-						if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - proj_ud -> spawn_time).count() < proj_ud -> lifetime)
+						b2_user_data *proj_ud = (b2_user_data *)(fixture_a->GetUserData().pointer);
+
+						if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - proj_ud->spawn_time).count() < proj_ud->lifetime)
 							return;
 
-						tile_type debri_tile_type = (proj_system -> get_projectile(proj_ud -> ent)).debri_tile_type;
+						tile_type debri_tile_type = (proj_system->get_projectile(proj_ud->ent)).debri_tile_type;
 
-						if(debri_tile_type != 0) {
-							game_engine::task_scheduler_pointer -> add_task({update_tile_task, new update_tile_params(fixture_a->GetBody()->GetPosition().x, fixture_a->GetBody()->GetPosition().y, debri_tile_type)});
+						if (debri_tile_type != 0)
+						{
+							game_engine::task_scheduler_pointer->add_task({update_tile_task, new update_tile_params(fixture_a->GetBody()->GetPosition().x, fixture_a->GetBody()->GetPosition().y, debri_tile_type)});
 						}
 						ud_a->type = b2fixture_types::EMPTY;
 					}
 					else
 					{
-						b2_user_data * proj_ud = (b2_user_data *)(fixture_b->GetUserData().pointer);
+						b2_user_data *proj_ud = (b2_user_data *)(fixture_b->GetUserData().pointer);
 
-						if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - proj_ud -> spawn_time).count() < proj_ud -> lifetime)
+						if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - proj_ud->spawn_time).count() < proj_ud->lifetime)
 							return;
 
-						tile_type debri_tile_type = (proj_system -> get_projectile(proj_ud -> ent)).debri_tile_type;
+						tile_type debri_tile_type = (proj_system->get_projectile(proj_ud->ent)).debri_tile_type;
 
-						if(debri_tile_type != 0) {
-							game_engine::task_scheduler_pointer -> add_task({update_tile_task, new update_tile_params(fixture_b->GetBody()->GetPosition().x, fixture_b->GetBody()->GetPosition().y, debri_tile_type)});
+						if (debri_tile_type != 0)
+						{
+							game_engine::task_scheduler_pointer->add_task({update_tile_task, new update_tile_params(fixture_b->GetBody()->GetPosition().x, fixture_b->GetBody()->GetPosition().y, debri_tile_type)});
 						}
 						ud_b->type = b2fixture_types::EMPTY;
 					}

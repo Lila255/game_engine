@@ -99,7 +99,7 @@ namespace game
 		TREE_SEED,	// 72
 		ROOT,	// 73
 		EMBER,	// 74
-		SOLID_11,	// 75
+		SNOW,	// 75
 		SOLID_12,	// 76
 		SOLID_13,	// 77
 		SOLID_14,	// 78
@@ -164,6 +164,9 @@ namespace game
 
 	};
 	const uint16_t SOLID_TILE_START_INDEX = tile_type::GLASS;
+	extern std::array<uint8_t, 256> is_solid_tile;
+
+
 
 	struct tile_linef
 	{

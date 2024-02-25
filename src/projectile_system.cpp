@@ -41,7 +41,7 @@ namespace game
 				tex_vbo_system_pointer->update(proj_entity);
 			} else if(ud->type == b2fixture_types::DEBRIS)
 			{
-				if(projectile.trail_tile_type != 0)
+				if(projectile.trail_tile_type != 0 && world_tiles->get_tile_at(position.x, position.y) == 0)
 				{
 					world_tiles->set_tile_at_with_lock(position.x, position.y, projectile.trail_tile_type);
 				}
@@ -64,6 +64,14 @@ namespace game
 		fixture_def.density = 0.2f;
 		fixture_def.friction = 0.3f;
 		fixture_def.restitution = 0.89f;
+		fixture_def.filter.categoryBits = projectile_type;
+
+		if(projectile_type == b2fixture_types::DEBRIS)
+		{
+			fixture_def.filter.maskBits = b2fixture_types::TERRAIN | b2fixture_types::PLAYER;
+		} else {
+			fixture_def.filter.maskBits = b2fixture_types::TERRAIN | b2fixture_types::PLAYER;
+		}
 
 		b2FixtureUserData fixtureUserData;
 		// fixtureUserData.pointer = b2fixture_types::PROJECTILE;

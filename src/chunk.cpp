@@ -4,6 +4,7 @@
 
 namespace game
 {
+	std::array<uint8_t, 256> is_solid_tile;
 
 	void chunk::create_chunk()
 	{
@@ -40,6 +41,7 @@ namespace game
 				{
 					data[y][x] = game::AIR;
 				}
+				// data[y][x] = game::AIR;
 
 				// data[y][x] = noise_1 > 0.6 ? 1 : 0;
 
@@ -439,7 +441,8 @@ namespace game
 			{
 				continue;
 			}
-			if (data[adjacent_y][adjacent_x] >= SOLID_TILE_START_INDEX)
+			// if (data[adjacent_y][adjacent_x] >= SOLID_TILE_START_INDEX)
+			if (is_solid_tile[data[adjacent_y][adjacent_x]])
 			{
 				edginess += offset[i];
 			}
@@ -578,7 +581,7 @@ namespace game
 		}
 		auto last_time = std::chrono::high_resolution_clock::now();
 		auto running_duration = last_time - start;
-		printf("		marching squares: %f mis\n", running_duration.count() / 1000.0);
+		// printf("		marching squares: %f mis\n", running_duration.count() / 1000.0);
 
 		std::vector<std::vector<std::pair<float, float>>> outlines;
 		while (1)
@@ -643,7 +646,7 @@ namespace game
 
 		running_duration = std::chrono::high_resolution_clock::now() - last_time;
 		// last_time = std::chrono::high_resolution_clock::now();
-		printf("		Connecting edges: %f mis\n", running_duration.count() / 1000.0);
+		// printf("		Connecting edges: %f mis\n", running_duration.count() / 1000.0);
 
 		// std::vector<std::vector<std::pair<float, float>>> * outlines_triangles = new std::vector<std::vector<std::pair<float, float>>>();
 		int vert_retention_count = 4;
@@ -695,7 +698,7 @@ namespace game
 
 		running_duration = std::chrono::high_resolution_clock::now() - last_time;
 		// last_time = std::chrono::high_resolution_clock::now();
-		printf("		triangulating: %f mis\n", running_duration.count() / 1000.0);
+		// printf("		triangulating: %f mis\n", running_duration.count() / 1000.0);
 
 
 		// auto end = std::chrono::high_resolution_clock::now();

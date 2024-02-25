@@ -77,9 +77,16 @@ namespace game
 		t.root_tiles.erase(start_tile);
 	}
 
-	bool tree_system::find_tile_to_grow_to(tree &t, tile_coord &current_tile, tile_coord &last_tile)
+	bool tree_system::find_tile_to_grow_to(tree &t, tile_coord &current_tile, tile_coord &last_tile, tile_type tree_tile_type)
 	{
-		tree_tracer tt = t.root_tiles[current_tile];
+		std::unordered_map<tile_coord, tree_tracer, tile_coord_hash> *tile_map;
+		if(tree_tile_type == ROOT)
+		{
+			tile_map = &t.root_tiles;
+		} else {
+			tile_map = &t.branch_tiles;
+		}
+		tree_tracer tt = tile_map->at(current_tile);
 
 		// check if tile is still valid
 		if (!game_engine::in_set(world_tiles->get_tile_at(current_tile.x, current_tile.y), ROOT, TREE_SEED, WOOD))
@@ -87,22 +94,22 @@ namespace game
 			if (tt.up == 2)
 			{
 				last_tile = tile_coord(current_tile.x, current_tile.y - 1);
-				t.root_tiles[{current_tile.x, current_tile.y - 1}].down = 0;
+				tile_map->at({current_tile.x, current_tile.y - 1}).down = 0;
 			}
 			else if (tt.down == 2)
 			{
 				last_tile = tile_coord(current_tile.x, current_tile.y + 1);
-				t.root_tiles[{current_tile.x, current_tile.y + 1}].up = 0;
+				tile_map->at({current_tile.x, current_tile.y + 1}).up = 0;
 			}
 			else if (tt.left == 2)
 			{
 				last_tile = tile_coord(current_tile.x - 1, current_tile.y);
-				t.root_tiles[{current_tile.x - 1, current_tile.y}].right = 0;
+				tile_map->at({current_tile.x - 1, current_tile.y}).right = 0;
 			}
 			else if (tt.right == 2)
 			{
 				last_tile = tile_coord(current_tile.x + 1, current_tile.y);
-				t.root_tiles[{current_tile.x + 1, current_tile.y}].left = 0;
+				tile_map->at({current_tile.x + 1, current_tile.y}).left = 0;
 			}
 
 			trim_tree(t, current_tile);
@@ -119,27 +126,27 @@ namespace game
 		if (tt.right == 1)
 			dir_count++;
 
-		if (dir_count == 0) // end of root
+		if (dir_count == 0) // end of root/branch
 		{
-			if (tt.down == 0 && can_place_tree_tile_at(current_tile.x, current_tile.y + 1, ROOT) && rand() % 4 != 0)
+			if (tt.down == 0 && can_place_tree_tile_at(current_tile.x, current_tile.y + 1, tree_tile_type) && rand() % 4 != 0)
 			{
 				last_tile = current_tile;
 				current_tile = tile_coord(current_tile.x, current_tile.y + 1);
 				return true;
 			}
-			else if (tt.left == 0 && can_place_tree_tile_at(current_tile.x - 1, current_tile.y, ROOT) && rand() % 2 == 0)
+			else if (tt.left == 0 && can_place_tree_tile_at(current_tile.x - 1, current_tile.y, tree_tile_type) && rand() % 2 == 0)
 			{
 				last_tile = current_tile;
 				current_tile = tile_coord(current_tile.x - 1, current_tile.y);
 				return true;
 			}
-			else if (tt.right == 0 && can_place_tree_tile_at(current_tile.x + 1, current_tile.y, ROOT) && rand() % 2 == 0)
+			else if (tt.right == 0 && can_place_tree_tile_at(current_tile.x + 1, current_tile.y, tree_tile_type) && rand() % 2 == 0)
 			{
 				last_tile = current_tile;
 				current_tile = tile_coord(current_tile.x + 1, current_tile.y);
 				return true;
 			}
-			else if (tt.up == 0 && can_place_tree_tile_at(current_tile.x, current_tile.y - 1, ROOT) && rand() % 20 == 0)
+			else if (tt.up == 0 && can_place_tree_tile_at(current_tile.x, current_tile.y - 1, tree_tile_type) && rand() % 20 == 0)
 			{
 				last_tile = current_tile;
 				current_tile = tile_coord(current_tile.x, current_tile.y - 1);
@@ -186,7 +193,7 @@ namespace game
 			{
 
 				tile_coord new_current_tile = tile_coord(current_tile.x, current_tile.y - 1);
-				if (find_tile_to_grow_to(t, new_current_tile, last_tile))
+				if (find_tile_to_grow_to(t, new_current_tile, last_tile, tree_tile_type))
 				{
 					current_tile = new_current_tile;
 					return true;
@@ -196,7 +203,7 @@ namespace game
 			if (dirs[i] == 1 && tt.down == 1)
 			{
 				tile_coord new_current_tile = tile_coord(current_tile.x, current_tile.y + 1);
-				if (find_tile_to_grow_to(t, new_current_tile, last_tile))
+				if (find_tile_to_grow_to(t, new_current_tile, last_tile, tree_tile_type))
 				{
 					current_tile = new_current_tile;
 					return true;
@@ -205,7 +212,7 @@ namespace game
 			else if (dirs[i] == 2 && tt.left == 1)
 			{
 				tile_coord new_current_tile = tile_coord(current_tile.x - 1, current_tile.y);
-				if (find_tile_to_grow_to(t, new_current_tile, last_tile))
+				if (find_tile_to_grow_to(t, new_current_tile, last_tile, tree_tile_type))
 				{
 					current_tile = new_current_tile;
 					return true;
@@ -214,7 +221,7 @@ namespace game
 			else if (dirs[i] == 3 && tt.right == 1)
 			{
 				tile_coord new_current_tile = tile_coord(current_tile.x + 1, current_tile.y);
-				if (find_tile_to_grow_to(t, new_current_tile, last_tile))
+				if (find_tile_to_grow_to(t, new_current_tile, last_tile, tree_tile_type))
 				{
 					current_tile = new_current_tile;
 					return true;
@@ -245,7 +252,7 @@ namespace game
 				tile_coord current_tile = tile_coord(t.seed_x, t.seed_y);
 				tile_coord last_tile = tile_coord(t.seed_x, t.seed_y);
 
-				bool found_tile = find_tile_to_grow_to(t, current_tile, last_tile);
+				bool found_tile = find_tile_to_grow_to(t, current_tile, last_tile, ROOT);
 
 				if (!found_tile)
 				{
@@ -274,9 +281,19 @@ namespace game
 				{
 					t.root_tiles[last_tile].right = 1;
 					t.root_tiles[current_tile] = tree_tracer{0, 0, 2, 0};
-					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
+					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, WOOD);
 				}
 			}
+
+			// if(t.branch_tiles.size() < t.root_tiles.size() && rand() % 3 == 0)
+			// {
+			// 	// grow branches
+			// 	tile_coord current_tile = tile_coord(t.seed_x, t.seed_y);
+			// 	tile_coord last_tile = tile_coord(t.seed_x, t.seed_y);
+
+			// 	bool found_tile = find_tile_to_grow_to(t, current_tile, last_tile, ROOT);
+
+			// }
 		}
 	}
 

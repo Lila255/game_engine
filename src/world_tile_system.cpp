@@ -1,4 +1,6 @@
 #include "world_tile_system.hpp"
+#include "box2d_system.hpp"
+#include "tasks.hpp"
 
 namespace game
 {
@@ -16,6 +18,11 @@ namespace game
 			// chunk_data[i] = new std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
 			set_modified_chunk(chunk_x, chunk_y, 1);
 		}
+		
+		std::fill(is_solid_tile.begin(), is_solid_tile.end(), 0);
+		std::fill(is_solid_tile.begin() + tile_type::GLASS, is_solid_tile.begin() + tile_type::SOLID_63 + 1, 1);
+		is_solid_tile[SNOW] = 0;
+		is_solid_tile[BEDROCK] = 1;
 	}
 
 	world_tile_system::~world_tile_system()
@@ -43,7 +50,7 @@ namespace game
 			return (tile_type)0;
 		if (tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
 			return (tile_type)0;
-		std::unique_lock<std::shared_mutex> lock(read_chunk_mutex);
+		std::shared_lock<std::shared_mutex> lock(read_chunk_mutex);
 		if (read_buffer == 0)
 		{
 			return (chunk_data_0[chunk])->get_tile(tile_x, tile_y);
@@ -85,9 +92,13 @@ namespace game
 		int tile_y = y % CHUNK_SIZE;
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 			return;
+		
 
 		std::unique_lock<std::shared_mutex> lock(write_chunk_mutex);
-		if((tile_type >= GLASS) != (get_tile_at(x, y) >= GLASS))
+		if(get_tile_at(x, y) == BEDROCK)
+			return;
+		
+		if(is_solid_tile[tile_type] != is_solid_tile[get_tile_at(x, y)])
 		{
 			set_modified_chunk(chunk_x, chunk_y, 1);
 		}
@@ -101,6 +112,64 @@ namespace game
 			(chunk_data_0[chunk])->set_tile(tile_x, tile_y, tile_type);
 		}
 	}
+
+	void world_tile_system::set_tile_at_with_search_and_lock(int x, int y, uint8_t tile_type)
+	{
+ 		int chunk_x = x / CHUNK_SIZE;
+		int chunk_y = y / CHUNK_SIZE;
+		int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int tile_x = x % CHUNK_SIZE;
+		int tile_y = y % CHUNK_SIZE;
+		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+			return;
+
+		std::unique_lock<std::shared_mutex> lock(write_chunk_mutex);
+
+		std::unordered_set<tile_coord, tile_coord_hash> checked_tiles;
+		std::queue<tile_coord> tile_queue;
+		tile_queue.push(tile_coord(x, y));
+
+		int dx[] = {0, 1, 0, -1};
+		int dy[] = {-1, 0, 1, 0};
+
+		while (!tile_queue.empty() && checked_tiles.size() < 200)
+		{
+			tile_coord current_tile = tile_queue.front();
+			tile_queue.pop();
+			if (checked_tiles.count(current_tile))
+				continue;
+			if(current_tile.x < 0 || current_tile.x >= CHUNKS_WIDTH * CHUNK_SIZE || current_tile.y < 0 || current_tile.y >= CHUNKS_WIDTH * CHUNK_SIZE)
+				continue;
+
+			checked_tiles.insert(current_tile);
+
+			if (get_write_tile_at(current_tile.x, current_tile.y) >= SOLID_TILE_START_INDEX)
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					tile_coord new_tile = tile_coord(current_tile.x + dx[i], current_tile.y + dy[i]);
+					
+					if (!checked_tiles.count(new_tile))
+					{
+						tile_queue.push(new_tile);
+					}
+				}
+			} else {
+				
+				if (is_solid_tile[get_write_tile_at(current_tile.x, current_tile.y)] != is_solid_tile[tile_type])
+				{
+					set_modified_chunk(current_tile.x / CHUNK_SIZE, current_tile.y / CHUNK_SIZE, 1);
+				}
+				lock.unlock();
+				
+				set_tile_at_with_lock(current_tile.x, current_tile.y, tile_type);
+
+				return;
+			}
+		}
+
+	}
+
 
 	void world_tile_system::set_tile_at_no_lock(int x, int y, uint8_t tile_type)
 	{
@@ -328,6 +397,13 @@ namespace game
 						}
 					}
 					break;
+				
+				case SNOW:
+					if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
+					{
+						set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
+						set_tile_at_no_lock(x, y + 1, SNOW);
+					}
 				}
 			}
 		}
@@ -403,6 +479,31 @@ namespace game
 						set_tile_at_no_lock(x + 1, y, TEMPORARY_SMOKE);
 					}
 					break;
+				}
+			}
+		}
+
+		// get character position
+		entity character_ent = game_engine::game_engine_pointer->player_entitiy;
+		game_engine::box_system *box_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
+		game_engine::box &character_box = box_system_pointer->get(character_ent);
+		// get character velocity from box2d
+		box2d_system *box2d_system_pointer = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()));
+		b2Body *character_body = box2d_system_pointer->get_dynamic_body(character_ent);
+
+		b2Vec2 velocity = character_body->GetLinearVelocity();
+		// get angle of velocity
+		float angle = atan2(velocity.y, velocity.x);
+
+		for (int i = (int)character_box.x; i < (int)character_box.x + character_box.w + 1; i++)
+		{
+			for (int j = (int)character_box.y; j < (int)character_box.y + character_box.h + 1; j++)
+			{
+				if (get_write_tile_at(i, j) == SNOW)
+				{
+					set_tile_at_no_lock(i, j, AIR);
+					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, velocity.x, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
+					// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
 				}
 			}
 		}

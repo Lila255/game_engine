@@ -9,11 +9,11 @@ namespace game
 
 	enum b2fixture_types
 	{
-		EMPTY, // set to this to delete fixture
-		PLAYER,
-		TERRAIN,
-		PROJECTILE,
-		DEBRIS
+		EMPTY = 0, // set to this to delete fixture
+		PLAYER = 1,
+		TERRAIN = 2,
+		PROJECTILE = 4,
+		DEBRIS = 8
 	};
 
 	struct b2_user_data
