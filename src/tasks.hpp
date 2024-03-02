@@ -16,8 +16,8 @@ namespace game
 	struct create_debris_params
 	{
 		float x, y, v_x, v_y, r;
-		uint8_t debri_tile_type, trail_tile_type;
-		create_debris_params(float x_pos, float y_pos, float vel_x, float vel_y, float radius, uint8_t debri_tile_type, uint8_t trail_tile_type) : x(x_pos), y(y_pos), v_x(vel_x), v_y(vel_y), r(radius), debri_tile_type(debri_tile_type), trail_tile_type(trail_tile_type) {}
+		uint8_t debri_tile_type, perm_tile_type, temp_tile_type;
+		create_debris_params(float x_pos, float y_pos, float vel_x, float vel_y, float radius, uint8_t debri_tile_type, uint8_t perm_tile_type, uint8_t temp_tile_type) : x(x_pos), y(y_pos), v_x(vel_x), v_y(vel_y), r(radius), debri_tile_type(debri_tile_type), perm_tile_type(perm_tile_type), temp_tile_type(temp_tile_type) {}
 	};
 	void create_debris_task(void *parameters);
 	void create_single_debris_task(void *parameters);

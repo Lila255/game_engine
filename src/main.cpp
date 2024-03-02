@@ -226,7 +226,7 @@ void start_physics_thread()
 		world_sys->update(tick_count++);
 		// printf("Tile movements took %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count());
 		std::array<entity, game::NUM_CHUNKS> chunk_entities = world_sys->get_chunk_entities();
-		std::array<game::chunk *, game::NUM_CHUNKS> * chunks = world_sys->get_chunks();
+		std::array<game::chunk *, game::NUM_CHUNKS> * chunks = world_sys->get_chunks_base();
 		
 		std::array<std::vector<std::vector<std::pair<float, float>>> *, game::NUM_CHUNKS> chunks_outlines;
 		std::array<std::thread, game::NUM_CHUNKS> threads;
@@ -336,6 +336,27 @@ void run_game(GLFWwindow *window)
 	world_sys->generate_world();
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
 	// std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
+
+	// GLuint midground_texture;
+	// glGenTextures(1, &midground_texture);
+	// glBindTexture(GL_TEXTURE_2D, midground_texture);
+	
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	// std::array<uint8_t, game::CHUNK_SIZE * game::CHUNKS_WIDTH * game::CHUNK_SIZE * game::CHUNKS_WIDTH> *midground_data = new std::array<uint8_t, game::CHUNK_SIZE * game::CHUNKS_WIDTH * game::CHUNK_SIZE * game::CHUNKS_WIDTH>();
+	// std::fill(midground_data->begin(), midground_data->end(), game::SAND);
+	// glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED, GL_UNSIGNED_BYTE, midground_data->data());
+	// delete midground_data;
+
+	// entity midground_entity = eng.create_entity();
+	// box_sys->add(midground_entity, {0.f, 0.f, -5.1, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	// texture_vbo_sys->add(midground_entity);
+	// game_engine::sprite midground_sprt(game_engine::shader_programs[0]);
+	// midground_sprt.add_texture({midground_texture, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	// render_sys->add(midground_entity, midground_sprt);
+	// glBindTexture(GL_TEXTURE_2D, 0);
+
+	// (world_sys->midground_tiles_ent) = midground_entity;
 
 	GLuint background_texture;
 	glGenTextures(1, &background_texture);
@@ -640,7 +661,7 @@ void run_game(GLFWwindow *window)
 
 		for(int c = 0; c < game::NUM_CHUNKS; c++)
 		{
-			render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(&((world_sys->get_chunks())->at(c)->data)), (c % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (c / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
+			render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(&((world_sys->get_chunks_copy())->at(c)->data)), (c % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (c / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
 		}
 		
 		// printf("b2d_time: %lums\n", duration_b2d.count() / 1000);

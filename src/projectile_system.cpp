@@ -2,7 +2,6 @@
 #include "box2d_system.hpp"
 #include "world_tile_system.hpp"
 
-
 namespace game
 {
 	void projectile_system::update(uint64_t time_to_step)
@@ -16,7 +15,7 @@ namespace game
 		// for (auto &proj : projectiles)
 		for (auto &proj_entity : entities)
 		{
-			projectile & projectile = projectiles.get(proj_entity);
+			projectile &projectile = projectiles.get(proj_entity);
 
 			b2_user_data *ud = (b2_user_data *)(projectile.body->GetFixtureList()->GetUserData().pointer);
 			if (ud && ud->type == b2fixture_types::EMPTY)
@@ -31,7 +30,7 @@ namespace game
 			}
 			b2Vec2 position = projectile.body->GetPosition();
 
-			if(ud->type == b2fixture_types::PROJECTILE)
+			if (ud->type == b2fixture_types::PROJECTILE)
 			{
 				game_engine::box b = bo_system_pointer->get(proj_entity);
 				b.x = position.x - glsl_helper::projectile_width / 2.0f;
@@ -39,11 +38,16 @@ namespace game
 				bo_system_pointer->update_box(proj_entity, b);
 				game_engine::texture_vbo_system *tex_vbo_system_pointer = ((game_engine::texture_vbo_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
 				tex_vbo_system_pointer->update(proj_entity);
-			} else if(ud->type == b2fixture_types::DEBRIS)
+			}
+			else if (ud->type == b2fixture_types::DEBRIS)
 			{
-				if(projectile.trail_tile_type != 0 && world_tiles->get_tile_at(position.x, position.y) == 0)
+				if (projectile.permanent_trail_tile_type != 0 && world_tiles->get_tile_at(position.x, position.y) == 0)
 				{
-					world_tiles->set_tile_at_with_lock(position.x, position.y, projectile.trail_tile_type);
+					world_tiles->set_tile_at_with_lock(position.x, position.y, projectile.permanent_trail_tile_type);
+				}
+				else if (projectile.temporary_trail_tile_type != 0 && world_tiles->get_tile_at(position.x, position.y) == 0)
+				{
+					world_tiles->set_tile_copy_at(position.x, position.y, projectile.temporary_trail_tile_type);
 				}
 			}
 		}
@@ -66,10 +70,12 @@ namespace game
 		fixture_def.restitution = 0.89f;
 		fixture_def.filter.categoryBits = projectile_type;
 
-		if(projectile_type == b2fixture_types::DEBRIS)
+		if (projectile_type == b2fixture_types::DEBRIS)
 		{
 			fixture_def.filter.maskBits = b2fixture_types::TERRAIN | b2fixture_types::PLAYER;
-		} else {
+		}
+		else
+		{
 			fixture_def.filter.maskBits = b2fixture_types::TERRAIN | b2fixture_types::PLAYER;
 		}
 

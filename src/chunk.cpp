@@ -12,8 +12,8 @@ namespace game
 		{
 			for (int x = 0; x < CHUNK_SIZE; x++)
 			{
-				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 16.0;
-				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 16.0;
+				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 20.0;
+				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 20.0;
 				double noise_1 = perlin_noise_1.noise2D_01(n_x, n_y);
 				double noise_2 = perlin_noise_2.noise2D_01(n_x, n_y);
 				double noise_3 = perlin_noise_3.noise2D_01(n_x, n_y);

@@ -11,7 +11,7 @@
 
 namespace game
 {
-	const siv::BasicPerlinNoise<double>::seed_type perlin_noise_seed = 32;
+	const siv::BasicPerlinNoise<double>::seed_type perlin_noise_seed = 1;
 	static siv::PerlinNoise perlin_noise_1(perlin_noise_seed);
 	static siv::PerlinNoise perlin_noise_2(perlin_noise_seed + 1);
 	static siv::PerlinNoise perlin_noise_3(perlin_noise_seed + 2);

@@ -409,9 +409,9 @@ namespace glsl_helper
 				float inverse_alpha = 0.0;
 				uint world_value = sampleWorld(v_TexCoord * texture_size);
 				if(world_value < 3) {
-					inverse_alpha = value / 100000.0;// + blurred_value / 512000.0;
+					inverse_alpha = value / 60000.0;// + blurred_value / 512000.0;
 				} else {
-					inverse_alpha = blurred_value / 75000.0;
+					inverse_alpha = blurred_value / 35000.0;
 				}
 				
 				if(inverse_alpha > 1.0)
@@ -625,7 +625,7 @@ namespace glsl_helper
 						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - 2 * refracted_bounces); 
 						// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 + metal_bounces -  2 * refracted_bounces); 
 					} else {
-						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 6 - 2 * refracted_bounces);
+						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - 2 * refracted_bounces);
 					}
 				}
 			};

@@ -39,18 +39,20 @@ namespace game
 	{
 	private:
 		std::array<entity, NUM_CHUNKS> chunk_entities;
-		std::array<chunk *, NUM_CHUNKS> chunk_data_0{};
-		std::array<uint8_t, game::NUM_CHUNKS> modified_chunks_0;
-		std::array<chunk *, NUM_CHUNKS> chunk_data_1{};
-		std::array<uint8_t, game::NUM_CHUNKS>  modified_chunks_1;
-		uint8_t read_buffer = 0;
-		std::shared_mutex read_chunk_mutex;
-		std::shared_mutex write_chunk_mutex;
+		std::array<chunk *, NUM_CHUNKS> tile_data_base{};
+		std::array<uint8_t, game::NUM_CHUNKS> modified_chunks;
+		std::array<chunk *, NUM_CHUNKS> tile_data_copy{};
+		// std::array<uint8_t, game::NUM_CHUNKS>  modified_chunks_1;
+		
+		
+		std::shared_mutex chunk_mutex_base;
+		std::shared_mutex chunk_mutex_copy;
 		uint8_t get_write_tile_at(int x, int y);
 		void set_tile_at_no_lock(int x, int y, uint8_t tile_type);
 
 	public:
 		entity all_chunk_ent;
+		entity midground_tiles_ent;
 		// std::mutex tile_mutex;
 
 		world_tile_system();
@@ -60,13 +62,15 @@ namespace game
 		uint8_t get_tile_at(int x, int y);
 		void set_tile_at_with_lock(int x, int y, uint8_t tile_type);
 		void set_tile_at_with_search_and_lock(int x, int y, uint8_t tile_type);
+		void set_tile_copy_at(int x, int y, uint8_t tile_type);
 		std::array<entity, NUM_CHUNKS> get_chunk_entities();
 		void update(){};
 		void update(uint64_t tick_count);
 		void generate_world();
 		entity get_chunk_entity(int x, int y);
 		entity get_chunk_entity(int chunk);
-		std::array<chunk *, NUM_CHUNKS> *get_chunks();
+		std::array<chunk *, NUM_CHUNKS> *get_chunks_copy();
+		std::array<chunk *, NUM_CHUNKS> *get_chunks_base();
 		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *, NUM_CHUNKS> get_chunks_data();
 		std::vector<std::vector<std::pair<float, float>>> *create_outlines(int x, int y);
 		void delete_circle(int x, int y, int radius);

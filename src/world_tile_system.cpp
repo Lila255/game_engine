@@ -13,8 +13,8 @@ namespace game
 		{
 			int chunk_x = i % CHUNKS_WIDTH;
 			int chunk_y = i / CHUNKS_WIDTH;
-			chunk_data_0[i] = new chunk(chunk_x, chunk_y);
-			chunk_data_1[i] = new chunk(chunk_x, chunk_y);
+			tile_data_base[i] = new chunk(chunk_x, chunk_y);
+			tile_data_copy[i] = new chunk(chunk_x, chunk_y);
 			// chunk_data[i] = new std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
 			set_modified_chunk(chunk_x, chunk_y, 1);
 		}
@@ -29,8 +29,8 @@ namespace game
 	{
 		for (int i = 0; i < NUM_CHUNKS; i++)
 		{
-			delete chunk_data_0[i];
-			delete chunk_data_1[i];
+			delete tile_data_base[i];
+			delete tile_data_copy[i];
 		}
 	}
 
@@ -50,15 +50,9 @@ namespace game
 			return (tile_type)0;
 		if (tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
 			return (tile_type)0;
-		std::shared_lock<std::shared_mutex> lock(read_chunk_mutex);
-		if (read_buffer == 0)
-		{
-			return (chunk_data_0[chunk])->get_tile(tile_x, tile_y);
-		}
-		else
-		{
-			return (chunk_data_1[chunk])->get_tile(tile_x, tile_y);
-		}
+		std::shared_lock<std::shared_mutex> lock(chunk_mutex_copy);
+
+		return (tile_data_copy[chunk])->get_tile(tile_x, tile_y);
 	}
 
 	uint8_t world_tile_system::get_write_tile_at(int x, int y)
@@ -73,17 +67,13 @@ namespace game
 		if (tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
 			return (tile_type)0;
 		// std::unique_lock<std::shared_mutex> lock(write_chunk_mutex);
-		if (read_buffer == 1)
-		{
-			return (chunk_data_0[chunk])->get_tile(tile_x, tile_y);
-		}
-		else
-		{
-			return (chunk_data_1[chunk])->get_tile(tile_x, tile_y);
-		}
+		// std::shared_lock<std::shared_mutex> lock(chunk_mutex_base);
+		
+		return (tile_data_base[chunk])->get_tile(tile_x, tile_y);
+		
 	}
 
-	void world_tile_system::set_tile_at_with_lock(int x, int y, uint8_t tile_type)
+	void world_tile_system::set_tile_at_with_lock(int x, int y, uint8_t t)
 	{
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
@@ -93,24 +83,21 @@ namespace game
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 			return;
 		
+		uint8_t current_tile = get_tile_at(x, y);
 
-		std::unique_lock<std::shared_mutex> lock(write_chunk_mutex);
-		if(get_tile_at(x, y) == BEDROCK)
+		if(current_tile == BEDROCK)
 			return;
+
+		std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
+		std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
 		
-		if(is_solid_tile[tile_type] != is_solid_tile[get_tile_at(x, y)])
+		if(is_solid_tile[t] != is_solid_tile[current_tile])
 		{
 			set_modified_chunk(chunk_x, chunk_y, 1);
 		}
 
-		if (read_buffer == 0)
-		{
-			(chunk_data_1[chunk])->set_tile(tile_x, tile_y, tile_type);
-		}
-		else
-		{
-			(chunk_data_0[chunk])->set_tile(tile_x, tile_y, tile_type);
-		}
+		(tile_data_base[chunk])->set_tile(tile_x, tile_y, t);
+		(tile_data_copy[chunk])->set_tile(tile_x, tile_y, t);
 	}
 
 	void world_tile_system::set_tile_at_with_search_and_lock(int x, int y, uint8_t tile_type)
@@ -123,7 +110,8 @@ namespace game
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 			return;
 
-		std::unique_lock<std::shared_mutex> lock(write_chunk_mutex);
+		std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
+		std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
 
 		std::unordered_set<tile_coord, tile_coord_hash> checked_tiles;
 		std::queue<tile_coord> tile_queue;
@@ -160,7 +148,8 @@ namespace game
 				{
 					set_modified_chunk(current_tile.x / CHUNK_SIZE, current_tile.y / CHUNK_SIZE, 1);
 				}
-				lock.unlock();
+				lock_base.unlock();
+				lock_copy.unlock();
 				
 				set_tile_at_with_lock(current_tile.x, current_tile.y, tile_type);
 
@@ -168,6 +157,19 @@ namespace game
 			}
 		}
 
+	}
+
+	void world_tile_system::set_tile_copy_at(int x, int y, uint8_t t)
+	{
+		int chunk_x = x / CHUNK_SIZE;
+		int chunk_y = y / CHUNK_SIZE;
+		int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int tile_x = x % CHUNK_SIZE;
+		int tile_y = y % CHUNK_SIZE;
+		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+			return;
+		std::unique_lock<std::shared_mutex> lock(chunk_mutex_copy);
+		(tile_data_copy[chunk])->set_tile(tile_x, tile_y, t);
 	}
 
 
@@ -187,14 +189,7 @@ namespace game
 		}
 		
 		// std::shared_lock<std::shared_mutex> lock(chunk_mutex);
-		if (read_buffer == 0)
-		{
-			(chunk_data_1[chunk])->set_tile(tile_x, tile_y, tile_type);
-		}
-		else
-		{
-			(chunk_data_0[chunk])->set_tile(tile_x, tile_y, tile_type);
-		}
+		(tile_data_base[chunk])->set_tile(tile_x, tile_y, tile_type);
 	}
 
 	std::array<entity, NUM_CHUNKS> world_tile_system::get_chunk_entities()
@@ -204,7 +199,8 @@ namespace game
 
 	void world_tile_system::update(uint64_t tick_count)
 	{
-		write_chunk_mutex.lock();
+		
+		std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
 
 		uint8_t direction = tick_count % 2;
 		for (int y = CHUNKS_WIDTH * CHUNK_SIZE - 1; y >= 0; y--)
@@ -502,32 +498,25 @@ namespace game
 				if (get_write_tile_at(i, j) == SNOW)
 				{
 					set_tile_at_no_lock(i, j, AIR);
-					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, velocity.x, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
+					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, velocity.x, -10, 0.5f, SNOW, AIR, SNOW)});
 					// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
 				}
 			}
 		}
 
-		read_chunk_mutex.lock();
+		std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
+
 		// copy modified chunks
 		for (int i = 0; i < NUM_CHUNKS; i++)
 		{
-			if (read_buffer == 0)
-			{
-				memcpy(chunk_data_0[i]->get_data(), chunk_data_1[i]->get_data(), CHUNK_SIZE * CHUNK_SIZE);
-				memcpy(modified_chunks_0.data(), modified_chunks_1.data(), NUM_CHUNKS);
-			}
-			else
-			{
-				memcpy(chunk_data_1[i]->get_data(), chunk_data_0[i]->get_data(), CHUNK_SIZE * CHUNK_SIZE);
-				memcpy(modified_chunks_1.data(), modified_chunks_0.data(), NUM_CHUNKS);
-			}
+			memcpy(tile_data_copy[i]->get_data(), tile_data_base[i]->get_data(), CHUNK_SIZE * CHUNK_SIZE);
 		}
-		read_buffer = !read_buffer;
-		read_chunk_mutex.unlock();
-		write_chunk_mutex.unlock();
+		
+		
+		lock_copy.unlock();
+		lock_base.unlock();
 
-		std::shared_lock<std::shared_mutex> tile_lock(read_chunk_mutex);
+		std::shared_lock<std::shared_mutex> tile_lock(chunk_mutex_copy);
 		// update textures
 		for (int chunk = 0; chunk < NUM_CHUNKS; chunk++)
 		{
@@ -535,14 +524,7 @@ namespace game
 			int chunk_x = chunk % CHUNKS_WIDTH;
 			int chunk_y = chunk / CHUNKS_WIDTH;
 			game_engine::render_system *render_system_pointer = ((game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
-			if (read_buffer == 0)
-			{
-				render_system_pointer->update_texture_section(all_chunk_ent, (uint8_t *)(chunk_data_0[chunk]->get_data()), chunk_x * CHUNK_SIZE, chunk_y * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
-			}
-			else
-			{
-				render_system_pointer->update_texture_section(all_chunk_ent, (uint8_t *)(chunk_data_1[chunk]->get_data()), chunk_x * CHUNK_SIZE, chunk_y * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
-			}
+			render_system_pointer->update_texture_section(all_chunk_ent, (uint8_t *)(tile_data_copy[chunk]->get_data()), chunk_x * CHUNK_SIZE, chunk_y * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
 		}
 	}
 
@@ -550,10 +532,10 @@ namespace game
 	{
 		for (int chunk = 0; chunk < NUM_CHUNKS; chunk++)
 		{
-			chunk_data_1[chunk]->create_chunk();
+			tile_data_base[chunk]->create_chunk();
 			chunk_entities[chunk] = game_engine::game_engine_pointer->create_entity();
 		}
-		std::unique_lock<std::shared_mutex> lock(write_chunk_mutex);
+
 		// create solid border around world
 		for (int x = 0; x < CHUNKS_WIDTH * CHUNK_SIZE; x++)
 		{
@@ -577,12 +559,14 @@ namespace game
 		return chunk_entities[chunk];
 	}
 
-	std::array<chunk *, NUM_CHUNKS> *world_tile_system::get_chunks()
+	std::array<chunk *, NUM_CHUNKS> *world_tile_system::get_chunks_copy()
 	{
-		if (read_buffer == 0)
-			return &chunk_data_0;
-		else
-			return &chunk_data_1;
+		return &tile_data_copy;
+	}
+	
+	std::array<chunk *, NUM_CHUNKS> *world_tile_system::get_chunks_base()
+	{
+		return &tile_data_base;
 	}
 
 	// std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *, NUM_CHUNKS> world_tile_system::get_chunks_data()
@@ -599,32 +583,20 @@ namespace game
 	std::vector<std::vector<std::pair<float, float>>> *world_tile_system::create_outlines(int x, int y)
 	{
 		std::vector<std::vector<std::pair<float, float>>> *outlines = new std::vector<std::vector<std::pair<float, float>>>;
-		std::shared_lock<std::shared_mutex> lock(read_chunk_mutex);
-		if (read_buffer == 0)
-		{
-			chunk_data_0[x + y * CHUNKS_WIDTH]->create_outlines(outlines);
-		}
-		else
-		{
-			chunk_data_1[x + y * CHUNKS_WIDTH]->create_outlines(outlines);
-		}
+		std::shared_lock<std::shared_mutex> lock(chunk_mutex_copy);
+		tile_data_copy[x + y * CHUNKS_WIDTH]->create_outlines(outlines);
+		
 		return outlines;
 	}
 
 	void world_tile_system::delete_circle(int x, int y, int radius)
 	{
-		std::unique_lock<std::shared_mutex> lock(write_chunk_mutex);
+		std::unique_lock<std::shared_mutex> lock(chunk_mutex_base);
+
 		for (int i = 0; i < NUM_CHUNKS; i++)
 		{
 			bool modified;
-			if (read_buffer == 1)
-			{
-				modified = chunk_data_0[i]->delete_circle(x, y, radius);
-			}
-			else
-			{
-				modified = chunk_data_1[i]->delete_circle(x, y, radius);
-			}
+			modified = tile_data_base[i]->delete_circle(x, y, radius);
 
 			if (modified)
 			{
@@ -635,18 +607,13 @@ namespace game
 
 	std::array<uint8_t, game::NUM_CHUNKS> *world_tile_system::get_modified_chunks()
 	{
-		if(read_buffer == 0)
-			return &modified_chunks_0;
-		else
-			return &modified_chunks_1;
+		return &modified_chunks;
+		
 	}
 
 	void world_tile_system::set_modified_chunk(int x, int y, uint8_t value)
 	{
-		if(read_buffer == 1)
-			modified_chunks_0[y * CHUNKS_WIDTH + x] = value;
-		else
-			modified_chunks_1[y * CHUNKS_WIDTH + x] = value;
+		modified_chunks[y * CHUNKS_WIDTH + x] = value;
 	}
 
 }

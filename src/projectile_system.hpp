@@ -12,7 +12,8 @@ namespace game
 		projectile() = default;
 		projectile(b2Body *b) : body(b) {}
 		tile_type debri_tile_type;
-		tile_type trail_tile_type;
+		tile_type permanent_trail_tile_type;
+		tile_type temporary_trail_tile_type;
 	};
 
 	struct projectile_system : public game_engine::system

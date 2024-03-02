@@ -6,8 +6,8 @@ namespace game_engine
 	task_scheduler* task_scheduler_pointer;
 
     std::vector<GLuint> shader_programs;
-    const uint16_t window_width = 2000;
-    const uint16_t window_height = 900;
+    const uint16_t window_width = 1920;
+    const uint16_t window_height = 1080;
 
     float projection_matrix[16] = {
 		8.0f / window_width, 0.0f, 0.0f, 0.0f,

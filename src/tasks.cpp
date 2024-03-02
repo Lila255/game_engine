@@ -24,7 +24,8 @@ namespace game
 			// proj_system->create_projectile(e, (fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), (rand() % 360) / 360.0f, 250.f, 1.f, b2fixture_types::DEBRIS);
 			projectile &proj = proj_sys->create_projectile(e, params->x, params->y, radians((rand() % 360)), vel, params->r, b2fixture_types::DEBRIS);
 			proj.debri_tile_type = (tile_type)(params->debri_tile_type);
-			proj.trail_tile_type = (tile_type)(params->trail_tile_type);
+			proj.temporary_trail_tile_type = (tile_type)(params->temp_tile_type);
+			proj.permanent_trail_tile_type = (tile_type)(params->perm_tile_type);
 		}
 	}
 
@@ -37,7 +38,8 @@ namespace game
 		float vel = sqrt(params->v_x * params->v_x + params->v_y * params->v_y);
 		projectile &proj = proj_sys->create_projectile(e, params->x, params->y, ang, vel, params->r, b2fixture_types::DEBRIS);
 		proj.debri_tile_type = (tile_type)(params->debri_tile_type);
-		proj.trail_tile_type = (tile_type)(params->trail_tile_type);
+		proj.temporary_trail_tile_type = (tile_type)(params->temp_tile_type);
+		proj.permanent_trail_tile_type = (tile_type)(params->perm_tile_type);
 	}
 
 	void delete_circle_task(void *parameters)
