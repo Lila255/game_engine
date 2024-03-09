@@ -26,7 +26,7 @@ namespace game
 		void update() {}
 		void update(uint64_t time_to_step);
 
-		projectile &create_projectile(entity ent, float x, float y, float ang, float vel, float radius, b2fixture_types projectile_type);
+		projectile &create_projectile(entity ent, float x, float y, float ang, float vel, float radius, uint16_t millis_lifetime, b2fixture_types projectile_type);
 		void add_projectile(entity ent, projectile proj);
 		void remove_projectile(entity ent);
 		projectile &get_projectile(entity ent);

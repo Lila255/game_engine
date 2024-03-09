@@ -74,7 +74,7 @@ namespace game
 						// delete circle shape around projectile
 						// world_tiles->delete_circle((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
 						game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius)});
-						game_engine::task_scheduler_pointer->add_task({(&create_debris_task), new create_debris_params(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 40.f, 40.f, 0.5f, SNOW, SNOW, AIR)});
+						game_engine::task_scheduler_pointer->add_task({(&create_debris_task), new create_debris_params(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 40.f, 40.f, 0.5f, WATER, WATER, AIR, 500)});
 						// for (int i = 0; i < explosion_radius; i++)
 						// {
 						// 	entity e = game_engine::game_engine_pointer->create_entity();
@@ -89,7 +89,7 @@ namespace game
 						// delete circle shape around projectile
 						// world_tiles->delete_circle((int)(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
 						game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius)});
-						game_engine::task_scheduler_pointer->add_task({&create_debris_task, new create_debris_params(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 40.f, 40.f, 0.5f, SNOW, SNOW, AIR)});
+						game_engine::task_scheduler_pointer->add_task({&create_debris_task, new create_debris_params(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2.f, fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2.f, 40.f, 40.f, 0.5f, WATER, WATER, AIR, 500)});
 
 						// for (int i = 0; i < explosion_radius; i++)
 						// {

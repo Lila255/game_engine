@@ -6,7 +6,7 @@ namespace game
 
 	box2d_system::box2d_system()
 	{
-		gravity = b2Vec2(0.0f, 91.8f);
+		gravity = b2Vec2(0.0f, 9.81f);
 		world = new b2World(gravity);
 		// contact_listener = new b2_contact_listener();
 	}
@@ -62,7 +62,7 @@ namespace game
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &chain;
 		fixtureDef.density = 0.0f;
-		fixtureDef.friction = 0.73f;
+		fixtureDef.friction = 0.173f;
 		fixtureDef.restitution = 0.15f;
 		fixtureDef.filter.categoryBits = b2fixture_types::TERRAIN;
 		b2FixtureUserData fixtureUserData;
@@ -102,7 +102,7 @@ namespace game
 				b2FixtureDef fixtureDef;
 				fixtureDef.shape = &chain;
 				fixtureDef.density = 0.0f;
-				fixtureDef.friction = 0.73f;
+				fixtureDef.friction = 0.173f;
 				fixtureDef.restitution = 0.15f;
 
 				fixtureDef.filter.categoryBits = b2fixture_types::TERRAIN;
@@ -161,7 +161,7 @@ namespace game
 				b2FixtureDef fixtureDef;
 				fixtureDef.shape = &chain;
 				fixtureDef.density = 1.0f;
-				fixtureDef.friction = 0.9f;
+				fixtureDef.friction = 0.29f;
 				fixtureDef.restitution = 0.15f;
 				fixtureDef.filter.categoryBits = b2fixture_types::TERRAIN;
 
@@ -208,8 +208,8 @@ namespace game
 			dynamic_box.Set(vertices, 3);
 			b2FixtureDef fixture_def;
 			fixture_def.shape = &dynamic_box;
-			fixture_def.density = 0.5f;
-			fixture_def.friction = 0.5f;
+			fixture_def.density = 1.5f;
+			fixture_def.friction = 0.25f;
 			fixture_def.restitution = .001f;
 			fixture_def.filter.categoryBits = b2fixture_types::PLAYER;
 			b2FixtureUserData fixtureUserData;

@@ -163,7 +163,8 @@ namespace game
 		BEDROCK,
 
 	};
-	const uint16_t SOLID_TILE_START_INDEX = tile_type::GLASS;
+	const uint8_t SOLID_TILE_START_INDEX = 64;
+	const uint8_t LIQUID_TILE_START_INDEX = 32;
 	extern std::array<uint8_t, 256> is_solid_tile;
 
 

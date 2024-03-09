@@ -26,6 +26,9 @@ namespace game
 		b2_user_data(entity e, b2fixture_types t) : ent(e), type(t) {
 			spawn_time = std::chrono::steady_clock::now();
 		}
+		void set_lifetime(uint16_t millis_lifetime) {
+			lifetime = millis_lifetime;
+		}
 	};
 
 	struct box2d_system : public game_engine::system

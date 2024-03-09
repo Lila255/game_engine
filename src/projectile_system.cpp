@@ -13,12 +13,20 @@ namespace game
 		world_tile_system *world_tiles = ((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()));
 		// retrieve all projectiles' locations from the box2d world, and update their positions in the game
 		// for (auto &proj : projectiles)
+
+		// printf("projectiles size: %d\n", entities.size());
+		// 
+
 		for (auto &proj_entity : entities)
 		{
 			projectile &projectile = projectiles.get(proj_entity);
+			// printf("\tx: %f, y: %f\n", projectile.body->GetPosition().x, projectile.body->GetPosition().y);
+			
 
 			b2_user_data *ud = (b2_user_data *)(projectile.body->GetFixtureList()->GetUserData().pointer);
-			if (ud && ud->type == b2fixture_types::EMPTY)
+			
+
+			if (ud && ud->type == b2fixture_types::EMPTY || std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - ud->spawn_time).count() > 10000)
 			{
 				remove_projectile(proj_entity);
 				bo_system_pointer->remove(proj_entity);
@@ -52,7 +60,7 @@ namespace game
 			}
 		}
 	}
-	projectile &projectile_system::create_projectile(entity ent, float x, float y, float ang, float vel, float radius, b2fixture_types projectile_type)
+	projectile &projectile_system::create_projectile(entity ent, float x, float y, float ang, float vel, float radius, uint16_t millis_lifetime, b2fixture_types projectile_type)
 	{
 		b2d_mutex.lock();
 		// create small circle projectile
@@ -81,7 +89,9 @@ namespace game
 
 		b2FixtureUserData fixtureUserData;
 		// fixtureUserData.pointer = b2fixture_types::PROJECTILE;
-		fixtureUserData.pointer = (uintptr_t) new b2_user_data(ent, projectile_type);
+		b2_user_data *ud = new b2_user_data(ent, projectile_type);
+		ud->set_lifetime(millis_lifetime);
+		fixtureUserData.pointer = (uintptr_t) ud;
 		fixture_def.userData = fixtureUserData;
 
 		body->CreateFixture(&fixture_def);

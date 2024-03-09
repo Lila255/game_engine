@@ -100,7 +100,7 @@ namespace game
 		(tile_data_copy[chunk])->set_tile(tile_x, tile_y, t);
 	}
 
-	void world_tile_system::set_tile_at_with_search_and_lock(int x, int y, uint8_t tile_type)
+	void world_tile_system::set_tile_at_with_search_and_lock(int x, int y, uint8_t t)
 	{
  		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
@@ -131,7 +131,8 @@ namespace game
 
 			checked_tiles.insert(current_tile);
 
-			if (get_write_tile_at(current_tile.x, current_tile.y) >= SOLID_TILE_START_INDEX)
+			uint8_t current_tile_type = get_write_tile_at(current_tile.x, current_tile.y);
+			if (current_tile_type >= SOLID_TILE_START_INDEX || current_tile_type == t)
 			{
 				for (int i = 0; i < 4; i++)
 				{
@@ -144,14 +145,14 @@ namespace game
 				}
 			} else {
 				
-				if (is_solid_tile[get_write_tile_at(current_tile.x, current_tile.y)] != is_solid_tile[tile_type])
+				if (is_solid_tile[get_write_tile_at(current_tile.x, current_tile.y)] != is_solid_tile[t])
 				{
 					set_modified_chunk(current_tile.x / CHUNK_SIZE, current_tile.y / CHUNK_SIZE, 1);
 				}
 				lock_base.unlock();
 				lock_copy.unlock();
 				
-				set_tile_at_with_lock(current_tile.x, current_tile.y, tile_type);
+				set_tile_at_with_lock(current_tile.x, current_tile.y, t);
 
 				return;
 			}
@@ -488,17 +489,23 @@ namespace game
 		b2Body *character_body = box2d_system_pointer->get_dynamic_body(character_ent);
 
 		b2Vec2 velocity = character_body->GetLinearVelocity();
-		// get angle of velocity
-		float angle = atan2(velocity.y, velocity.x);
+		
 
 		for (int i = (int)character_box.x; i < (int)character_box.x + character_box.w + 1; i++)
 		{
 			for (int j = (int)character_box.y; j < (int)character_box.y + character_box.h + 1; j++)
 			{
-				if (get_write_tile_at(i, j) == SNOW)
+				tile_type tile = (tile_type)get_write_tile_at(i, j);
+
+				if (tile >= SOLID_TILE_START_INDEX && !is_solid_tile[tile])
 				{
 					set_tile_at_no_lock(i, j, AIR);
-					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, velocity.x, -10, 0.5f, SNOW, AIR, SNOW)});
+					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -10, 0.5f, tile, AIR, tile, 250)});
+					// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
+				} else if (velocity.y * velocity.y + velocity.x * velocity.x > 100 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
+				{
+					set_tile_at_no_lock(i, j, AIR);
+					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -10, 0.5f, tile, AIR, tile, 250)});
 					// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
 				}
 			}

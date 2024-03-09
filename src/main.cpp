@@ -57,7 +57,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(-8.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(-18.1f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
@@ -74,7 +74,8 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		body->ApplyAngularImpulse(50.f, true);
+		b2Vec2 impulse = b2Vec2(18.1f, 0.0f);
+		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
 	// d
@@ -83,7 +84,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(8.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(18.1f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
@@ -164,7 +165,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		// create b2d projectile
 		//start away from player
 		// player_pos.x += cos(angle) * 0.5;
-		projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x + cos(angle) * 5.0f), (float)(player_pos.y + sin(angle) * 5.0f), float(angle), 250.f, glsl_helper::projectile_width / 2.0f, game::b2fixture_types::PROJECTILE);
+		projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x + cos(angle) * 5.0f), (float)(player_pos.y + sin(angle) * 5.0f), float(angle), 250.f, glsl_helper::projectile_width / 2.0f, 500, game::b2fixture_types::PROJECTILE);
 		// create sprite for projectile
 		game_engine::render_system *render_sys = (game_engine::render_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
 		game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
@@ -336,27 +337,6 @@ void run_game(GLFWwindow *window)
 	world_sys->generate_world();
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
 	// std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
-
-	// GLuint midground_texture;
-	// glGenTextures(1, &midground_texture);
-	// glBindTexture(GL_TEXTURE_2D, midground_texture);
-	
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// std::array<uint8_t, game::CHUNK_SIZE * game::CHUNKS_WIDTH * game::CHUNK_SIZE * game::CHUNKS_WIDTH> *midground_data = new std::array<uint8_t, game::CHUNK_SIZE * game::CHUNKS_WIDTH * game::CHUNK_SIZE * game::CHUNKS_WIDTH>();
-	// std::fill(midground_data->begin(), midground_data->end(), game::SAND);
-	// glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED, GL_UNSIGNED_BYTE, midground_data->data());
-	// delete midground_data;
-
-	// entity midground_entity = eng.create_entity();
-	// box_sys->add(midground_entity, {0.f, 0.f, -5.1, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
-	// texture_vbo_sys->add(midground_entity);
-	// game_engine::sprite midground_sprt(game_engine::shader_programs[0]);
-	// midground_sprt.add_texture({midground_texture, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
-	// render_sys->add(midground_entity, midground_sprt);
-	// glBindTexture(GL_TEXTURE_2D, 0);
-
-	// (world_sys->midground_tiles_ent) = midground_entity;
 
 	GLuint background_texture;
 	glGenTextures(1, &background_texture);
