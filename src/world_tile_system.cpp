@@ -500,12 +500,12 @@ namespace game
 				if (tile >= SOLID_TILE_START_INDEX && !is_solid_tile[tile])
 				{
 					set_tile_at_no_lock(i, j, AIR);
-					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -10, 0.5f, tile, AIR, tile, 250)});
+					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -velocity.y, 0.5f, tile, AIR, tile, 250)});
 					// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
-				} else if (velocity.y * velocity.y + velocity.x * velocity.x > 100 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
+				} else if (velocity.y * velocity.y + velocity.x * velocity.x > 10 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
 				{
 					set_tile_at_no_lock(i, j, AIR);
-					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -10, 0.5f, tile, AIR, tile, 250)});
+					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -velocity.y, 0.5f, tile, AIR, tile, 250)});
 					// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
 				}
 			}

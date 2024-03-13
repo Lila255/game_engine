@@ -40,7 +40,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 					// body->ApplyForceToCenter(impulse, true);
 					
 					// set vertical velocity to negative value.
-					body->SetLinearVelocity(b2Vec2(body->GetLinearVelocity().x, -45.0f));
+					body->SetLinearVelocity(b2Vec2(body->GetLinearVelocity().x, -4.0f));
 			// 		break;
 			// 	}
 			// }
@@ -57,7 +57,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(-18.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(body->GetContactList() != NULL ? -.41f : -.1f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
@@ -74,7 +74,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(18.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(0.0f, 0.81f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
@@ -84,13 +84,16 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(18.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(body->GetContactList() != NULL ? .41f : .1f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
 	// shift
 	if (keys.count(GLFW_KEY_LEFT_SHIFT) > 0)
 	{
+		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+		entity player = game_engine::game_engine_pointer->player_entitiy;
+		b2Body *body = b2d_sys->get_dynamic_body(player);
 		int direction = 0;
 		if (keys.count(GLFW_KEY_A) > 0 && keys.count(GLFW_KEY_D) > 0)
 		{
@@ -103,14 +106,14 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		else if (keys.count(GLFW_KEY_D))
 		{
 			direction = 1;
+		} else 
+		{
+			direction = body->GetLinearVelocity().x > 0 ? 1 : -1;
 		}
-		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
-		entity player = game_engine::game_engine_pointer->player_entitiy;
-		b2Body *body = b2d_sys->get_dynamic_body(player);
 		// b2Vec2 impulse = b2Vec2(direction * 3.f, 0.f);
 		// body->ApplyLinearImpulseToCenter(impulse, true);
 		// set horizontal velocity to direction * 10
-		body->SetLinearVelocity(b2Vec2(direction * 115.0f, body->GetLinearVelocity().y));
+		body->SetLinearVelocity(b2Vec2(body->GetLinearVelocity().x + direction * 8.0f, body->GetLinearVelocity().y));
 		keys.erase(GLFW_KEY_LEFT_SHIFT);
 	}
 }
@@ -165,7 +168,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		// create b2d projectile
 		//start away from player
 		// player_pos.x += cos(angle) * 0.5;
-		projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x + cos(angle) * 5.0f), (float)(player_pos.y + sin(angle) * 5.0f), float(angle), 250.f, glsl_helper::projectile_width / 2.0f, 500, game::b2fixture_types::PROJECTILE);
+		projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x * game::box2d_scale + cos(angle) * 5.0f), (float)(player_pos.y * game::box2d_scale + sin(angle) * 5.0f), float(angle), 250.f, glsl_helper::projectile_width / 2.0f, 500, game::b2fixture_types::PROJECTILE);
 		// create sprite for projectile
 		game_engine::render_system *render_sys = (game_engine::render_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
 		game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
@@ -675,7 +678,7 @@ void run_game(GLFWwindow *window)
 
 
 		GLint player_pos = glGetUniformLocation(compute_shader, "player_pos");
-		glUniform2f(player_pos, (float)(player_body->GetPosition().x + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0), (float)(player_body->GetPosition().y + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0));
+		glUniform2f(player_pos, (float)(player_body->GetPosition().x * game::box2d_scale + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0), (float)(player_body->GetPosition().y * game::box2d_scale + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0));
 
 		// GLint vector_location = glGetUniformLocation(compute_shader, "normal_vectors");
 		// glUniform2fv(vector_location, 256, (GLfloat*)game::noramal_vectors.data());
@@ -797,6 +800,7 @@ void run_game(GLFWwindow *window)
 		}
 
 		auto loop_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_rendering_loop - start_rendering_loop);
+		
 
 		last_time_taken_micro = loop_duration.count();
 		counter++;

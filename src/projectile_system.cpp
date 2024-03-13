@@ -37,7 +37,9 @@ namespace game
 				continue;
 			}
 			b2Vec2 position = projectile.body->GetPosition();
-
+			position.x *= box2d_scale;
+			position.y *= box2d_scale;
+			
 			if (ud->type == b2fixture_types::PROJECTILE)
 			{
 				game_engine::box b = bo_system_pointer->get(proj_entity);
@@ -66,11 +68,11 @@ namespace game
 		// create small circle projectile
 		b2BodyDef body_def;
 		body_def.type = b2_dynamicBody;
-		body_def.position.Set(x, y);
+		body_def.position.Set(x / box2d_scale, y / box2d_scale);
 		// body_def.angle = ang;
 		b2Body *body = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()))->world->CreateBody(&body_def);
 		b2CircleShape circle;
-		circle.m_radius = radius;
+		circle.m_radius = radius / box2d_scale;
 		b2FixtureDef fixture_def;
 		fixture_def.shape = &circle;
 		fixture_def.density = 0.2f;

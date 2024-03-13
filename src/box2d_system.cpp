@@ -3,6 +3,7 @@
 namespace game
 {
 	std::mutex b2d_mutex;
+	float box2d_scale = 10.0f;
 
 	box2d_system::box2d_system()
 	{
@@ -44,7 +45,6 @@ namespace game
 
 	void box2d_system::create_static_body(entity ent, std::vector<std::pair<float, float>> mesh)
 	{
-
 		if (mesh.size() < 3)
 			return;
 		// static_bodies.add(ent, body);
@@ -56,7 +56,7 @@ namespace game
 		b2Vec2 *vertices = new b2Vec2[mesh.size()];
 		for (int i = 0; i < mesh.size(); i++)
 		{
-			vertices[i].Set(mesh[i].first, mesh[i].second);
+			vertices[i].Set(mesh[i].first / box2d_scale, mesh[i].second / box2d_scale);
 		}
 		chain.CreateLoop(vertices, (int32)(mesh.size()));
 		b2FixtureDef fixtureDef;
@@ -90,7 +90,7 @@ namespace game
 				b2Vec2 *vertices = new b2Vec2[3];
 				for (int k = 0; k < 3; k++)
 				{
-					vertices[k].Set(meshes->at(i)[j + k].first, meshes->at(i)[j + k].second);
+					vertices[k].Set(meshes->at(i)[j + k].first / box2d_scale, meshes->at(i)[j + k].second / box2d_scale);
 				}
 				// if straight line, skip (poor check, only works for axis aligned lines)
 				if (vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
@@ -149,7 +149,7 @@ namespace game
 				b2Vec2 *vertices = new b2Vec2[3];
 				for (int k = 0; k < 3; k++)
 				{
-					vertices[k].Set(meshes->at(i)[j + k].first, meshes->at(i)[j + k].second);
+					vertices[k].Set(meshes->at(i)[j + k].first / box2d_scale, meshes->at(i)[j + k].second / box2d_scale);
 				}
 				// if straight line, skip (poor check, only works for axis aligned lines)
 				if (vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
@@ -187,7 +187,7 @@ namespace game
 		// // do this ^^^ but get the shape from the mesh paramater
 		b2BodyDef body_def;
 		body_def.type = b2_dynamicBody;
-		body_def.position.Set(90.0f, 20.0f);
+		body_def.position.Set(90.0f / box2d_scale, 20.0f / box2d_scale);
 		body_def.fixedRotation = true;
 		b2Body *body = world->CreateBody(&body_def);
 		// use mesh
@@ -198,7 +198,7 @@ namespace game
 			b2Vec2 *vertices = new b2Vec2[3];
 			for (int j = 0; j < 3; j++)
 			{
-				vertices[j].Set(mesh[i + j].first, mesh[i + j].second);
+				vertices[j].Set(mesh[i + j].first / box2d_scale, mesh[i + j].second / box2d_scale);
 			}
 			// if straight line, skip (poor check, only works for axis aligned lines)
 			if (vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
@@ -208,7 +208,7 @@ namespace game
 			dynamic_box.Set(vertices, 3);
 			b2FixtureDef fixture_def;
 			fixture_def.shape = &dynamic_box;
-			fixture_def.density = 1.5f;
+			fixture_def.density = 11.5f;
 			fixture_def.friction = 0.25f;
 			fixture_def.restitution = .001f;
 			fixture_def.filter.categoryBits = b2fixture_types::PLAYER;
@@ -246,8 +246,8 @@ namespace game
 		// // get box position
 		game_engine::box_system *bo_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
 		game_engine::box b = bo_system_pointer->get(game_engine::game_engine_pointer->player_entitiy);
-		b.x = position.x; // - glsl_helper::character_width / 2.0f;
-		b.y = position.y; // - glsl_helper::character_height / 2.0f;
+		b.x = position.x * box2d_scale; // - glsl_helper::character_width / 2.0f;
+		b.y = position.y * box2d_scale; // - glsl_helper::character_height / 2.0f;
 		bo_system_pointer->update_box(game_engine::game_engine_pointer->player_entitiy, b);
 		game_engine::texture_vbo_system *tex_vbo_system_pointer = ((game_engine::texture_vbo_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
 		tex_vbo_system_pointer->update(game_engine::game_engine_pointer->player_entitiy);

@@ -6,6 +6,7 @@
 namespace game
 {
 	extern std::mutex b2d_mutex;
+	extern float box2d_scale;
 
 	enum b2fixture_types
 	{
