@@ -168,7 +168,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		// create b2d projectile
 		//start away from player
 		// player_pos.x += cos(angle) * 0.5;
-		projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x * game::box2d_scale + cos(angle) * 5.0f), (float)(player_pos.y * game::box2d_scale + sin(angle) * 5.0f), float(angle), 250.f, glsl_helper::projectile_width / 2.0f, 500, game::b2fixture_types::PROJECTILE);
+		projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x * game::box2d_scale + cos(angle) * 5.0f), (float)(player_pos.y * game::box2d_scale + sin(angle) * 5.0f), float(angle), 15.f, glsl_helper::projectile_width / 2.0f, 500, game::b2fixture_types::PROJECTILE);
 		// create sprite for projectile
 		game_engine::render_system *render_sys = (game_engine::render_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
 		game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
@@ -336,6 +336,7 @@ void run_game(GLFWwindow *window)
 	eng.add_system(game_engine::family::type<game::tree_system>(), tree_sys);
 
 	std::thread tree_thread(&game::tree_system::start, tree_sys);
+
 
 	world_sys->generate_world();
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
@@ -618,6 +619,7 @@ void run_game(GLFWwindow *window)
 	// glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
 
 	std::thread world_thread(start_physics_thread);
+	std::thread box_2d_thread(&game::box2d_system::start_thread, box2d_sys);
 
 	uint16_t saved_light_textures = 0;
 	uint16_t light_texture_index = 0;
@@ -634,11 +636,12 @@ void run_game(GLFWwindow *window)
 	while (!glfwWindowShouldClose(window))
 	{
 		auto start_rendering_loop = std::chrono::high_resolution_clock::now();
+		uint64_t start_rendering_loop_micro = (std::chrono::time_point_cast<std::chrono::microseconds>(start_rendering_loop)).time_since_epoch().count();
 
 		game::b2d_mutex.lock();
 		// set player velocity again
 		player_body->SetLinearVelocity(player_vel);
-		box2d_sys->update(last_time_taken_micro);
+		// box2d_sys->update(last_time_taken_micro);
 		projectile_sys->update(last_time_taken_micro);
 		game::b2d_mutex.unlock();
 
@@ -649,7 +652,7 @@ void run_game(GLFWwindow *window)
 		
 		// printf("b2d_time: %lums\n", duration_b2d.count() / 1000);
 
-		game_engine::box &b = box_sys->get(player_entity);
+		game_engine::box b = box_sys->get(player_entity).get_box_lerped(start_rendering_loop_micro);
 		game_engine::view_matrix[12] = float(-b.x - 0.5 * glsl_helper::character_width + game_engine::window_width * (1.0 / (2 * PIXEL_SCALE)));
 		game_engine::view_matrix[13] = float(-b.y - 0.5 * glsl_helper::character_height + game_engine::window_height * (1.0 / (2 * PIXEL_SCALE)));
 
@@ -678,7 +681,7 @@ void run_game(GLFWwindow *window)
 
 
 		GLint player_pos = glGetUniformLocation(compute_shader, "player_pos");
-		glUniform2f(player_pos, (float)(player_body->GetPosition().x * game::box2d_scale + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0), (float)(player_body->GetPosition().y * game::box2d_scale + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0));
+		glUniform2f(player_pos, (float)(b.x + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0), (float)(b.y + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0));
 
 		// GLint vector_location = glGetUniformLocation(compute_shader, "normal_vectors");
 		// glUniform2fv(vector_location, 256, (GLfloat*)game::noramal_vectors.data());
@@ -807,6 +810,9 @@ void run_game(GLFWwindow *window)
 	}
 
 	physics_loop_running = false;
+	box2d_sys->stop_thread();
+	box_2d_thread.join();
+
 	world_thread.join();
 	tree_sys->set_running(false);
 	tree_thread.join();
@@ -843,11 +849,6 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 	// }
 }
 
-void print_hello_world()
-{
-	printf("Hello World!\n");
-
-}
 
 int main()
 {

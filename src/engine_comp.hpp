@@ -33,6 +33,42 @@ namespace game_engine
 		box(float x, float y, float z, float w, float h) : x(x), y(y), w(w), h(h), z(z) {}
 	};
 
+	struct box_lerp : public component
+	{
+		float x, y, z, w, h;
+		float x2, y2, z2, w2, h2;
+		uint64_t t0, t1;
+
+		box_lerp() = default;
+		box_lerp(float x, float y, float z, float w, float h) : x(x), y(y), w(w), h(h), z(z), x2(x), y2(y), w2(w), h2(h), z2(z), t0(0), t1(0) {}
+
+		box get_box_lerped(uint64_t t)
+		{
+			uint64_t last_tick_time = t1 - t0;
+			if(t < t1)
+				return box(x, y, z, w, h);
+			if(t > t1 + last_tick_time)
+				return box(x2, y2, z2, w2, h2);
+
+			uint64_t time_elapsed = (t - last_tick_time - t0);
+			uint64_t total_time = (t1 - t0);
+			double t_d = (double)(time_elapsed) / (double)(total_time);
+			
+			return box(x + (x2 - x) * t_d, y + (y2 - y) * t_d, z + (z2 - z) * t_d, w + (w2 - w) * t_d, h + (h2 - h) * t_d);
+			// return box(x + (x2 - x) * t, y + (y2 - y) * t, z + (z2 - z) * t, w + (w2 - w) * t, h + (h2 - h) * t);
+		}
+
+		box get_box()
+		{
+			return box(x, y, z, w, h);
+		}
+		
+		box get_box_last()
+		{
+			return box(x2, y2, z2, w2, h2);
+		}
+	};
+
 	/// @brief A component that stores a texture id
 	struct texture : public component
 	{
@@ -73,7 +109,7 @@ namespace game_engine
 	struct box_system : public system
 	{
 	private:
-		sparse_component_set<box> m_boxes;
+		sparse_component_set<box_lerp> m_boxes;
 
 	public:
 		void update() override
@@ -82,8 +118,10 @@ namespace game_engine
 			throw std::runtime_error("box_system::update() should not be called");
 		}
 
-		void add(uint32_t ent, box &&b)
+		void add(uint32_t ent, box_lerp &&b)
 		{
+			b.t0 = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+			b.t1 = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
 			m_boxes.add(ent, b);
 		}
 
@@ -92,12 +130,12 @@ namespace game_engine
 			m_boxes.remove(ent);
 		}
 
-		box &get(uint32_t ent)
+		box_lerp &get(uint32_t ent)
 		{
 			return m_boxes.get(ent);
 		}
 
-		void update_box(entity ent, box b)
+		void update_box(entity ent, box_lerp b)
 		{
 			m_boxes.update(ent, b);
 		}
@@ -128,7 +166,7 @@ namespace game_engine
 		void add(uint32_t ent)
 		{
 			// Get the box component
-			box &b = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()))->get(ent);
+			box b = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()))->get(ent).get_box();
 
 			// Create the vertex data
 			// float vertex_data[] = {
@@ -189,10 +227,49 @@ namespace game_engine
 
 		/// @brief Update the VBO for the given entity.
 		/// @param ent The entity to update the VBO for. Entity must contain a box component to pull values from
-		void update(entity ent)
+		// void update(entity ent)
+		// {
+		// 	// Get the box component
+		// 	box b = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()))->get(ent).get_box();
+		// 	// Create the vertex data
+		// 	// float vertex_data[] = {
+		// 	//     b.x, b.y, b.z, 0.0f, 0.0f,
+		// 	//     b.x + b.w, b.y, b.z, 1.0f, 0.0f,
+		// 	//     b.x + b.w, b.y + b.h, b.z, 1.0f, 1.0f,
+		// 	//     b.x, b.y + b.h, b.z, 0.0f, 1.0f
+		// 	// };
+		// 	// verticies data
+		// 	float vertices[] = {
+		// 		b.x, b.y, b.z,
+		// 		b.x + b.w, b.y, b.z,
+		// 		b.x + b.w, b.y + b.h, b.z,
+		// 		b.x, b.y + b.h, b.z};
+		// 	// texture data
+		// 	float texture_data[] = {
+		// 		0.0f, 0.0f,
+		// 		1.0f, 0.0f,
+		// 		1.0f, 1.0f,
+		// 		0.0f, 1.0f};
+
+		// 	// Bind the VAO
+		// 	glBindVertexArray(m_vaos.get(ent));
+
+		// 	// Bind the VBO
+		// 	glBindBuffer(GL_ARRAY_BUFFER, m_vbos.get(ent));
+
+		// 	// Upload the vertex data to the GPU
+		// 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(texture_data), NULL, GL_DYNAMIC_DRAW);
+		// 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+		// 	glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(texture_data), texture_data);
+
+		// 	// Unbind the VB0
+		// 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+		// 	// Unbind the VAO
+		// 	glBindVertexArray(0);
+		// }
+
+		void update(entity ent, box b)
 		{
-			// Get the box component
-			box &b = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()))->get(ent);
 			// Create the vertex data
 			// float vertex_data[] = {
 			//     b.x, b.y, b.z, 0.0f, 0.0f,
@@ -303,11 +380,12 @@ namespace game_engine
 				mouse_callback(m_window, game_engine_pointer->pressed_mouse_buttons);
 				return;
 			}
-
+			uint64_t time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 			texture_vbo_system *texture_vbo_system_pointer = ((texture_vbo_system *)game_engine_pointer->get_system(family::type<texture_vbo_system>()));
 			box_system *bo_system_pointer = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()));
-			box &b = bo_system_pointer->get(game_engine_pointer->player_entitiy);
-
+			// box &b = bo_system_pointer->get(game_engine_pointer->player_entitiy);
+			box lerped_player_box = bo_system_pointer->get(game_engine_pointer->player_entitiy).get_box_lerped(time);
+			texture_vbo_system_pointer->update(game_engine_pointer->player_entitiy, lerped_player_box);
 			// view_matrix[12] = -b.x - 0.5 * glsl_helper::character_width + window_width * (1.0 / (2 * PIXEL_SCALE));
 			// view_matrix[13] = -b.y - 0.5 * glsl_helper::character_height + window_height * (1.0 / (2 * PIXEL_SCALE));
 
@@ -445,7 +523,7 @@ namespace game_engine
 
 			box_system *b_system = (game_engine::box_system *)(game_engine_pointer->get_system(family::type<game_engine::box_system>()));
 			texture_vbo_system *vbo_system = (game_engine::texture_vbo_system *)(game_engine_pointer->get_system(family::type<game_engine::texture_vbo_system>()));
-			box &b = b_system->get(game_engine_pointer->player_entitiy);
+			box_lerp &b = b_system->get(game_engine_pointer->player_entitiy);
 
 			for (auto &key : game_engine_pointer->pressed_keys)
 			{
@@ -466,7 +544,7 @@ namespace game_engine
 					b.x += 1.0f;
 				}
 			}
-			vbo_system->update(game_engine_pointer->player_entitiy);
+			vbo_system->update(game_engine_pointer->player_entitiy, b.get_box());
 		}
 		void draw_line(float x1, float y1, float z1, float x2, float y2, float z2)
 		{

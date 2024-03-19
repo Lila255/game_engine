@@ -446,7 +446,7 @@ namespace game
 					}
 					break;
 				case TEMPORARY_SMOKE:
-					if (rand() % 5 == 0)
+					if (rand() % 15 == 0)
 					{
 						set_tile_at_no_lock(x, y, AIR);
 					}
@@ -483,7 +483,7 @@ namespace game
 		// get character position
 		entity character_ent = game_engine::game_engine_pointer->player_entitiy;
 		game_engine::box_system *box_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
-		game_engine::box &character_box = box_system_pointer->get(character_ent);
+		game_engine::box character_box = box_system_pointer->get(character_ent).get_box();
 		// get character velocity from box2d
 		box2d_system *box2d_system_pointer = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()));
 		b2Body *character_body = box2d_system_pointer->get_dynamic_body(character_ent);

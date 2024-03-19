@@ -42,12 +42,15 @@ namespace game
 			
 			if (ud->type == b2fixture_types::PROJECTILE)
 			{
-				game_engine::box b = bo_system_pointer->get(proj_entity);
+				game_engine::box_lerp b = bo_system_pointer->get(proj_entity);
 				b.x = position.x - glsl_helper::projectile_width / 2.0f;
 				b.y = position.y - glsl_helper::projectile_height / 2.0f;
+				b.x2 = position.x - glsl_helper::projectile_width / 2.0f;
+				b.y2 = position.y - glsl_helper::projectile_height / 2.0f;
+
 				bo_system_pointer->update_box(proj_entity, b);
 				game_engine::texture_vbo_system *tex_vbo_system_pointer = ((game_engine::texture_vbo_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
-				tex_vbo_system_pointer->update(proj_entity);
+				tex_vbo_system_pointer->update(proj_entity, b.get_box());
 			}
 			else if (ud->type == b2fixture_types::DEBRIS)
 			{

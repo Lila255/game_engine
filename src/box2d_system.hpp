@@ -38,7 +38,8 @@ namespace game
 		b2Vec2 gravity; //(0.0f, -9.8f);
 		game_engine::sparse_component_set<b2Body *> static_bodies;
 		game_engine::sparse_component_set<b2Body *> dynamic_bodies;
-
+		uint8_t running = 0;
+		const uint64_t time_step_ms = 10;
 	public:
 		b2World *world;
 
@@ -62,6 +63,10 @@ namespace game
 		void create_dynamic_body(entity ent, std::vector<std::pair<float, float>> mesh);
 
 		void remove_dynamic_body(entity ent);
+
+		void start_thread();
+		
+		void stop_thread();
 
 		void update() {}
 

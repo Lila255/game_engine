@@ -735,7 +735,7 @@ namespace game
 					{
 						data[y][x] = EMBER;
 					} else {
-						data[y][x] = 1;
+						data[y][x] = TEMPORARY_SMOKE;
 					}
 				}
 			}

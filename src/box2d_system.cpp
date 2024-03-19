@@ -230,10 +230,37 @@ namespace game
 		dynamic_bodies.remove(ent);
 	}
 
+	void box2d_system::start_thread() 
+	{
+		running = 1;
+
+		while(running)
+		{	
+			std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
+			b2d_mutex.lock();
+			update(time_step_ms);
+			std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
+			std::chrono::microseconds elapsed_ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+			b2d_mutex.unlock();
+			if(elapsed_ms.count() < time_step_ms * 1000)
+			{
+				std::this_thread::sleep_for(std::chrono::microseconds((time_step_ms * 1000 - elapsed_ms.count())));
+			}
+		}
+	}
+
+	void box2d_system::stop_thread()
+	{
+		running = 0;
+	}
+
 	void box2d_system::update(uint64_t time_to_step)
 	{
+		game_engine::box_system *bo_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
 
-		world->Step(time_to_step / 1000000.f, 6, 2);
+		game_engine::box_lerp player_box_0 = bo_system_pointer->get(game_engine::game_engine_pointer->player_entitiy);
+		
+		world->Step(time_to_step / 1000.0, 6, 2);
 		// world->Step(1.0f / 144.0f, 6, 2);
 
 		b2Body *body = dynamic_bodies.get(game_engine::game_engine_pointer->player_entitiy);
@@ -244,13 +271,17 @@ namespace game
 		// b2Vec2 position = body->GetPosition();
 		// printf("x: %f, y: %f\n", position.x, position.y);
 		// // get box position
-		game_engine::box_system *bo_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
-		game_engine::box b = bo_system_pointer->get(game_engine::game_engine_pointer->player_entitiy);
-		b.x = position.x * box2d_scale; // - glsl_helper::character_width / 2.0f;
-		b.y = position.y * box2d_scale; // - glsl_helper::character_height / 2.0f;
+		game_engine::box_lerp b = bo_system_pointer->get(game_engine::game_engine_pointer->player_entitiy);
+		b.x2 = position.x * box2d_scale; // - glsl_helper::character_width / 2.0f;
+		b.y2 = position.y * box2d_scale; // - glsl_helper::character_height / 2.0f;
+		b.x = player_box_0.x2;
+		b.y = player_box_0.y2;
+		b.t0 = player_box_0.t1;
+		b.t1 = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+
 		bo_system_pointer->update_box(game_engine::game_engine_pointer->player_entitiy, b);
 		game_engine::texture_vbo_system *tex_vbo_system_pointer = ((game_engine::texture_vbo_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
-		tex_vbo_system_pointer->update(game_engine::game_engine_pointer->player_entitiy);
+		// tex_vbo_system_pointer->update(game_engine::game_engine_pointer->player_entitiy, b.get_box());
 	}
 
 	b2Body *box2d_system::get_static_body(entity ent)
