@@ -1,6 +1,7 @@
 #include "projectile_system.hpp"
 #include "box2d_system.hpp"
 #include "world_tile_system.hpp"
+#include "tasks.hpp"
 
 namespace game
 {
@@ -28,6 +29,12 @@ namespace game
 
 			if (ud && ud->type == b2fixture_types::EMPTY || std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - ud->spawn_time).count() > 10000)
 			{
+				if(ud->type == DEBRIS)
+				{
+					// timed out
+					game_engine::task_scheduler_pointer->add_task({&update_tile_task, new update_tile_params(projectile.body->GetPosition().x * game::box2d_scale, projectile.body->GetPosition().y *  game::box2d_scale, projectile.debri_tile_type)});
+				}
+
 				remove_projectile(proj_entity);
 				bo_system_pointer->remove(proj_entity);
 				render_system_pointer->remove(proj_entity);

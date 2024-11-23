@@ -182,6 +182,9 @@ namespace game
 		static_bodies.remove(ent);
 	}
 
+	/// @brief Creates a dynamic body with the provided entity and mesh.
+	/// @param ent 
+	/// @param mesh Mesh is in a squashed vector of triangle co-ordinates
 	void box2d_system::create_dynamic_body(entity ent, std::vector<std::pair<float, float>> mesh)
 	{
 		// // do this ^^^ but get the shape from the mesh paramater
@@ -208,7 +211,7 @@ namespace game
 			dynamic_box.Set(vertices, 3);
 			b2FixtureDef fixture_def;
 			fixture_def.shape = &dynamic_box;
-			fixture_def.density = 11.5f;
+			fixture_def.density = 1.5f;
 			fixture_def.friction = 0.25f;
 			fixture_def.restitution = .001f;
 			fixture_def.filter.categoryBits = b2fixture_types::PLAYER;
@@ -219,6 +222,44 @@ namespace game
 			body->CreateFixture(&fixture_def);
 			delete[] vertices;
 		}
+		dynamic_bodies.add(ent, body);
+	}
+
+	void box2d_system::add_mesh(entity ent,  std::vector<std::pair<float, float>> mesh, b2fixture_types mesh_type)
+	{
+		b2Body *body = dynamic_bodies.get(ent);
+		for (int i = 0; i < mesh.size(); i += 3)
+		{
+			b2PolygonShape dynamic_box;
+			b2Vec2 *vertices = new b2Vec2[3];
+			for (int j = 0; j < 3; j++)
+			{
+				vertices[j].Set(mesh[i + j].first / box2d_scale, mesh[i + j].second / box2d_scale);
+			}
+			// if straight line, skip (poor check, only works for axis aligned lines)
+			if (vertices[0].x == vertices[1].x && vertices[0].x == vertices[2].x)
+				continue;
+			if (vertices[0].y == vertices[1].y && vertices[0].y == vertices[2].y)
+				continue;
+			dynamic_box.Set(vertices, 3);
+			b2FixtureDef fixture_def;
+			fixture_def.shape = &dynamic_box;
+			fixture_def.density = 1.5f;
+			fixture_def.friction = 0.25f;
+			fixture_def.restitution = .001f;
+			fixture_def.filter.categoryBits = mesh_type;
+			b2FixtureUserData fixtureUserData;
+			// fixtureUserData.pointer = b2fixture_types::PLAYER;
+			fixtureUserData.pointer = (uintptr_t) new b2_user_data(ent, mesh_type);
+			fixture_def.userData = fixtureUserData;
+			body->CreateFixture(&fixture_def);
+			delete[] vertices;
+		}
+		
+	}
+
+	void box2d_system::add_dynamic_body(entity ent, b2Body *body)
+	{
 		dynamic_bodies.add(ent, body);
 	}
 
@@ -239,9 +280,10 @@ namespace game
 			std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
 			b2d_mutex.lock();
 			update(time_step_ms);
+			b2d_mutex.unlock();
 			std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
 			std::chrono::microseconds elapsed_ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-			b2d_mutex.unlock();
+			// printf("Elapsed time: %ld\n", elapsed_ms.count());
 			if(elapsed_ms.count() < time_step_ms * 1000)
 			{
 				std::this_thread::sleep_for(std::chrono::microseconds((time_step_ms * 1000 - elapsed_ms.count())));

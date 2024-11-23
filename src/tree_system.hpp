@@ -7,6 +7,7 @@
 
 namespace game
 {
+	extern std::mutex tree_mutex;
 	struct tree_tracer
 	{
 		uint8_t up, down, left, right;

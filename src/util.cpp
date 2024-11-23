@@ -2,6 +2,8 @@
 
 namespace game_engine
 {
+	
+
 	static uint32_t current_max = 0;
 	static std::priority_queue<uint32_t> free_ids;
 

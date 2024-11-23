@@ -54,12 +54,13 @@ namespace glsl_helper
 
 	// create_projectile_texture
 	void create_projectile_texture(GLuint &texture);
+
+	GLuint create_texture_from_data(std::string texture_name, const uint8_t *data, int width, int height);
 };
 
 std::vector<GLuint> load_shaders(std::string vert, std::string frag);
 
 GLuint load_compute_shader(std::string shader_src);
 
-void create_texture_from_data(GLuint texture_id, const uint8_t *data, int width, int height, int channels);
 
 #endif

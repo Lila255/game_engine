@@ -58,7 +58,7 @@ namespace game
 		WATER,	// 32
 		LAVA,	// 33
 		ACID,	// 34
-		FLUID_03,	// 35
+		HONEY,	// 35
 		FLUID_04,	// 36
 		FLUID_05,	// 37
 		FLUID_06,	// 38
@@ -100,7 +100,7 @@ namespace game
 		ROOT,	// 73
 		EMBER,	// 74
 		SNOW,	// 75
-		SOLID_12,	// 76
+		WAX,	// 76
 		SOLID_13,	// 77
 		SOLID_14,	// 78
 		SOLID_15,	// 79
@@ -157,12 +157,18 @@ namespace game
 		BRICK_2,	// 129
 		BRICK_3,	// 130
 		BRICK_4,	// 131
-		MORTAR,	// 132
+		MORTAR,		// 132
+		TRANS_BLUE,	// 133
+		TRANS_PINK,	// 134
+		WHITE,		// 135
+		BEE_YELLOW,	// 136
+		BEE_BLACK,	// 137
 
 		// indestructible tiles
 		BEDROCK,
 
 	};
+	const uint8_t BACKGROUND_TILE_START_INDEX = 128;
 	const uint8_t SOLID_TILE_START_INDEX = 64;
 	const uint8_t LIQUID_TILE_START_INDEX = 32;
 	extern std::array<uint8_t, 256> is_solid_tile;
@@ -249,7 +255,7 @@ namespace game
 			data = std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
 		}
 
-		void create_chunk();
+		void create_chunk(uint32_t x, uint32_t y);
 
 		void to_string();
 
@@ -277,7 +283,8 @@ namespace game
 		std::vector<std::vector<std::pair<float, float>>> create_outlines_centers();
 
 
-		bool delete_circle(int x, int y, int radius);
+		uint32_t delete_circle(int x, int y, int radius, std::unordered_set<uint8_t> tile_deny_list);
+		bool find_tile_in_rect(std::pair<int, int> &result, int x, int y, int w, int h, std::unordered_set<uint8_t> tile_types);
 	private:
 		uint16_t get_tile_edginess(int x, int y);
 		

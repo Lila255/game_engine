@@ -237,26 +237,50 @@ namespace game_engine
 			queue.pop();
 			return value;
 		}
+		bool empty()
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			return queue.empty();
+		}
 	};
 
 	struct task
 	{
 		void (* function_pointer)(void *);
 		void * task_parameters;
+		void run()
+		{
+			function_pointer(task_parameters);
+		}
 	};
+
 	
 	struct task_scheduler
 	{
 	private:
 		thread_safe_queue<task> task_queue;
 		bool shutdown_flag = false;
+		static uint64_t task_counter;
+		static std::unordered_map<uint64_t, uint64_t> task_count_by_type;
+		static std::unordered_map<uint64_t, std::string> task_names;
 	public:
 		void start()
 		{
+			task_counter = 0;
+			task_count_by_type.clear();
 			while(!shutdown_flag)
 			{
 				task t = task_queue.pop();
 				t.function_pointer(t.task_parameters);
+				task_counter++;
+				if(task_count_by_type.count((uint64_t)t.function_pointer) > 0)
+				{
+					task_count_by_type[(uint64_t)t.function_pointer]++;
+				}
+				else
+				{
+					task_count_by_type[(uint64_t)t.function_pointer] = 1;
+				}
 				delete t.task_parameters;
 			}
 		}
@@ -266,10 +290,49 @@ namespace game_engine
 			task_queue.push(t);
 		}
 
+		bool pop_task(task &t)
+		{
+			if(task_queue.empty())
+			{
+				return false;
+			}
+			t = task_queue.pop();
+			return true;
+		}
+
 		void shutdown(task t)
 		{
 			shutdown_flag = true;
 			add_task(t);
+		}
+
+		void add_task_name(uint64_t id, std::string name)
+		{
+			task_names[id] = name;
+		}
+
+		static void print_task_counter(void * null_param)
+		{
+			printf("Task counter: %d\n", task_counter);
+			printf("Task type breakdown:\n");
+
+			for(auto &task: task_count_by_type)
+			{
+				printf("  Function pointer: %d - %s: %d\n", task.first, task_names.count(task.first) ? task_names[task.first].c_str() : "task with no name", task.second);
+			}
+			
+			// if(task_count_by_type.count((uint64_t)print_task_counter) > 0)
+			// {
+			// 	printf("print_task_counter: %d\n", task_count_by_type[(uint64_t)print_task_counter]);
+			// }
+			// if(task_count_by_type.count((uint64_t)ingle_debris_task) > 0)
+			// {
+			// 	printf("create_single_debris_task: %d\n", task_count_by_type[(uint64_t)create_single_debris_task]);
+			// }
+			// else
+			// {
+			// 	// printf("print_task_counter: 0\n");
+			// }
 		}
 	};
 }

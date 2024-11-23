@@ -195,5 +195,15 @@ namespace game_engine
 			// return entities;
 			return m_dense;
 		}
+
+		std::vector<GLuint>::iterator begin()
+		{
+			return m_dense.begin();
+		}
+		
+		std::vector<GLuint>::iterator end()
+		{
+			return m_dense.end();
+		}
 	};
 }

@@ -4,6 +4,7 @@ namespace game
 {
 	std::random_device rd;
 	std::mt19937 g(rd());
+	std::mutex tree_mutex;
 
 	void tree_system::add_tree(entity ent, tree t)
 	{
@@ -233,6 +234,7 @@ namespace game
 
 	void tree_system::update()
 	{
+		tree_mutex.lock();
 		// Update all trees
 		for (auto &tree_entity : trees.get_entities())
 		{
@@ -295,6 +297,7 @@ namespace game
 
 			// }
 		}
+		tree_mutex.unlock();
 	}
 
 	void tree_system::start()

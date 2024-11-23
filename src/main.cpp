@@ -57,7 +57,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(body->GetContactList() != NULL ? -.41f : -.1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(body->GetContactList() != NULL ? -.041f : -.01f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
@@ -84,7 +84,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(body->GetContactList() != NULL ? .41f : .1f, 0.0f);
+		b2Vec2 impulse = b2Vec2(body->GetContactList() != NULL ? .041f : .01f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
@@ -235,11 +235,11 @@ void start_physics_thread()
 		std::array<std::vector<std::vector<std::pair<float, float>>> *, game::NUM_CHUNKS> chunks_outlines;
 		std::array<std::thread, game::NUM_CHUNKS> threads;
 
-		std::array<uint8_t, game::NUM_CHUNKS> * modified_chunks = world_sys -> get_modified_chunks();
+		std::array<uint8_t, game::NUM_CHUNKS>  modified_chunks = *(world_sys -> get_modified_chunks());
 
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
-			if(modified_chunks -> at(i) == 0)
+			if(modified_chunks.at(i) == 0)
 				continue;
 			game::chunk *c = chunks->at(i);
 			chunks_outlines[i] = new std::vector<std::vector<std::pair<float, float>>>();
@@ -249,7 +249,7 @@ void start_physics_thread()
 		
 		for (int i = 0; i < game::NUM_CHUNKS; i++)
 		{
-			if(modified_chunks -> at(i) == 0)
+			if(modified_chunks.at(i) == 0)
 				continue;
 
 			world_sys -> set_modified_chunk(i % game::CHUNKS_WIDTH, i / game::CHUNKS_WIDTH, 0);
@@ -262,7 +262,7 @@ void start_physics_thread()
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		printf("Physics loop took %lld ms\n", duration);
+		// printf("Physics loop took %lld ms\n", duration);
 		// printf("Physics loop took %lld ms\n", duration);
 		
 		
@@ -291,6 +291,18 @@ void run_game(GLFWwindow *window)
 
 	game_engine::task_scheduler task_sc;
 	game_engine::task_scheduler_pointer = &task_sc;
+
+	task_sc.add_task_name((uint64_t)&game_engine::task_scheduler::print_task_counter, "print_task_counter");
+	// task name here
+	task_sc.add_task_name((uint64_t)&game::shutdown_task_schedular_task, "shutdown_task_schedular_task");
+	task_sc.add_task_name((uint64_t)&game::create_debris_task, "create_debris_task");
+	task_sc.add_task_name((uint64_t)&game::create_single_debris_task, "create_single_debris_task");
+	task_sc.add_task_name((uint64_t)&game::delete_circle_task, "delete_circle_task");
+	task_sc.add_task_name((uint64_t)&game::update_tile_task, "update_tile_task");
+	task_sc.add_task_name((uint64_t)&game::create_flying_creature_nest_task, "create_flying_creature_nest_task");
+	task_sc.add_task_name((uint64_t)&game::flying_creature_eat_task, "flying_creature_eat_task");
+	task_sc.add_task_name((uint64_t)&game::flying_creature_deposit_task, "flying_creature_deposit_task");
+	
 	
 	std::thread task_runner(&game_engine::task_scheduler::start, &task_sc);
 
@@ -329,16 +341,22 @@ void run_game(GLFWwindow *window)
 	eng.add_system(game_engine::family::type<game::projectile_system>(), projectile_sys);
 
 	game::box2d_system *box2d_sys = new game::box2d_system();
-	box2d_sys->world -> SetContactListener(new game::b2_contact_listener());
 	eng.add_system(game_engine::family::type<game::box2d_system>(), box2d_sys);
 
 	game::tree_system *tree_sys = new game::tree_system(world_sys);
 	eng.add_system(game_engine::family::type<game::tree_system>(), tree_sys);
 
+	game::flying_creature_system *flying_creature_sys = new game::flying_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys);
+	eng.add_system(game_engine::family::type<game::flying_creature_system>(), flying_creature_sys);
+
+
 	std::thread tree_thread(&game::tree_system::start, tree_sys);
 
 
+	box2d_sys->world -> SetContactListener(new game::b2_contact_listener());
 	world_sys->generate_world();
+
+	// printf("tiles:\n%s\n", world_sys->to_csv_string().c_str());
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
 	// std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
 
@@ -468,9 +486,13 @@ void run_game(GLFWwindow *window)
 	sprt.add_texture({player_texture, 0, GL_R8, glsl_helper::character_width, glsl_helper::character_height});
 	render_sys->add(player_entity, sprt);
 	// box_sys->add(player_entity, {0.f, 0.f, -1.f, 4 * 8.f, 1 * 85.333333333f});
-	box_sys->add(player_entity, {0.f, 0.f, -4.5f, glsl_helper::character_width, glsl_helper::character_height});
+	box_sys->add(player_entity, {0.f, 0.f, -4.9f, glsl_helper::character_width, glsl_helper::character_height});
 	texture_vbo_sys->add(player_entity);
 	eng.player_entitiy = player_entity;
+
+	
+	std::array<uint8_t, 4> bee_texture = {game::BEE_YELLOW, game::BEE_YELLOW, game::BEE_BLACK, game::BEE_BLACK};
+	glsl_helper::create_texture_from_data("bee", bee_texture.data(), 2, 2);
 
 	// // create box2d body
 	// std::vector<std::pair<float, float>> player_shape = {
@@ -480,13 +502,23 @@ void run_game(GLFWwindow *window)
 	// 	{glsl_helper::character_width, glsl_helper::character_height},
 	// 	{0.f, 0.f},
 	// 	{0.f, glsl_helper::character_height}};
+	// std::vector<std::pair<float, float>> player_shape = {
+	// 	{0.f, 0.f},
+	// 	{(float)glsl_helper::character_width, (float)glsl_helper::character_height},
+	// 	{(float)glsl_helper::character_width, 0.f},
+	// 	{(float)glsl_helper::character_width, (float)glsl_helper::character_height},
+	// 	{0.f, 0.f},
+	// 	{0.f, (float)glsl_helper::character_height}};
+	float edge_width = 0.1f;
 	std::vector<std::pair<float, float>> player_shape = {
-		{0.f, 0.f},
-		{(float)glsl_helper::character_width, (float)glsl_helper::character_height},
-		{(float)glsl_helper::character_width, 0.f},
-		{(float)glsl_helper::character_width, (float)glsl_helper::character_height},
-		{0.f, 0.f},
-		{0.f, (float)glsl_helper::character_height}};
+		{glsl_helper::character_width - edge_width, 0}, {edge_width, 0}, {0, edge_width},
+		{0, edge_width}, {glsl_helper::character_width, edge_width}, {glsl_helper::character_width - edge_width, 0},
+		{0, edge_width}, {0, glsl_helper::character_height - edge_width}, {glsl_helper::character_width, edge_width},
+		{0, glsl_helper::character_height - edge_width}, {glsl_helper::character_width, glsl_helper::character_height - edge_width}, {glsl_helper::character_width, edge_width},
+		{0, glsl_helper::character_height - edge_width}, {edge_width, glsl_helper::character_height}, {glsl_helper::character_width, glsl_helper::character_height - edge_width},
+		{edge_width, glsl_helper::character_height}, {glsl_helper::character_width - edge_width, glsl_helper::character_height}, {glsl_helper::character_width, glsl_helper::character_height - edge_width}
+
+	};
 
 	chunk_outlines.push_back({player_shape});
 	box2d_sys->create_dynamic_body(player_entity, player_shape);
@@ -620,6 +652,7 @@ void run_game(GLFWwindow *window)
 
 	std::thread world_thread(start_physics_thread);
 	std::thread box_2d_thread(&game::box2d_system::start_thread, box2d_sys);
+	std::thread flying_creature_thread(&game::flying_creature_system::start_thread, flying_creature_sys);
 
 	uint16_t saved_light_textures = 0;
 	uint16_t light_texture_index = 0;
@@ -631,6 +664,10 @@ void run_game(GLFWwindow *window)
 	// store start time
 	auto last_fps_start = std::chrono::high_resolution_clock::now();
 	
+	printf("before bee: %d\n", glGetError());
+	entity new_bee = eng.create_entity();
+	flying_creature_sys -> create_flying_creature(new_bee, 10, 10, game::flying_creature_type::BEE);
+	printf("here: %d\n", glGetError());
 
 	// Run the game loop
 	while (!glfwWindowShouldClose(window))
@@ -644,6 +681,7 @@ void run_game(GLFWwindow *window)
 		// box2d_sys->update(last_time_taken_micro);
 		projectile_sys->update(last_time_taken_micro);
 		game::b2d_mutex.unlock();
+		flying_creature_sys->update_rendering(last_time_taken_micro);
 
 		for(int c = 0; c < game::NUM_CHUNKS; c++)
 		{
@@ -653,6 +691,8 @@ void run_game(GLFWwindow *window)
 		// printf("b2d_time: %lums\n", duration_b2d.count() / 1000);
 
 		game_engine::box b = box_sys->get(player_entity).get_box_lerped(start_rendering_loop_micro);
+
+
 		game_engine::view_matrix[12] = float(-b.x - 0.5 * glsl_helper::character_width + game_engine::window_width * (1.0 / (2 * PIXEL_SCALE)));
 		game_engine::view_matrix[13] = float(-b.y - 0.5 * glsl_helper::character_height + game_engine::window_height * (1.0 / (2 * PIXEL_SCALE)));
 
@@ -681,7 +721,8 @@ void run_game(GLFWwindow *window)
 
 
 		GLint player_pos = glGetUniformLocation(compute_shader, "player_pos");
-		glUniform2f(player_pos, (float)(b.x + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0), (float)(b.y + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 100.0));
+		// glUniform2f(player_pos, (float)(b.x + glsl_helper::character_width / 2.0), (float)(b.y + glsl_helper::character_width / 2.0));
+		glUniform2f(player_pos, (float)(b.x + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 50.0), (float)(b.y + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 50.0));
 
 		// GLint vector_location = glGetUniformLocation(compute_shader, "normal_vectors");
 		// glUniform2fv(vector_location, 256, (GLfloat*)game::noramal_vectors.data());
@@ -689,9 +730,9 @@ void run_game(GLFWwindow *window)
 		// printf("before_binding_col_texture: %d\n", glGetError());
 		// glBindImageTexture(3, colour_textures[light_texture_index], 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		// printf("after_binding_col_texture: %d\n", glGetError());
+		 
 		
-		
-		glDispatchCompute(16000, 1, 1);
+		glDispatchCompute( 16000, 1, 1);
 		// printf("after dispatch: %d\n", glGetError());
 		glFinish();
 

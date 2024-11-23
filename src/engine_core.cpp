@@ -4,6 +4,9 @@ namespace game_engine
 {
 	engine *game_engine_pointer;
 	task_scheduler* task_scheduler_pointer;
+	uint64_t task_scheduler::task_counter = 0;
+	std::unordered_map<uint64_t, uint64_t> task_scheduler::task_count_by_type;
+	std::unordered_map<uint64_t, std::string> task_scheduler::task_names;
 
     std::vector<GLuint> shader_programs;
     const uint16_t window_width = 1920;

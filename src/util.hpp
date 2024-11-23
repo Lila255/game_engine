@@ -62,4 +62,12 @@ namespace game_engine
 		return ((val == set) || ...);
 	}
 
+	struct free_ids_comparison
+	{
+		bool operator() (uint32_t a, uint32_t b) const
+		{
+			return a > b;
+		}
+	};
+
 }

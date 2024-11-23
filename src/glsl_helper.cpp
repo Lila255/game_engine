@@ -1,4 +1,5 @@
 #include "glsl_helper.hpp"
+#include "chunk.hpp"
 
 namespace glsl_helper
 {
@@ -79,8 +80,8 @@ namespace glsl_helper
 		0.4901f, 0.2039f, 0.0549f, 1.0000f, // 73: ROOT
 		1.0000f, 0.2352f, 0.0000f, 1.0000f, // 74: EMBER
 		0.9000f, 0.9000f, 0.9000f, 1.0000f, // 75: SNOW
-		0.2980f, 1.0000f, 1.0000f, 1.0000f, // 76
-		0.3020f, 1.0000f, 1.0000f, 1.0000f, // 77
+		0.9255f, 0.8157f, 0.4039f, 1.0000f, // 76: WAX
+		0.3020f, 0.8157f, 0.4039f, 1.0000f, // 77
 		0.3059f, 1.0000f, 1.0000f, 1.0000f, // 78
 		0.3098f, 1.0000f, 1.0000f, 1.0000f, // 79
 		0.3137f, 1.0000f, 1.0000f, 1.0000f, // 80
@@ -131,16 +132,16 @@ namespace glsl_helper
 		0.4902f, 1.0000f, 1.0000f, 1.0000f, // 125
 		0.4941f, 1.0000f, 1.0000f, 1.0000f, // 126
 		0.4980f, 1.0000f, 1.0000f, 1.0000f, // 127
-		0.5500f, 0.1100f, 0.1100f, 1.0000f, // 128
-		0.7400f, 0.2600f, 0.2100f, 1.0000f, // 129
-		0.6800f, 0.7000f, 0.7400f, 1.0000f, // 130
-		0.5100f, 0.5200f, 0.5500f, 1.0000f, // 131
+		0.5500f, 0.1100f, 0.1100f, 1.0000f, // 128: BRICK_1
+		0.7400f, 0.2600f, 0.2100f, 1.0000f, // 129: BRICK_2
+		0.6800f, 0.7000f, 0.7400f, 1.0000f, // 130: BRICK_3
+		0.5100f, 0.5200f, 0.5500f, 1.0000f, // 131: BRICK_4
 		0.6784f, 0.6274f, 0.5843f, 1.0000f, // 132: Mortar
-		0.5216f, 1.0000f, 1.0000f, 1.0000f, // 133
-		0.5255f, 1.0000f, 1.0000f, 1.0000f, // 134
-		0.5294f, 1.0000f, 1.0000f, 1.0000f, // 135
-		0.5333f, 1.0000f, 1.0000f, 1.0000f, // 136
-		0.5373f, 1.0000f, 1.0000f, 1.0000f, // 137
+		0.3568f, 0.8078f, 0.9803f, 1.0000f, // 133: TRANS_BLUE
+		0.9607f, 0.6627f, 0.7215f, 1.0000f, // 134: TRANS_PINK
+		1.0000f, 1.0000f, 1.0000f, 1.0000f, // 135: WHITE
+		0.9294f, 0.7882f, 0.2588f, 1.0000f, // 136: BEE_YELLOW
+		0.1000f, 0.1000f, 0.1000f, 1.0000f, // 137: BEE_BLACK
 		0.5412f, 1.0000f, 1.0000f, 1.0000f, // 138
 		0.5451f, 1.0000f, 1.0000f, 1.0000f, // 139
 		0.5490f, 1.0000f, 1.0000f, 1.0000f, // 140
@@ -408,19 +409,30 @@ namespace glsl_helper
 				// vec3 rgb = hsv2rgb(hue);
 				float inverse_alpha = 0.0;
 				uint world_value = sampleWorld(v_TexCoord * texture_size);
-				if(world_value < 3) {
-					inverse_alpha = value / 60000.0;// + blurred_value / 512000.0;
+				if(world_value < 32) {
+					inverse_alpha = value / (6.0 *  16000);// + blurred_value / 512000.0;
 				} else {
-					inverse_alpha = blurred_value / 35000.0;
+					inverse_alpha = blurred_value / (3.5 *  16000);
 				}
 				
-				if(inverse_alpha > 1.0)
-					inverse_alpha = 1.0;
+				inverse_alpha = max(0.0, inverse_alpha);
+				inverse_alpha = min(1.0, inverse_alpha);
 
-				// rgb *= inverse_alpha;
+				// inverse_alpha = inverse_alpha * inverse_alpha;
 
-				// out_Color = vec4(rgb.r, rgb.g, rgb.b, 1.0 - inverse_alpha);
-				out_Color = vec4(0, 0, 0, 1.0 - inverse_alpha);
+
+				float alpha = 1.0 - inverse_alpha;
+				// alpha = sin(1.5708 * alpha);
+				// alpha = 1 - 1.0 / (12 * alpha + 1.0) + 1 / 12.0;
+				// alpha = alpha * alpha;
+				alpha = alpha * alpha * alpha;
+				// alpha = (alpha * alpha + alpha) / 2.0;
+
+
+
+				// alpha = alpha * alpha;
+
+				out_Color = vec4(0, 0, 0, alpha);
 			}
 		)";
 	}
@@ -480,22 +492,27 @@ namespace glsl_helper
 				return normalize(vec2(-ray_dir.x * cosThetaT, -ray_dir.y * sinThetaT));
 			}
 
+
 			uniform vec2 player_pos;    // relative to the lighting texture, center of the screen but not center of lighting texture
 			float step_distance = .919191911919;
 			
 			const int max_ray_length = 512;
 			// const float ior_values[6] = float[6](1.0, 1.01, 1.33, 1.52, 1.62, 1.65);
 
-			// raycast from player_pos to the edge of the screen, 16000 invocations
+			float random(float seed) {
+			    return fract(sin(seed) * 43758.5453123);
+			}
+
+			// raycast from player_pos to the edge of the screen,  16000 invocations
 			layout(local_size_x = 1, local_size_y = 1) in;
 			void main() {
 				if(player_pos.x < 0.0 || player_pos.x > texture_size.x || player_pos.y < 0.0 || player_pos.y > texture_size.y) {
 					return;
 				}
 				int ray_index = int(gl_GlobalInvocationID.x);
-				float ray_decimal = float(ray_index) / float(16000);
-				float ray_angle = float(ray_index) / float(16000) * 2.0 * 3.1415926535897932384626433832795;
-				// uint hue_val = uint((float(ray_index) / 16000.0) * 4294967295.0);
+				float ray_decimal = float(ray_index) / float( 16000);
+				float ray_angle = ((float(ray_index) + random(ray_decimal)) / float( 16000)) * 2.0 * 3.1415926535897932384626433832795;
+				// uint hue_val = uint((float(ray_index) /  16000.0) * 4294967295.0);
 				vec2 ray_dir = vec2(cos(ray_angle), sin(ray_angle));
 
 				vec2 ray_pos = player_pos;
@@ -552,9 +569,6 @@ namespace glsl_helper
 							// }
 						}
 						else {
-							if(sample_v == 10) {
-								metal_bounces = 1;
-							}
 
 							uint surround_values = 0;
 							// for(int j = 0; j < 9; j++)
@@ -594,13 +608,16 @@ namespace glsl_helper
 							}
 							vec2 reflection = ray_dir - 2.0 * dot_val * normal_vec;
 
+
 							// Add a small random variation
-							float noise_scale = 0.62; 
+							float noise_scale = 0.69; 
 							reflection += noise_scale * ((ray_index % 100 - 50) / float(50.0));
 
-							ray_dir = reflection;
-							ray_pos += 2 * ray_dir;
-							if(sampleWorld(ray_pos) > 0) {
+							vec2 rrr = normalize(reflection);
+
+							ray_dir = rrr;
+							ray_pos += .5 * ray_dir;
+							if(sampleWorld(ray_pos) >= 32) {
 								break;
 							}
 							bounces++;
@@ -620,6 +637,7 @@ namespace glsl_helper
 					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  1); 
 					
 					// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy),  bounces > 0 ? 0.5 : 1); 
+					// if(bounces == 1)
 					if(bounces > 0)
 					{
 						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - 2 * refracted_bounces); 
@@ -758,65 +776,92 @@ namespace glsl_helper
 		// };
 		std::array<uint8_t, character_height * character_width> data = {
 			66, 66, 66, 66,
-			66, 64, 64, 66,
-			66, 64, 64, 66,
-			66, 64, 64, 66,
-			66, 64, 64, 66,
-			0, 64, 64, 0,
-			0, 64, 64, 0,
-			66, 64, 64, 66,
-			66, 64, 64, 66,
-			66, 64, 64, 66,
-			66, 64, 64, 66,
+			66, 68, 68, 66,
+			66, 68, 68, 66,
+			66, 68, 68, 66,
+			66, 69, 69, 66,
+			0, 69, 69, 0,
+			0, 69, 69, 0,
+			66, 69, 69, 66,
+			66, 68, 68, 66,
+			66, 68, 68, 66,
+			66, 68, 68, 66,
 			66, 66, 66, 66};
-			// 4,
-			// 5,
-			// 6,
-			// 7,
-			// 4,
-			// 5,
-			// 6,
-			// 7,
-			// 4,
-			// 5,
-			// 61,
-			// 37,
-			// 154,
-			// 52,
-			// 26,
-			// 7,
-			// 42,
-			// 5,
-			// 56,
-			// 7,
-			// 49,
-			// 56,
-			// 69,
-			// 74,
-			// 34,
-			// 54,
-			// 66,
-			// 7,
-			// 4,
-			// 5,
-			// 6,
-			// 87,
-			// 47,
-			// 43,
-			// 96,
-			// 78,
-			// 46,
-			// 51,
-			// 63,
-			// 77,
-			// 49,
-			// 50,
-			// 61,
-			// 17,
-			// 24,
-			// 15,
-			// 16,
-			// 17};
+
+		// 66, 66, 66, 66,
+		// 66, 64, 64, 66,
+		// 66, 64, 64, 66,
+		// 66, 64, 64, 66,
+		// 66, 64, 64, 66,
+		// 0, 64, 64, 0,
+		// 0, 64, 64, 0,
+		// 66, 64, 64, 66,
+		// 66, 64, 64, 66,
+		// 66, 64, 64, 66,
+		// 66, 64, 64, 66,
+		// 66, 66, 66, 66};
+
+		// game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE,
+		// game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE,
+		// game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE,
+		// game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK,
+		// game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK,
+		// game::tile_type::WHITE, game::tile_type::WHITE, game::tile_type::WHITE, game::tile_type::WHITE,
+		// game::tile_type::WHITE, game::tile_type::WHITE, game::tile_type::WHITE, game::tile_type::WHITE,
+		// game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK,
+		// game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK, game::tile_type::TRANS_PINK,
+		// game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE,
+		// game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE,
+		// game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE, game::tile_type::TRANS_BLUE};
+
+		// 4,
+		// 5,
+		// 6,
+		// 7,
+		// 4,
+		// 5,
+		// 6,
+		// 7,
+		// 4,
+		// 5,
+		// 61,
+		// 37,
+		// 154,
+		// 52,
+		// 26,
+		// 7,
+		// 42,
+		// 5,
+		// 56,
+		// 7,
+		// 49,
+		// 56,
+		// 69,
+		// 74,
+		// 34,
+		// 54,
+		// 66,
+		// 7,
+		// 4,
+		// 5,
+		// 6,
+		// 87,
+		// 47,
+		// 43,
+		// 96,
+		// 78,
+		// 46,
+		// 51,
+		// 63,
+		// 77,
+		// 49,
+		// 50,
+		// 61,
+		// 17,
+		// 24,
+		// 15,
+		// 16,
+		// 17};
 		// std::array<uint8_t, 24> data = {
 		// 	101,
 		// 	100,
@@ -876,6 +921,38 @@ namespace glsl_helper
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 4, 4, 0, GL_RED, GL_UNSIGNED_BYTE, data.data());
 		texture_map["projectile"] = texture;
+	}
+
+	
+	GLuint create_texture_from_data(std::string texture_name, const uint8_t *data, int width, int height)
+	{
+		if(texture_map.count(texture_name))
+		{
+			return texture_map[texture_name];
+		}
+		GLuint texture;
+		// Create a texture for the character
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
+		// Set texture options
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		// std::array<uint8_t, 16> data = {
+		// 	0, 7, 7, 0,
+		// 	7, 0, 0, 7,
+		// 	7, 0, 0, 7,
+		// 	0, 7, 7, 0};
+		// std::array<uint8_t, 16> data = {
+		// 	7,7,7,7
+		// };
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 4, 4, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+		texture_map[texture_name] = texture;
+		return texture;
 	}
 }
 
@@ -975,38 +1052,3 @@ GLuint load_compute_shader(std::string shader_src)
 	return program;
 }
 
-void create_texture_from_data(GLuint texture_id, const uint8_t *data, int width, int height, int channels)
-{
-	// create texture
-	glGenTextures(1, &texture_id);
-	glBindTexture(GL_TEXTURE_2D, texture_id);
-
-	// set the texture wrapping/filtering options (on the currently bound texture object)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	// Set texture data to values from data
-	if (channels == 1)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
-	}
-	else
-	{
-		printf("Error: Unsupported number of channels: %d\n", channels);
-	}
-
-	// generate mipmaps for the currently bound texture
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	// unbind texture
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	// check for errors
-	GLenum err;
-	while ((err = glGetError()) != GL_NO_ERROR)
-	{
-		printf("OpenGL error: %d\n", err);
-	}
-}

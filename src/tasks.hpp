@@ -37,4 +37,26 @@ namespace game
 		update_tile_params(int x, int y, tile_type t) : x(x), y(y), m_tile_type(t) {}
 	};
 	void update_tile_task(void * parameters);
+
+
+	struct create_flying_creature_nest_params
+	{
+		int x, y;
+		create_flying_creature_nest_params(int x_pos, int y_pos) : x(x_pos), y(y_pos) {}
+	};
+	void create_flying_creature_nest_task(void *parameters);
+
+	struct flying_creature_eat_params
+	{
+		int x, y, ent;
+		flying_creature_eat_params(int x_pos, int y_pos, entity e) : x(x_pos), y(y_pos), ent(e) {}
+	};
+	void flying_creature_eat_task(void *parameters);
+
+	struct flying_creature_deposit_params
+	{
+		int x, y, ent;
+		flying_creature_deposit_params(int x_pos, int y_pos, entity e) : x(x_pos), y(y_pos), ent(e) {}
+	};
+	void flying_creature_deposit_task(void *parameters);
 }

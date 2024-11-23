@@ -14,7 +14,8 @@ namespace game
 		PLAYER = 1,
 		TERRAIN = 2,
 		PROJECTILE = 4,
-		DEBRIS = 8
+		DEBRIS = 8,
+		FLYING_CREATURE = 16
 	};
 
 	struct b2_user_data
@@ -69,6 +70,9 @@ namespace game
 		void stop_thread();
 
 		void update() {}
+		void add_dynamic_body(entity ent, b2Body * body);
+		void add_mesh(entity ent,  std::vector<std::pair<float, float>> mesh, b2fixture_types mesh_type);
+
 
 		void update(uint64_t time_to_step);
 

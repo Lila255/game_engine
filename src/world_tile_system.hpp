@@ -42,8 +42,7 @@ namespace game
 		std::array<chunk *, NUM_CHUNKS> tile_data_base{};
 		std::array<uint8_t, game::NUM_CHUNKS> modified_chunks;
 		std::array<chunk *, NUM_CHUNKS> tile_data_copy{};
-		// std::array<uint8_t, game::NUM_CHUNKS>  modified_chunks_1;
-		
+		// std::array<uint8_t, game::NUM_CHUNKS>  modified_chunks_1;		
 		
 		std::shared_mutex chunk_mutex_base;
 		std::shared_mutex chunk_mutex_copy;
@@ -73,8 +72,11 @@ namespace game
 		std::array<chunk *, NUM_CHUNKS> *get_chunks_base();
 		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *, NUM_CHUNKS> get_chunks_data();
 		std::vector<std::vector<std::pair<float, float>>> *create_outlines(int x, int y);
-		void delete_circle(int x, int y, int radius);
+		uint32_t delete_circle(int x, int y, int radius, std::unordered_set<uint8_t> tyle_deny_list);
 		std::array<uint8_t, game::NUM_CHUNKS> *get_modified_chunks();
 		void set_modified_chunk(int x, int y, uint8_t value);
+		bool find_tile_in_rect(std::pair<int, int> &result, int x, int y, int w, int h, std::unordered_set<uint8_t> tile_types);
+		// std::pair<int, int> get_tile_in_rect(int x, int y, int w, int h, std::unordered_set<uint8_t> tile_types);
+		std::string to_csv_string();
 	};
 }

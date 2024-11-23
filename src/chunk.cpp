@@ -5,49 +5,88 @@
 namespace game
 {
 	std::array<uint8_t, 256> is_solid_tile;
+	
 
-	void chunk::create_chunk()
+	void chunk::create_chunk(uint32_t x, uint32_t y)
 	{
+		chunk_x = x;
+		chunk_y = y;
+
 		for (int y = 0; y < CHUNK_SIZE; y++)
 		{
 			for (int x = 0; x < CHUNK_SIZE; x++)
 			{
-				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 20.0;
-				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 20.0;
+				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 32.0;
+				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 32.0;
 				double noise_1 = perlin_noise_1.noise2D_01(n_x, n_y);
 				double noise_2 = perlin_noise_2.noise2D_01(n_x, n_y);
 				double noise_3 = perlin_noise_3.noise2D_01(n_x, n_y);
 
-				if (noise_1 * noise_2 > .30)
-				// if (noise_1 + noise_2 > .970)
-				{ // solid
-					if (noise_2 > 0.725)
-					{
-						data[y][x] = game::STONE;
-					}
-					else
-					{
-						if (noise_3 > 0.758)
-						{
-							data[y][x] = game::SAND;
-						}
-						else
-						{
-							data[y][x] = game::DIRT;
-						}
-					}
-				}
-				else
+				// if (noise_1 * noise_2 > .30)
+				// // if (noise_1 + noise_2 > .970)
+				// { // solid
+				// 	if (noise_2 > 0.725)
+				// 	{
+				// 		data[y][x] = game::STONE;
+				// 	}
+				// 	else
+				// 	{
+				// 		if (noise_3 > 0.758)
+				// 		{
+				// 			data[y][x] = game::SAND;
+				// 		}
+				// 		else
+				// 		{
+				// 			data[y][x] = game::DIRT;
+				// 		}
+				// 	}
+				// }
+				// else
+				// {
+				// 	data[y][x] = game::AIR;
+				// }
+				// -===============- //
+				if ((((y / 5) % 195 == 0) || ((x / 5) % 255 == 0)))
 				{
 					data[y][x] = game::AIR;
 				}
+				else
+				{
+					if (noise_1 * noise_2 > .320)
+					// if (noise_1 + noise_2 > .970)
+					{ // solid
+						if (noise_2 > 0.725)
+						{
+							data[y][x] = game::STONE;
+						}
+						else
+						{
+							if (noise_3 > 0.758)
+							{
+								data[y][x] = game::SAND;
+							}
+							else
+							{
+								data[y][x] = game::DIRT;
+							}
+						}
+					}
+					else
+					{
+						data[y][x] = game::AIR;
+					}
+				}
+				// else
+				// {
+				// 	data[y][x] = game::AIR;
+				// }
+				// -===============- //
 				// data[y][x] = game::AIR;
-
-				// data[y][x] = noise_1 > 0.6 ? 1 : 0;
-
+				// -===============- //
 				// if(((x / 15) % 2 == 0) && ((y / 15) % 2 == 0) && (x / 30) % 2 == 0){
 				// if(((x / 15) % 2 == 0) && ((y / 15) % 4 == 0) && (x / 30) % 2 == 0){
-					
+				// -===============- //
+
 				// 	data[y][x] = game::STONE;
 				// }
 				// else if(((x / 15) % 2 == 0) && ((y / 15) % 4 == 2) && (x / 30) % 2 == 0)
@@ -426,7 +465,7 @@ namespace game
 		return outline;
 	}
 
-	const int adjacent_tiles_dx[4] = {-1, 0, 0, -1};	// bottom left, bottom right, top right, top left
+	const int adjacent_tiles_dx[4] = {-1, 0, 0, -1}; // bottom left, bottom right, top right, top left
 	const int adjacent_tiles_dy[4] = {0, 0, -1, -1};
 	const int offset[4] = {1, 2, 4, 8};
 	uint16_t chunk::get_tile_edginess(int x, int y)
@@ -538,7 +577,7 @@ namespace game
 		}
 	};
 
-	void chunk::create_outlines(std::vector<std::vector<std::pair<float, float>>> * chunk_outline)
+	void chunk::create_outlines(std::vector<std::vector<std::pair<float, float>>> *chunk_outline)
 	{
 		// start time
 		auto start = std::chrono::high_resolution_clock::now();
@@ -551,31 +590,31 @@ namespace game
 			{
 				// if (data[y][x] >= SOLID_TILE_START_INDEX)
 				// {
-					uint16_t edginess = get_tile_edginess(x, y);
-					for (tile_linef line : edges_lines[edginess])
+				uint16_t edginess = get_tile_edginess(x, y);
+				for (tile_linef line : edges_lines[edginess])
+				{
+					line.x1 += x;
+					line.y1 += y;
+					line.x2 += x;
+					line.y2 += y;
+					if (!edge_lines.count({line.x1, line.y1}))
 					{
-						line.x1 += x;
-						line.y1 += y;
-						line.x2 += x;
-						line.y2 += y;
-						if (!edge_lines.count({line.x1, line.y1}))
-						{
-							edge_lines[{line.x1, line.y1}] = line_mapping_pair({line.x2, line.y2});
+						edge_lines[{line.x1, line.y1}] = line_mapping_pair({line.x2, line.y2});
 
-							if (!edge_lines_reverse.count({line.x2, line.y2}))
-								edge_lines_reverse[{line.x2, line.y2}] = line_mapping_pair({line.x1, line.y1});
-							else
-								edge_lines_reverse[{line.x2, line.y2}].insert({line.x1, line.y1});
-						}
+						if (!edge_lines_reverse.count({line.x2, line.y2}))
+							edge_lines_reverse[{line.x2, line.y2}] = line_mapping_pair({line.x1, line.y1});
 						else
-						{
-							edge_lines[{line.x1, line.y1}].insert({line.x2, line.y2});
-							if (!edge_lines_reverse.count({line.x2, line.y2}))
-								edge_lines_reverse[{line.x2, line.y2}] = line_mapping_pair({line.x1, line.y1});
-							else
-								edge_lines_reverse[{line.x2, line.y2}].insert({line.x1, line.y1});
-						}
+							edge_lines_reverse[{line.x2, line.y2}].insert({line.x1, line.y1});
 					}
+					else
+					{
+						edge_lines[{line.x1, line.y1}].insert({line.x2, line.y2});
+						if (!edge_lines_reverse.count({line.x2, line.y2}))
+							edge_lines_reverse[{line.x2, line.y2}] = line_mapping_pair({line.x1, line.y1});
+						else
+							edge_lines_reverse[{line.x2, line.y2}].insert({line.x1, line.y1});
+					}
+				}
 				// }
 			}
 		}
@@ -625,7 +664,7 @@ namespace game
 				}
 				else
 				{
- 					printf("Error: outline ended prematurely\n");
+					printf("Error: outline ended prematurely\n");
 					break;
 				}
 
@@ -684,7 +723,7 @@ namespace game
 					outline_triangles.push_back(std::make_pair((float)(p3->x + chunk_x * CHUNK_SIZE), (float)(p3->y + chunk_y * CHUNK_SIZE)));
 				}
 
-				chunk_outline -> push_back(outline_triangles);
+				chunk_outline->push_back(outline_triangles);
 				for (p2t::Point *p : outline_points)
 					delete p;
 				delete cdt;
@@ -700,13 +739,12 @@ namespace game
 		// last_time = std::chrono::high_resolution_clock::now();
 		// printf("		triangulating: %f mis\n", running_duration.count() / 1000.0);
 
-
 		// auto end = std::chrono::high_resolution_clock::now();
 		// auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		// printf("	Time taken by entire function: %d\n", duration.count());
 	}
 
-	bool chunk::delete_circle(int x, int y, int radius)
+	uint32_t chunk::delete_circle(int x, int y, int radius, std::unordered_set<uint8_t> tile_deny_list)
 	{
 		if (radius == 0)
 			return false;
@@ -721,25 +759,59 @@ namespace game
 		if (x0 > CHUNK_SIZE || y0 > CHUNK_SIZE || x1 < 0 || y1 < 0)
 			return false;
 
+		uint32_t tiles_deleted = 0;
+
 		for (int y = y0; y <= y1; y++)
 		{
 			for (int x = x0; x <= x1; x++)
 			{
 				if (x < 0 || y < 0 || x >= CHUNK_SIZE || y >= CHUNK_SIZE)
 					continue;
-				if(data[y][x] == tile_type::BEDROCK || data[y][x] < SOLID_TILE_START_INDEX)
+				if (data[y][x] == tile_type::BEDROCK || data[y][x] < SOLID_TILE_START_INDEX)
+					continue;
+				if (tile_deny_list.count(data[y][x]))
 					continue;
 				if ((x - local_x) * (x - local_x) + (y - local_y) * (y - local_y) <= radius * radius)
 				{
-					if(game_engine::in_set(data[y][x], ROOT, WOOD, LEAF))
+					if (game_engine::in_set(data[y][x], ROOT, WOOD, LEAF))
 					{
 						data[y][x] = EMBER;
-					} else {
+					}
+					else
+					{
 						data[y][x] = TEMPORARY_SMOKE;
 					}
+					tiles_deleted++;
 				}
 			}
 		}
-		return true;
+		return tiles_deleted;
+	}
+
+	bool chunk::find_tile_in_rect(std::pair<int, int> &result, int x, int y, int w, int h, std::unordered_set<uint8_t> tile_types)
+	{
+		// check if the rect is in the chunk
+		if (x / CHUNK_SIZE <= chunk_x && (x + w) / CHUNK_SIZE >= chunk_x && y / CHUNK_SIZE <= chunk_y && (y + h) / CHUNK_SIZE >= chunk_y)
+		{
+			int local_x = x - chunk_x * CHUNK_SIZE;
+			int local_y = y - chunk_y * CHUNK_SIZE;
+
+			for (int i = local_y; i < local_y + h; i++)
+			{
+				for (int j = local_x; j < local_x + w; j++)
+				{
+					if (j < 0 || i < 0 || j >= CHUNK_SIZE || i >= CHUNK_SIZE)
+						continue;
+					if (tile_types.count(data[i][j]))
+					{
+						result = std::make_pair(j + chunk_x * CHUNK_SIZE, i + chunk_y * CHUNK_SIZE);
+						return true;
+					}
+				}
+			}
+
+		}
+
+		return false;
 	}
 }
