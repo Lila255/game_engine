@@ -410,7 +410,8 @@ namespace glsl_helper
 				float inverse_alpha = 0.0;
 				uint world_value = sampleWorld(v_TexCoord * texture_size);
 				if(world_value < 32) {
-					inverse_alpha = value / (6.0 *  16000);// + blurred_value / 512000.0;
+					// inverse_alpha = value / (6.0 *  16000);// + blurred_value / 512000.0;
+					inverse_alpha = value / (6.0 *  16000) + blurred_value / 1896000.0;
 				} else {
 					inverse_alpha = blurred_value / (3.5 *  16000);
 				}
@@ -425,7 +426,7 @@ namespace glsl_helper
 				// alpha = sin(1.5708 * alpha);
 				// alpha = 1 - 1.0 / (12 * alpha + 1.0) + 1 / 12.0;
 				// alpha = alpha * alpha;
-				alpha = alpha * alpha * alpha;
+				// alpha = alpha * alpha * alpha;
 				// alpha = (alpha * alpha + alpha) / 2.0;
 
 

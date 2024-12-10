@@ -615,17 +615,17 @@ namespace game
 			chunk_entities[chunk] = game_engine::game_engine_pointer->create_entity();
 		}
 
-		// create solid border around world
-		for (int x = 0; x < CHUNKS_WIDTH * CHUNK_SIZE; x++)
-		{
-			set_tile_at_no_lock(x, 0, BEDROCK);
-			set_tile_at_no_lock(x, CHUNKS_WIDTH * CHUNK_SIZE - 1, BEDROCK);
-		}
-		for (int y = 0; y < CHUNKS_WIDTH * CHUNK_SIZE; y++)
-		{
-			set_tile_at_no_lock(0, y, BEDROCK);
-			set_tile_at_no_lock(CHUNKS_WIDTH * CHUNK_SIZE - 1, y, BEDROCK);
-		}
+		// // create solid border around world
+		// for (int x = 0; x < CHUNKS_WIDTH * CHUNK_SIZE; x++)
+		// {
+		// 	set_tile_at_no_lock(x, 0, BEDROCK);
+		// 	set_tile_at_no_lock(x, CHUNKS_WIDTH * CHUNK_SIZE - 1, BEDROCK);
+		// }
+		// for (int y = 0; y < CHUNKS_WIDTH * CHUNK_SIZE; y++)
+		// {
+		// 	set_tile_at_no_lock(0, y, BEDROCK);
+		// 	set_tile_at_no_lock(CHUNKS_WIDTH * CHUNK_SIZE - 1, y, BEDROCK);
+		// }
 	}
 
 	entity world_tile_system::get_chunk_entity(int x, int y)

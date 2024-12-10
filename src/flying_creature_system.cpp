@@ -30,7 +30,7 @@ namespace game
 	{
 		std::unordered_map<uint64_t, std::string> * task_names = new std::unordered_map<uint64_t, std::string>();
 		
-		task_scheduler_pointer -> add_task({game_engine::task_scheduler::print_task_counter, 0});
+		// task_scheduler_pointer -> add_task({game_engine::task_scheduler::print_task_counter, 0});
 		std::vector<entity> entities = flying_creatures.get_entities();
 
 

@@ -17,6 +17,10 @@ namespace game
 	static siv::PerlinNoise perlin_noise_3(perlin_noise_seed + 2);
 
 	const uint16_t CHUNK_SIZE = 100; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
+	const uint8_t CHUNK_FRAMES = 16; // Number of frames the current chunk has
+	
+	const uint16_t NUM_CHUNKS = 16; 
+	const uint16_t CHUNKS_WIDTH = 4;
 	
 	// enum for tile types
 	enum tile_type
@@ -239,12 +243,13 @@ namespace game
 	struct chunk
 	{
 	public:
-		std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> data;
+		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES> data;
 		uint16_t chunk_x;
 		uint16_t chunk_y;
 		entity *background_entity;
 		entity *foreground_entity;
 		entity *light_entity;
+		uint8_t current_frame = 0;
 		// int dx[8] = {0, 1, 1, 1, 0, -1, -1, -1};
 		// int dy[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
 		const int8_t dx[4] = {0, 1, 0, -1};
@@ -252,7 +257,7 @@ namespace game
 		chunk() = default;
 		chunk(uint16_t x, uint16_t y) : chunk_x(x), chunk_y(y)
 		{
-			data = std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
+			data = std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES>{};
 		}
 
 		void create_chunk(uint32_t x, uint32_t y);
@@ -285,6 +290,7 @@ namespace game
 
 		uint32_t delete_circle(int x, int y, int radius, std::unordered_set<uint8_t> tile_deny_list);
 		bool find_tile_in_rect(std::pair<int, int> &result, int x, int y, int w, int h, std::unordered_set<uint8_t> tile_types);
+		void update_frame(uint8_t frame);
 	private:
 		uint16_t get_tile_edginess(int x, int y);
 		

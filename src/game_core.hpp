@@ -18,6 +18,7 @@
 #include "box2d_system.hpp"
 #include "tree_system.hpp"
 #include "flying_creature_system.hpp"
+#include "chunk_frame_system.hpp"
 
 #include "tasks.hpp"
 

@@ -11,8 +11,6 @@ namespace game
 	// extern const uint16_t NUM_CHUNKS; // 3x3 chunks in world
 	// extern const uint16_t CHUNKS_WIDTH;
 
-	const uint16_t NUM_CHUNKS = 16; 
-	const uint16_t CHUNKS_WIDTH = 4;
 
 	// coordinate pair with hash
 	struct tile_coord

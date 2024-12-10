@@ -349,12 +349,17 @@ void run_game(GLFWwindow *window)
 	game::flying_creature_system *flying_creature_sys = new game::flying_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys);
 	eng.add_system(game_engine::family::type<game::flying_creature_system>(), flying_creature_sys);
 
+	game::chunk_frame_system * chunk_frame_sys = new game::chunk_frame_system(box2d_sys, render_sys, world_sys);
+	eng.add_system(game_engine::family::type<game::chunk_frame_system>(), chunk_frame_sys);
+
 
 	std::thread tree_thread(&game::tree_system::start, tree_sys);
 
 
 	box2d_sys->world -> SetContactListener(new game::b2_contact_listener());
 	world_sys->generate_world();
+
+
 
 	// printf("tiles:\n%s\n", world_sys->to_csv_string().c_str());
 	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
@@ -653,6 +658,7 @@ void run_game(GLFWwindow *window)
 	std::thread world_thread(start_physics_thread);
 	std::thread box_2d_thread(&game::box2d_system::start_thread, box2d_sys);
 	std::thread flying_creature_thread(&game::flying_creature_system::start_thread, flying_creature_sys);
+	// std::thread chunk_frame_thread(&game::chunk_frame_system::start_thread, chunk_frame_sys);
 
 	uint16_t saved_light_textures = 0;
 	uint16_t light_texture_index = 0;

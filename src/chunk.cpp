@@ -12,102 +12,150 @@ namespace game
 		chunk_x = x;
 		chunk_y = y;
 
-		for (int y = 0; y < CHUNK_SIZE; y++)
+		for(int z = 0; z < CHUNK_FRAMES; z++)
 		{
-			for (int x = 0; x < CHUNK_SIZE; x++)
+			for (int y = 0; y < CHUNK_SIZE; y++)
 			{
-				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 32.0;
-				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 32.0;
-				double noise_1 = perlin_noise_1.noise2D_01(n_x, n_y);
-				double noise_2 = perlin_noise_2.noise2D_01(n_x, n_y);
-				double noise_3 = perlin_noise_3.noise2D_01(n_x, n_y);
+				for (int x = 0; x < CHUNK_SIZE; x++)
+				{
+					double n_x = (x + chunk_x * game::CHUNK_SIZE) / 32.0;
+					double n_y = (y + chunk_y * game::CHUNK_SIZE) / 32.0;
+					double n_z = (z + chunk_x * game::CHUNK_SIZE) / 64.0;
+					double noise_1 = perlin_noise_1.noise3D_01(n_x, n_y, n_z);
+					double noise_2 = perlin_noise_2.noise3D_01(n_x, n_y, n_z);
+					double noise_3 = perlin_noise_3.noise3D_01(n_x, n_y, n_z);
 
-				// if (noise_1 * noise_2 > .30)
-				// // if (noise_1 + noise_2 > .970)
-				// { // solid
-				// 	if (noise_2 > 0.725)
-				// 	{
-				// 		data[y][x] = game::STONE;
-				// 	}
-				// 	else
-				// 	{
-				// 		if (noise_3 > 0.758)
-				// 		{
-				// 			data[y][x] = game::SAND;
-				// 		}
-				// 		else
-				// 		{
-				// 			data[y][x] = game::DIRT;
-				// 		}
-				// 	}
-				// }
-				// else
-				// {
-				// 	data[y][x] = game::AIR;
-				// }
-				// -===============- //
-				if ((((y / 5) % 195 == 0) || ((x / 5) % 255 == 0)))
-				{
-					data[y][x] = game::AIR;
-				}
-				else
-				{
-					if (noise_1 * noise_2 > .320)
-					// if (noise_1 + noise_2 > .970)
-					{ // solid
-						if (noise_2 > 0.725)
-						{
-							data[y][x] = game::STONE;
-						}
-						else
-						{
-							if (noise_3 > 0.758)
-							{
-								data[y][x] = game::SAND;
-							}
-							else
-							{
-								data[y][x] = game::DIRT;
-							}
-						}
+					// if (noise_1 * noise_2 > .30)
+					// // if (noise_1 + noise_2 > .970)
+					// { // solid
+					// 	if (noise_2 > 0.725)
+					// 	{
+					// 		data[y][x] = game::STONE;
+					// 	}
+					// 	else
+					// 	{
+					// 		if (noise_3 > 0.758)
+					// 		{
+					// 			data[y][x] = game::SAND;
+					// 		}
+					// 		else
+					// 		{
+					// 			data[y][x] = game::DIRT;
+					// 		}
+					// 	}
+					// }
+					// else
+					// {
+					// 	data[y][x] = game::AIR;
+					// }
+					// -===============- //
+					if ((((y / 5) % 195 == 0) || ((x / 5) % 255 == 0)))
+					{
+						data[z][y][x] = game::AIR;
 					}
 					else
 					{
-						data[y][x] = game::AIR;
+						if (noise_1 * noise_2 > .320)
+						// if (noise_1 + noise_2 > .970)
+						{ // solid
+							if (noise_2 > 0.725)
+							{
+								data[z][y][x] = game::STONE;
+							}
+							else
+							{
+								if (noise_3 > 0.758)
+								{
+									data[z][y][x] = game::SAND;
+								}
+								else
+								{
+									data[z][y][x] = game::DIRT;
+								}
+							}
+						}
+						else
+						{
+							data[z][y][x] = game::AIR;
+						}
+					}
+					// else
+					// {
+					// 	data[y][x] = game::AIR;
+					// }
+					// -===============- //
+					// data[y][x] = game::AIR;
+					// -===============- //
+					// if(((x / 15) % 2 == 0) && ((y / 15) % 2 == 0) && (x / 30) % 2 == 0){
+					// if(((x / 15) % 2 == 0) && ((y / 15) % 4 == 0) && (x / 30) % 2 == 0){
+					// -===============- //
+
+					// 	data[y][x] = game::STONE;
+					// }
+					// else if(((x / 15) % 2 == 0) && ((y / 15) % 4 == 2) && (x / 30) % 2 == 0)
+					// {
+					// 	data[y][x] = game::SAND;
+					// }
+					// else {
+					// 	data[y][x] = game::AIR;
+					// }
+				}
+			}
+
+			// spawn some grass
+			for (int y = 1; y < CHUNK_SIZE; y++)
+			{
+				for (int x = 0; x < CHUNK_SIZE; x++)
+				{
+					if (data[z][y][x] == game::DIRT && data[z][y - 1][x] == game::AIR)
+					{
+						if (rand() % 100 < 10)
+							data[z][y][x] = game::GRASS;
 					}
 				}
-				// else
-				// {
-				// 	data[y][x] = game::AIR;
-				// }
-				// -===============- //
-				// data[y][x] = game::AIR;
-				// -===============- //
-				// if(((x / 15) % 2 == 0) && ((y / 15) % 2 == 0) && (x / 30) % 2 == 0){
-				// if(((x / 15) % 2 == 0) && ((y / 15) % 4 == 0) && (x / 30) % 2 == 0){
-				// -===============- //
-
-				// 	data[y][x] = game::STONE;
-				// }
-				// else if(((x / 15) % 2 == 0) && ((y / 15) % 4 == 2) && (x / 30) % 2 == 0)
-				// {
-				// 	data[y][x] = game::SAND;
-				// }
-				// else {
-				// 	data[y][x] = game::AIR;
-				// }
 			}
-		}
 
-		// spawn some grass
-		for (int y = 1; y < CHUNK_SIZE; y++)
-		{
-			for (int x = 0; x < CHUNK_SIZE; x++)
+					// create solid border around world
+			// for (int x = 0; x < CHUNKS_WIDTH * CHUNK_SIZE; x++)
+			// {
+			// 	set_tile_at_no_lock(x, 0, BEDROCK);
+			// 	set_tile_at_no_lock(x, CHUNKS_WIDTH * CHUNK_SIZE - 1, BEDROCK);
+			// }
+			// for (int y = 0; y < CHUNKS_WIDTH * CHUNK_SIZE; y++)
+			// {
+			// 	set_tile_at_no_lock(0, y, BEDROCK);
+			// 	set_tile_at_no_lock(CHUNKS_WIDTH * CHUNK_SIZE - 1, y, BEDROCK);
+			// }
+			if(chunk_x == 0 || chunk_x == CHUNK_SIZE - 1 || chunk_y == 0 || chunk_y == CHUNK_SIZE - 1)
 			{
-				if (data[y][x] == game::DIRT && data[y - 1][x] == game::AIR)
+				if(chunk_x == 0)
 				{
-					if (rand() % 100 < 10)
-						data[y][x] = game::GRASS;
+					for(int i = 0; i < CHUNK_SIZE; i++)
+					{
+						data[z][i][0] = game::BEDROCK;
+					}
+				}
+				else if(chunk_x == CHUNKS_WIDTH - 1)
+				{
+					for(int i = 0; i < CHUNK_SIZE; i++)
+					{
+						data[z][i][CHUNK_SIZE - 1] = game::BEDROCK;
+					}
+				}
+
+				if(chunk_y == 0)
+				{
+					for(int i = 0; i < CHUNK_SIZE; i++)
+					{
+						data[z][0][i] = game::BEDROCK;
+					}
+				} 
+				else if(chunk_y == CHUNKS_WIDTH - 1)
+				{
+					for(int i = 0; i < CHUNK_SIZE; i++)
+					{
+						data[z][CHUNK_SIZE - 1][i] = game::BEDROCK;
+					}
 				}
 			}
 		}
@@ -128,34 +176,44 @@ namespace game
 
 	std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *chunk::get_data()
 	{
-		return &data;
+			return &data[current_frame];
 	}
 
+	/// @brief Set the tile at the given x and y coordinates
+	/// This does not lock
+	/// @param x 
+	/// @param y 
+	/// @param value 
 	void chunk::set_tile(int x, int y, uint8_t value)
 	{
 		if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE)
-			data[y][x] = value;
+			data[current_frame][y][x] = value;
 	}
 
+	/// @brief 
+	/// This does not lock
+	/// @param x 
+	/// @param y 
+	/// @return 
 	uint8_t chunk::get_tile(int x, int y)
 	{
 		if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE)
-			return data[y][x];
+			return data[current_frame][y][x];
 		else
 			return 0;
 	}
 
 	bool chunk::isBoundaryTile(int x, int y)
 	{
-		uint16_t rows = (uint16_t)data.size();
-		uint16_t cols = (uint16_t)data[0].size();
+		uint16_t rows = (uint16_t)data[current_frame].size();
+		uint16_t cols = (uint16_t)data[current_frame][0].size();
 		for (int i = -1; i <= 1; i++)
 		{
 			for (int j = -1; j <= 1; j++)
 			{
 				int newX = x + i;
 				int newY = y + j;
-				if (newX < 0 || newX >= cols || newY < 0 || newY >= rows || data[newY][newX] == 0)
+				if (newX < 0 || newX >= cols || newY < 0 || newY >= rows || data[current_frame][newY][newX] == 0)
 				{
 					return true;
 				}
@@ -168,8 +226,8 @@ namespace game
 	{
 		// check N, NE, E, SE, S, SW, W, NW
 		// The first direction that is a boundary tile is the next boundary tile
-		uint16_t rows = (uint16_t)data.size();
-		uint16_t cols = (uint16_t)data[0].size();
+		uint16_t rows = (uint16_t)data[current_frame].size();
+		uint16_t cols = (uint16_t)data[current_frame][0].size();
 		int newX;
 		int newY;
 		for (int i = 0; i < sizeof(dx); i++)
@@ -181,7 +239,7 @@ namespace game
 			{
 				continue;
 			}
-			if (newX >= 0 && newX < cols && newY >= 0 && newY < rows && data[newY][newX] > 0 && isBoundaryTile(newX, newY))
+			if (newX >= 0 && newX < cols && newY >= 0 && newY < rows && data[current_frame][newY][newX] > 0 && isBoundaryTile(newX, newY))
 			{
 				return std::make_pair(newX, newY);
 			}
@@ -236,21 +294,21 @@ namespace game
 			if (y1 == 0 && x1 == 0)
 			{
 				// top left of chunk down line
-				return data[y1][x1];
+				return data[current_frame][y1][x1];
 			}
 			if (x1 == 0)
 			{
 				// edge of chunk (left side)
-				return data[y1][x1];
+				return data[current_frame][y1][x1];
 			}
 
 			if (x1 == CHUNK_SIZE)
 			{
 				// edge of chunk (right side)
-				return data[y1][x1 - 1];
+				return data[current_frame][y1][x1 - 1];
 			}
 
-			return data[y1][x1] && !data[y1][x1 - 1] || !data[y1][x1] && data[y1][x1 - 1];
+			return data[current_frame][y1][x1] && !data[current_frame][y1][x1 - 1] || !data[current_frame][y1][x1] && data[current_frame][y1][x1 - 1];
 		}
 		else if (y1 == y2)
 		{
@@ -258,20 +316,20 @@ namespace game
 			if (x1 == 0 && y1 == 0)
 			{
 				// top left right line
-				return data[y1][x1];
+				return data[current_frame][y1][x1];
 			}
 			if (y1 == 0)
 			{
 				// edge of chunk (top side)
-				return data[y1][x1];
+				return data[current_frame][y1][x1];
 			}
 			if (y1 == CHUNK_SIZE)
 			{
 				// edge of chunk (bottom side)
-				return data[y1 - 1][x1];
+				return data[current_frame][y1 - 1][x1];
 			}
 
-			return data[y1][x1] && !data[y1 - 1][x1] || !data[y1][x1] && data[y1 - 1][x1];
+			return data[current_frame][y1][x1] && !data[current_frame][y1 - 1][x1] || !data[current_frame][y1][x1] && data[current_frame][y1 - 1][x1];
 		}
 
 		// int x1 = l.x1;
@@ -379,19 +437,19 @@ namespace game
 
 	bool chunk::is_edge(int x, int y)
 	{
-		if (!data[y][x])
+		if (!data[current_frame][y][x])
 			return false;
 
 		if (x == 0 || x == CHUNK_SIZE - 1 || y == 0 || y == CHUNK_SIZE - 1)
 		{
-			return data[y][x];
+			return data[current_frame][y][x];
 		}
 
 		for (int i = 0; i < 4; i++)
 		{
 			for (int j = 0; j < 4; j++)
 			{
-				if (data[y + dy[i]][x + dx[j]] == 0)
+				if (data[current_frame][y + dy[i]][x + dx[j]] == 0)
 					return true;
 			}
 		}
@@ -481,7 +539,7 @@ namespace game
 				continue;
 			}
 			// if (data[adjacent_y][adjacent_x] >= SOLID_TILE_START_INDEX)
-			if (is_solid_tile[data[adjacent_y][adjacent_x]])
+			if (is_solid_tile[data[current_frame][adjacent_y][adjacent_x]])
 			{
 				edginess += offset[i];
 			}
@@ -767,19 +825,19 @@ namespace game
 			{
 				if (x < 0 || y < 0 || x >= CHUNK_SIZE || y >= CHUNK_SIZE)
 					continue;
-				if (data[y][x] == tile_type::BEDROCK || data[y][x] < SOLID_TILE_START_INDEX)
+				if (data[current_frame][y][x] == tile_type::BEDROCK || data[current_frame][y][x] < SOLID_TILE_START_INDEX)
 					continue;
-				if (tile_deny_list.count(data[y][x]))
+				if (tile_deny_list.count(data[current_frame][y][x]))
 					continue;
 				if ((x - local_x) * (x - local_x) + (y - local_y) * (y - local_y) <= radius * radius)
 				{
-					if (game_engine::in_set(data[y][x], ROOT, WOOD, LEAF))
+					if (game_engine::in_set(data[current_frame][y][x], ROOT, WOOD, LEAF))
 					{
-						data[y][x] = EMBER;
+						data[current_frame][y][x] = EMBER;
 					}
 					else
 					{
-						data[y][x] = TEMPORARY_SMOKE;
+						data[current_frame][y][x] = TEMPORARY_SMOKE;
 					}
 					tiles_deleted++;
 				}
@@ -802,7 +860,7 @@ namespace game
 				{
 					if (j < 0 || i < 0 || j >= CHUNK_SIZE || i >= CHUNK_SIZE)
 						continue;
-					if (tile_types.count(data[i][j]))
+					if (tile_types.count(data[current_frame][i][j]))
 					{
 						result = std::make_pair(j + chunk_x * CHUNK_SIZE, i + chunk_y * CHUNK_SIZE);
 						return true;
@@ -814,4 +872,10 @@ namespace game
 
 		return false;
 	}
+
+	void chunk::update_frame(uint8_t frame)
+	{
+		current_frame = frame;
+	}
+
 }
