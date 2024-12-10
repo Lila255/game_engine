@@ -411,9 +411,9 @@ namespace glsl_helper
 				uint world_value = sampleWorld(v_TexCoord * texture_size);
 				if(world_value < 32) {
 					// inverse_alpha = value / (6.0 *  16000);// + blurred_value / 512000.0;
-					inverse_alpha = value / (6.0 *  16000) + blurred_value / 1896000.0;
+					inverse_alpha = value / (4.0 *  16000) + blurred_value / 1896000.0;
 				} else {
-					inverse_alpha = blurred_value / (3.5 *  16000);
+					inverse_alpha = blurred_value / (2.5 *  16000);
 				}
 				
 				inverse_alpha = max(0.0, inverse_alpha);

@@ -157,7 +157,7 @@ namespace game
 		
 		game::flying_creature_system *flying_creature_sys = (game::flying_creature_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::flying_creature_system>()));
 
-		for(int i = 0; i < 20; i++)
+		for(int i = 0; i < 8; i++)
 		{
 			entity e = game_engine::game_engine_pointer->create_entity();
 			flying_creature_sys -> create_flying_creature(e, params->x + rand() % 10 - 5, params->y + rand() % 10 - 5, game::flying_creature_type::BEE);
@@ -182,7 +182,186 @@ namespace game
 		b2d_mutex.unlock();
 	}
 
-	
+	// check 8 directions
+	int dx[] = {0,   1, 1, 1, 0, -1, -1, -1};
+	int dy[] = {-1, -1, 0, 1, 1,  1,  0, -1};
+	std::pair<int, int> find_creature_nest_end(std::pair<int, int> start_tile)
+	{
+		world_tile_system *world_tiles = ((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()));
+		std::queue<std::pair<int, int>> tiles_to_check;
+		std::unordered_set<std::pair<int, int>, chunk_coord_pair_hash> checked_tiles;
+
+		tiles_to_check.push(start_tile);
+
+
+		while(tiles_to_check.size())
+		{
+			std::pair<int, int> current_tile = tiles_to_check.front();
+			tiles_to_check.pop();
+			if(checked_tiles.count(current_tile))
+				continue;
+			
+			checked_tiles.insert(current_tile);
+
+			if(world_tiles->get_tile_at(current_tile.first, current_tile.second) != WAX)
+			{
+				continue;
+			}
+
+			for(int i = 0; i < 8; i++)
+			{
+				std::pair<int, int> new_tile = {current_tile.first + dx[i], current_tile.second + dy[i]};
+
+				if(!checked_tiles.count(new_tile))
+				{
+					if(world_tiles->get_tile_at(new_tile.first, new_tile.second) == WAX)
+					{
+						bool found_next_tiles = false;
+
+						std::pair<int, int> same_dir_tile = {new_tile.first + dx[i], new_tile.second + dy[i]};
+						if(world_tiles->get_tile_at(same_dir_tile.first, same_dir_tile.second) == WAX)
+						{
+							tiles_to_check.push(new_tile);
+							found_next_tiles = true;
+						}
+						uint8_t right_turn_index = (i + 1) % 8;
+						uint8_t left_turn_index = (i + 7) % 8;
+						std::pair<int, int> right_turn_tile = {new_tile.first + dx[right_turn_index], new_tile.second + dy[right_turn_index]};
+
+						if(world_tiles->get_tile_at(right_turn_tile.first, right_turn_tile.second) == WAX)
+						{
+							tiles_to_check.push(new_tile);
+							found_next_tiles = true;
+						}
+						
+						std::pair<int, int> left_turn_tile = {new_tile.first + dx[left_turn_index], new_tile.second + dy[left_turn_index]};
+
+						if(world_tiles->get_tile_at(left_turn_tile.first, left_turn_tile.second) == WAX)
+						{
+							tiles_to_check.push(new_tile);
+							found_next_tiles = true;
+						}
+
+						if(!found_next_tiles)
+						{
+							return new_tile;
+						}
+					}
+				}
+			}
+		}
+		return start_tile;
+	}
+
+	const int nest_wall_length = 10;
+
+	std::pair<int, int> place_creature_nest_tile(tile_type type, std::pair<int, int> end_tile)
+	{
+		world_tile_system *world_tiles = ((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()));
+
+		int8_t direction = -1;
+		for(int i = 0; i < 8; i++)
+		{
+			if(world_tiles->get_tile_at(end_tile.first + dx[i], end_tile.second + dy[i]) == WAX)
+			{
+				direction = i;
+				break;
+			}
+		}
+		
+		if(direction == -1)
+		{
+			world_tiles->set_tile_at_with_lock(end_tile.first, end_tile.second - 1, type);
+			return {end_tile.first, end_tile.second - 1};
+		}
+
+		uint8_t tile_count = 1;
+		std::pair<int, int> current_tile = end_tile;
+		while(1)
+		{
+			std::pair<int, int> next_tile = {current_tile.first + dx[direction], current_tile.second + dy[direction]};
+			if(world_tiles->get_tile_at(next_tile.first, next_tile.second) == WAX)
+			{
+				current_tile = next_tile;
+				tile_count++;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		if(tile_count < nest_wall_length)
+		{
+			uint8_t opposite_direction = (direction + 4) % 8;
+			std::pair<int, int> opposite_tile = {end_tile.first + dx[opposite_direction], end_tile.second + dy[opposite_direction]};
+			world_tiles->set_tile_at_with_lock(opposite_tile.first, opposite_tile.second, type);
+			return opposite_tile;
+		}
+		else
+		{
+			uint8_t opposite_direction = (direction + 4) % 8;
+			uint8_t right_turn_index;// = (opposite_direction + 1) % 8;
+			uint8_t left_turn_index;// = (opposite_direction + 7) % 8;
+			if(direction == 0 || direction == 4)
+			{
+				right_turn_index = (opposite_direction + 1) % 8;
+				left_turn_index = (opposite_direction + 7) % 8;
+			}
+			else if(direction == 1)
+			{
+				right_turn_index = (opposite_direction + 2) % 8;
+				left_turn_index = (opposite_direction + 7) % 8;
+			}
+			else if(direction == 3)
+			{
+				right_turn_index = (opposite_direction + 1) % 8;
+				left_turn_index = (opposite_direction + 6) % 8;
+			}
+			else if(direction == 5)
+			{
+				right_turn_index = (opposite_direction + 2) % 8;
+				left_turn_index = (opposite_direction + 7) % 8;
+			}
+			else if(direction == 7)
+			{
+				right_turn_index = (opposite_direction + 1) % 8;
+				left_turn_index = (opposite_direction + 6) % 8;
+			}
+			else
+			{
+				right_turn_index = (opposite_direction + 2) % 8;
+				left_turn_index = (opposite_direction + 7) % 8;
+			}
+
+
+
+			std::pair<int, int> right_turn_tile = {end_tile.first + dx[right_turn_index], end_tile.second + dy[right_turn_index]};
+			std::pair<int, int> left_turn_tile = {end_tile.first + dx[left_turn_index], end_tile.second + dy[left_turn_index]};
+
+			if(world_tiles->get_tile_at(right_turn_tile.first, right_turn_tile.second) != WAX)
+			{
+				world_tiles->set_tile_at_with_lock(right_turn_tile.first, right_turn_tile.second, type);
+				return right_turn_tile;
+			}
+			else if(world_tiles->get_tile_at(left_turn_tile.first, left_turn_tile.second) != WAX)
+			{
+				world_tiles->set_tile_at_with_lock(left_turn_tile.first, left_turn_tile.second, type);
+				return left_turn_tile;
+			}
+			// else
+			// {
+			// 	uint8_t opposite_direction = (direction + 4) % 8;
+			// 	std::pair<int, int> opposite_tile = {end_tile.first + dx[opposite_direction], end_tile.second + dy[opposite_direction]};
+			// 	world_tiles->set_tile_at_with_lock(opposite_tile.first, opposite_tile.second, type);
+			// 	return opposite_tile;
+			// }
+				
+		}
+
+
+		return end_tile;
+	}
 
 	void flying_creature_deposit_task(void *parameters)
 	{
@@ -204,14 +383,26 @@ namespace game
 			world_tiles -> find_tile_in_rect(start_tile, params->x - 5, params->y - 5, 10, 10, {WAX});
 		}
 
-		printf("Depositing %d wax at %d, %d\n", c.get_collected_mass(), start_tile.first, start_tile.second);
+		std::pair<int, int> end_tile = find_creature_nest_end(start_tile);
 
 		for(int i = 0; i < c.get_collected_mass(); i++)
 		{
-			world_tiles->set_tile_at_with_search_and_lock(start_tile.first, start_tile.second, WAX);
+			std::pair<int, int> next = place_creature_nest_tile(WAX, end_tile);
+			if(next == end_tile)
+			{
+				break;
+			}
+			end_tile = next;
 		}
+
+		// printf("Depositing %d wax at %d, %d\n", c.get_collected_mass(), start_tile.first, start_tile.second);
+
+		// for(int i = 0; i < c.get_collected_mass(); i++)
+		// {
+		// 	world_tiles->set_tile_at_with_search_and_lock(start_tile.first, start_tile.second, WAX);
+		// }
 		c.set_collected_mass(0);
-		c.target_home = {params->x, params->y};
+		c.target_home = end_tile;
 	}
 	
 	
