@@ -321,6 +321,7 @@ namespace glsl_helper
 		return vert_1.str();
 	}
 
+	// Output white
 	std::string frag_1()
 	{
 		std::stringstream frag_1;
@@ -334,6 +335,7 @@ namespace glsl_helper
 		return frag_1.str();
 	}
 
+	// Output texture
 	std::string vert_2()
 	{
 		return
@@ -343,10 +345,11 @@ namespace glsl_helper
 			layout (location = 1) in vec2 texCoord;
 			uniform mat4 projection;
 			uniform mat4 view;
+			//uniform ivec2 texture_size; 
 			out vec2 v_TexCoord;
 			void main()
 			{
-    			v_TexCoord = texCoord;
+				v_TexCoord = texCoord;// * vec2(texture_size);
 				gl_Position = projection * view * vec4(in_Position, 1.0);
 			}
 		)";
@@ -951,7 +954,7 @@ namespace glsl_helper
 		// 	7,7,7,7
 		// };
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 4, 4, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 		texture_map[texture_name] = texture;
 		return texture;
 	}

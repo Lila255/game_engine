@@ -184,7 +184,15 @@ namespace game
 
 	// check 8 directions
 	int dx[] = {0,   1, 1, 1, 0, -1, -1, -1};
-	int dy[] = {-1, -1, 0, 1, 1,  1,  0, -1};
+	int dy[] = {-1, -1, 0, 1, 1,  1,  0, -1};	
+	std::unordered_map<int, std::pair<int, int>> bee_tile_joints_reverse = {
+		{5, {0, 3}},
+		{3, {0, 5}},
+		{0, {3, 5}},
+		{7, {1, 4}},
+		{1, {4, 7}},
+		{4, {1, 7}},
+	};
 	std::pair<int, int> find_creature_nest_end(std::pair<int, int> start_tile)
 	{
 		world_tile_system *world_tiles = ((world_tile_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<world_tile_system>()));
@@ -208,6 +216,7 @@ namespace game
 				continue;
 			}
 
+
 			for(int i = 0; i < 8; i++)
 			{
 				std::pair<int, int> new_tile = {current_tile.first + dx[i], current_tile.second + dy[i]};
@@ -224,23 +233,47 @@ namespace game
 							tiles_to_check.push(new_tile);
 							found_next_tiles = true;
 						}
-						uint8_t right_turn_index = (i + 1) % 8;
-						uint8_t left_turn_index = (i + 7) % 8;
-						std::pair<int, int> right_turn_tile = {new_tile.first + dx[right_turn_index], new_tile.second + dy[right_turn_index]};
+						// uint8_t right_turn_index = (i + 1) % 8;
+						// uint8_t left_turn_index = (i + 7) % 8;
+						uint8_t right_turn_index;
+						uint8_t left_turn_index;
+						uint8_t reverse_index = (i + 4) % 8;
+						if(bee_tile_joints_reverse.count(i))
+						{
+							std::pair<int, int> opposite_tile = bee_tile_joints_reverse[i];
+							right_turn_index = opposite_tile.first;
+							left_turn_index = opposite_tile.second;
+						}
+						else
+						{
+							printf("Error: bee_tile_joints_reverse does not contain key %d\n", i);
+							continue;
+						}
 
-						if(world_tiles->get_tile_at(right_turn_tile.first, right_turn_tile.second) == WAX)
+						std::pair<int, int> right_turn_tile = {new_tile.first + dx[right_turn_index], new_tile.second + dy[right_turn_index]};
+						std::pair<int, int> left_turn_tile = {new_tile.first + dx[left_turn_index], new_tile.second + dy[left_turn_index]};
+
+						bool right_turn_tile_is_wax = world_tiles->get_tile_at(right_turn_tile.first, right_turn_tile.second) == WAX;
+						bool left_turn_tile_is_wax = world_tiles->get_tile_at(left_turn_tile.first, left_turn_tile.second) == WAX;
+
+						if(!found_next_tiles && (right_turn_tile_is_wax + left_turn_tile_is_wax == 1))
+						{
+							return new_tile;
+						}
+
+
+						if(right_turn_tile_is_wax)
 						{
 							tiles_to_check.push(new_tile);
 							found_next_tiles = true;
 						}
 						
-						std::pair<int, int> left_turn_tile = {new_tile.first + dx[left_turn_index], new_tile.second + dy[left_turn_index]};
-
-						if(world_tiles->get_tile_at(left_turn_tile.first, left_turn_tile.second) == WAX)
+						if(left_turn_tile_is_wax)
 						{
 							tiles_to_check.push(new_tile);
 							found_next_tiles = true;
 						}
+
 
 						if(!found_next_tiles)
 						{
@@ -253,7 +286,16 @@ namespace game
 		return start_tile;
 	}
 
-	const int nest_wall_length = 10;
+	const int nest_wall_length = 6;
+	std::unordered_map<std::pair<int, int>, int, chunk_coord_pair_hash> bee_tile_joints = {
+		{{0, 3}, 5},
+		{{0, 5}, 3},
+		{{3, 5}, 0},
+		{{1, 4}, 7},
+		{{4, 7}, 1},
+		{{1, 7}, 4},
+	};
+
 
 	std::pair<int, int> place_creature_nest_tile(tile_type type, std::pair<int, int> end_tile)
 	{
@@ -264,8 +306,22 @@ namespace game
 		{
 			if(world_tiles->get_tile_at(end_tile.first + dx[i], end_tile.second + dy[i]) == WAX)
 			{
-				direction = i;
-				break;
+				if(direction == -1)
+				{
+					direction = i;
+				}
+				else
+				{
+					if(bee_tile_joints.count({direction, i}))
+					{
+						direction = bee_tile_joints[{direction, i}];
+					}
+					else
+					{
+						printf("Error: bee_tile_joints does not contain key %d, %d\n", direction, i);
+						return end_tile;
+					}
+				}
 			}
 		}
 		
@@ -385,13 +441,17 @@ namespace game
 
 		std::pair<int, int> end_tile = find_creature_nest_end(start_tile);
 
-		for(int i = 0; i < c.get_collected_mass(); i++)
+		int32_t collected_mas = c.get_collected_mass();
+		int32_t deposited_mass = 0;
+
+		for(int i = 0; i < collected_mas; i++)
 		{
 			std::pair<int, int> next = place_creature_nest_tile(WAX, end_tile);
 			if(next == end_tile)
 			{
 				break;
 			}
+			deposited_mass++;
 			end_tile = next;
 		}
 
@@ -401,7 +461,7 @@ namespace game
 		// {
 		// 	world_tiles->set_tile_at_with_search_and_lock(start_tile.first, start_tile.second, WAX);
 		// }
-		c.set_collected_mass(0);
+		c.set_collected_mass(collected_mas - deposited_mass);
 		c.target_home = end_tile;
 	}
 	

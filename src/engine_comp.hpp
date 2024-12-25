@@ -83,10 +83,17 @@ namespace game_engine
 		texture(GLuint id, GLuint binding, GLuint format, uint32_t width, uint32_t height) : id(id), binding(binding), format(format), width(width), height(height) {}
 	};
 
+	enum sprite_type
+	{
+		STATIC_IMAGE,
+		STATIC_LINE,
+	};
+
 	struct sprite : public component
 	{
 		GLuint program = 0;
 		std::vector<texture> textures;
+		sprite_type type = STATIC_IMAGE;
 
 		sprite() = default;
 		sprite(GLuint program) : program(program) {}
@@ -268,7 +275,7 @@ namespace game_engine
 		// 	glBindVertexArray(0);
 		// }
 
-		void update(entity ent, box b)
+		void update(entity ent, box b, std::vector<float> vertices = {}, std::vector<float> texture_data = {})
 		{
 			// Create the vertex data
 			// float vertex_data[] = {
@@ -278,13 +285,14 @@ namespace game_engine
 			//     b.x, b.y + b.h, b.z, 0.0f, 1.0f
 			// };
 			// verticies data
-			float vertices[] = {
+			std::vector<float> vertices_ = vertices.size() > 0 ? vertices : std::vector<float>{
 				b.x, b.y, b.z,
 				b.x + b.w, b.y, b.z,
 				b.x + b.w, b.y + b.h, b.z,
 				b.x, b.y + b.h, b.z};
+
 			// texture data
-			float texture_data[] = {
+			std::vector<float> texture_data_ = texture_data.size() > 0 ? texture_data : std::vector<float>{
 				0.0f, 0.0f,
 				1.0f, 0.0f,
 				1.0f, 1.0f,
@@ -297,15 +305,17 @@ namespace game_engine
 			glBindBuffer(GL_ARRAY_BUFFER, m_vbos.get(ent));
 
 			// Upload the vertex data to the GPU
-			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(texture_data), NULL, GL_DYNAMIC_DRAW);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-			glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(texture_data), texture_data);
+			glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(float) + texture_data_.size() * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, vertices_.size() * sizeof(float), vertices_.data());
+			glBufferSubData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(float), texture_data_.size() * sizeof(float), texture_data_.data());
 
 			// Unbind the VB0
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			// Unbind the VAO
 			glBindVertexArray(0);
 		}
+
+
 
 		/// @brief Get the VAO for this system
 		GLuint get_vao(entity ent)
@@ -428,29 +438,48 @@ namespace game_engine
 				glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix);
 				GLuint view_location = glGetUniformLocation(program, "view");
 				glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
-				GLuint texture_size = glGetUniformLocation(program, "texture_size");
-				glUniform2i(texture_size, t.textures[0].width, t.textures[0].height);
-
-
-				// texture &t = m_texture_groups[shader_program.second]->get(*it);
-				GLuint vbo = texture_vbo_system_pointer->get_vbo(*it);
-				glBindVertexArray(texture_vbo_system_pointer->get_vao(*it));
-
-				// Bind the texture
-				// glBindTexture(GL_TEXTURE_2D, t.id);
-				// glBindTextureUnit(0, t.id);
-				for(int i = 0; i < t.textures.size(); i++)
+				
+				switch(t.type)
 				{
-					glActiveTexture(GL_TEXTURE0 + i);
-					glBindTexture(GL_TEXTURE_2D, t.textures[i].id);
-					glBindImageTexture(t.textures[i].binding, t.textures[i].id, 0, GL_FALSE, 0, GL_READ_ONLY, t.textures[i].format);
-				}
-				// glBindTexture(GL_TEXTURE_2D, t.id);
-				// glBindImageTexture(0, t.id, 0, GL_FALSE, 0, GL_READ_ONLY, t.format);
+					case STATIC_IMAGE:
+						{
+							GLuint texture_size = glGetUniformLocation(program, "texture_size");
+							glUniform2i(texture_size, t.textures[0].width, t.textures[0].height);
 
-				// Bind the VBO
-				glBindBuffer(GL_ARRAY_BUFFER, vbo);
-				glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+							// texture &t = m_texture_groups[shader_program.second]->get(*it);
+							GLuint vbo = texture_vbo_system_pointer->get_vbo(*it);
+							glBindVertexArray(texture_vbo_system_pointer->get_vao(*it));
+
+							// Bind the texture
+							// glBindTexture(GL_TEXTURE_2D, t.id);
+							// glBindTextureUnit(0, t.id);
+							for(int i = 0; i < t.textures.size(); i++)
+							{
+								glActiveTexture(GL_TEXTURE0 + i);
+								glBindTexture(GL_TEXTURE_2D, t.textures[i].id);
+								glBindImageTexture(t.textures[i].binding, t.textures[i].id, 0, GL_FALSE, 0, GL_READ_ONLY, t.textures[i].format);
+							}
+
+
+							// glBindTexture(GL_TEXTURE_2D, t.id);
+							// glBindImageTexture(0, t.id, 0, GL_FALSE, 0, GL_READ_ONLY, t.format);
+
+							// Bind the VBO
+							glBindBuffer(GL_ARRAY_BUFFER, vbo);
+							glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+							break;
+						}
+					case STATIC_LINE:
+						{
+							// get box component
+							box b = bo_system_pointer->get(*it).get_box();
+							// draw line
+							draw_line(b.x, b.y, b.z, b.x + b.w, b.y + b.h, b.z);
+
+							break;
+						}
+				}
 			}
 			glUseProgram(0);
 			// }

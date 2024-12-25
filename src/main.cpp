@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <iostream>
 #include <assert.h>
 #include <thread>
 #include <mutex>
@@ -352,6 +353,8 @@ void run_game(GLFWwindow *window)
 	game::chunk_frame_system * chunk_frame_sys = new game::chunk_frame_system(box2d_sys, render_sys, world_sys);
 	eng.add_system(game_engine::family::type<game::chunk_frame_system>(), chunk_frame_sys);
 
+	game::legged_creature_system *legged_creature_sys = new game::legged_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys);
+	eng.add_system(game_engine::family::type<game::legged_creature_system>(), legged_creature_sys);
 
 	std::thread tree_thread(&game::tree_system::start, tree_sys);
 
@@ -498,6 +501,11 @@ void run_game(GLFWwindow *window)
 	
 	std::array<uint8_t, 4> bee_texture = {game::BEE_YELLOW, game::BEE_YELLOW, game::BEE_BLACK, game::BEE_BLACK};
 	glsl_helper::create_texture_from_data("bee", bee_texture.data(), 2, 2);
+	std::array<uint8_t, 16> spider_texture = {game::tile_type::AIR, game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK, game::tile_type::AIR,
+											  game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK, game::tile_type::WHITE, game::tile_type::BEE_BLACK,
+											  game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK,
+											  game::tile_type::AIR, game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK, game::tile_type::AIR};
+	glsl_helper::create_texture_from_data("spider", spider_texture.data(), 4, 4);
 
 	// // create box2d body
 	// std::vector<std::pair<float, float>> player_shape = {
@@ -655,10 +663,12 @@ void run_game(GLFWwindow *window)
 	// GLuint view_location = glGetUniformLocation(game_engine::shader_programs[1], "view");
 	// glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
 
+
 	std::thread world_thread(start_physics_thread);
 	std::thread box_2d_thread(&game::box2d_system::start_thread, box2d_sys);
 	std::thread flying_creature_thread(&game::flying_creature_system::start_thread, flying_creature_sys);
 	// std::thread chunk_frame_thread(&game::chunk_frame_system::start_thread, chunk_frame_sys);
+	std::thread legged_creature_thread(&game::legged_creature_system::start_thread, legged_creature_sys);
 
 	uint16_t saved_light_textures = 0;
 	uint16_t light_texture_index = 0;
@@ -672,8 +682,14 @@ void run_game(GLFWwindow *window)
 	
 	printf("before bee: %d\n", glGetError());
 	entity new_bee = eng.create_entity();
-	flying_creature_sys -> create_flying_creature(new_bee, 10, 10, game::flying_creature_type::BEE);
+	// flying_creature_sys -> create_flying_creature(new_bee, 10, 10, game::flying_creature_type::BEE);
+	
+	entity new_spider = eng.create_entity();
+	legged_creature_sys -> create_legged_creature(new_spider, 50, 50, game::legged_creature_type::SPIDER);
+
 	printf("here: %d\n", glGetError());
+
+
 
 	// Run the game loop
 	while (!glfwWindowShouldClose(window))
@@ -687,7 +703,8 @@ void run_game(GLFWwindow *window)
 		// box2d_sys->update(last_time_taken_micro);
 		projectile_sys->update(last_time_taken_micro);
 		game::b2d_mutex.unlock();
-		flying_creature_sys->update_rendering(last_time_taken_micro);
+		// flying_creature_sys->update_rendering(last_time_taken_micro);
+		legged_creature_sys->update_rendering(last_time_taken_micro);
 
 		for(int c = 0; c < game::NUM_CHUNKS; c++)
 		{
@@ -795,6 +812,8 @@ void run_game(GLFWwindow *window)
 		// glFinish();
 		render_sys->update();
 		// game_engine::rendering_mutex.lock();
+
+		// legged_creature_sys -> post_fx_update();
 
 		glUseProgram(game_engine::shader_programs[1]);
 		GLuint projection_location = glGetUniformLocation(game_engine::shader_programs[1], "projection");
@@ -997,6 +1016,7 @@ int main()
 	// do_tests();
 	// return 0;
 	printf("Error_1: %d\n", glGetError());
+	
 
 	// Run the game
 	run_game(window);

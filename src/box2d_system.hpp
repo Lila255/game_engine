@@ -15,7 +15,11 @@ namespace game
 		TERRAIN = 2,
 		PROJECTILE = 4,
 		DEBRIS = 8,
-		FLYING_CREATURE = 16
+		FLYING_CREATURE = 16,
+		LEGGED_CREATURE = 32,
+		LEGS = 64,
+		FEET = 128,
+		
 	};
 
 	struct b2_user_data

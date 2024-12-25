@@ -18,6 +18,7 @@
 #include "box2d_system.hpp"
 #include "tree_system.hpp"
 #include "flying_creature_system.hpp"
+#include "legged_creature_system.hpp"
 #include "chunk_frame_system.hpp"
 
 #include "tasks.hpp"
@@ -71,28 +72,26 @@ namespace game
 				}
 				if (ud_a->type == b2fixture_types::TERRAIN || ud_b->type == b2fixture_types::TERRAIN)
 				{
-					uint16_t explosion_radius = 8;
+					uint16_t explosion_radius = 16;
 					// printf("Terrain hit\n");
 					if (ud_a->type == b2fixture_types::PROJECTILE)
 					{
 						// delete circle shape around projectile
-						// world_tiles->delete_circle((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
-						// game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
-						// game_engine::task_scheduler_pointer->add_task({(&create_debris_task), new create_debris_params(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2.f, fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2.f, 4.f, 4.f, 0.5f, SNOW, SNOW, AIR, 500)});
+						world_tiles->delete_circle((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius, {});
+						game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
+						game_engine::task_scheduler_pointer->add_task({(&create_debris_task), new create_debris_params(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2.f, fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2.f, 4.f, 4.f, 0.5f, SNOW, SNOW, AIR, 500)});
 						// for (int i = 0; i < explosion_radius; i++)
 						// {
 						// 	entity e = game_engine::game_engine_pointer->create_entity();
 						// 	proj_system->create_projectile(e, (fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), (rand() % 360) / 360.0f, 250.f, 1.f, b2fixture_types::DEBRIS);
 						// }
 						
-						// printf("Error_1.000005: x%d\n", glGetError());
-						// printf("Error_1.000005: x%d\n", glGetError());
-						// printf("Error_1.000005: x%d\n", glGetError());
+
+
 						// create flying_creature_nest
-						
-						game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
-						flying_creature_sys->add_task({&create_flying_creature_nest_task, new create_flying_creature_nest_params(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width * 2, fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height * 2)});
-						game_engine::task_scheduler_pointer->add_task({&update_tile_task, new update_tile_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale), WAX)});
+						// game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
+						// flying_creature_sys->add_task({&create_flying_creature_nest_task, new create_flying_creature_nest_params(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width * 2, fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height * 2)});
+						// game_engine::task_scheduler_pointer->add_task({&update_tile_task, new update_tile_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale), WAX)});
 
 						// set projectile type to empty in ud_a
 						ud_a->type = b2fixture_types::EMPTY;
@@ -100,18 +99,17 @@ namespace game
 					else
 					{
 						// delete circle shape around projectile
-						// world_tiles->delete_circle((int)(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius);
-						// game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
-						// game_engine::task_scheduler_pointer->add_task({&create_debris_task, new create_debris_params(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2.f, fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2.f, 4.f, 4.f, 0.5f, SNOW, SNOW, AIR, 500)});
-	
-						// printf("Error_1.11115: x%d\n", glGetError());
-						// printf("Error_1.11115: x%d\n", glGetError());
-						// printf("Error_1.1115: x%d\n", glGetError());
-						// create flying_creature_nest
+						world_tiles->delete_circle((int)(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius, {});
 						game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
-						// game_engine::task_scheduler_pointer->add_task({&create_flying_creature_nest_task, new create_flying_creature_nest_params(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width * 2, fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height * 2)});
-						flying_creature_sys->add_task({&create_flying_creature_nest_task, new create_flying_creature_nest_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale))});
-						game_engine::task_scheduler_pointer->add_task({&update_tile_task, new update_tile_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale), WAX)});
+						game_engine::task_scheduler_pointer->add_task({&create_debris_task, new create_debris_params(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2.f, fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2.f, 4.f, 4.f, 0.5f, SNOW, SNOW, AIR, 500)});
+	
+						// // create flying_creature_nest
+						// game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
+						// // game_engine::task_scheduler_pointer->add_task({&create_flying_creature_nest_task, new create_flying_creature_nest_params(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width * 2, fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height * 2)});
+						// flying_creature_sys->add_task({&create_flying_creature_nest_task, new create_flying_creature_nest_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale))});
+						// game_engine::task_scheduler_pointer->add_task({&update_tile_task, new update_tile_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale), WAX)});
+						
+						
 						// set projectile type to empty in ud_b
 						ud_b->type = b2fixture_types::EMPTY;
 					}
