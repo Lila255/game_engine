@@ -59,4 +59,14 @@ namespace game
 		flying_creature_deposit_params(int x_pos, int y_pos, entity e) : x(x_pos), y(y_pos), ent(e) {}
 	};
 	void flying_creature_deposit_task(void *parameters);
+
+	struct legged_creature_step_params
+	{
+		entity legged_creature_entity;
+		entity foot_entity;
+		uint64_t leg_index;
+
+		legged_creature_step_params(entity legged_creature_ent, entity foot_ent, uint64_t leg_i) : legged_creature_entity(legged_creature_ent), foot_entity(foot_ent), leg_index(leg_i) {}
+	};
+	void legged_creature_step_task(void *parameters);
 }

@@ -13,7 +13,7 @@ namespace game
 {
 
 	static siv::PerlinNoise perlin_noise_spider(20.0);
-	const float legged_creature_scale = 16.0f;
+	const float legged_creature_scale = 12.0f;
 
 	struct legged_creature_system : public game_engine::system
 	{

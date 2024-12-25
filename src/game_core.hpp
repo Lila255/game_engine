@@ -198,6 +198,27 @@ namespace game
 					}
 				}
 			}
+			else if (game_engine::in_set(b2fixture_types::FEET, ud_a->type, ud_b->type))
+			{
+				if (!game_engine::in_set(ud_a->type, b2fixture_types::TERRAIN) && !game_engine::in_set(ud_b->type, b2fixture_types::TERRAIN))
+					return;
+				
+				b2_user_data * foot_user_data;
+				if (ud_a->type == b2fixture_types::FEET)
+				{
+					foot_user_data = ud_a;
+				}
+				else
+				{
+					foot_user_data = ud_b;
+				}
+				entity legged_creature_ent = foot_user_data->ent_2;
+				entity foot_ent = foot_user_data->ent;
+				uint64_t foot_index = foot_user_data->index;
+
+				game_engine::task_scheduler_pointer->add_task({&legged_creature_step_task, new legged_creature_step_params(legged_creature_ent, foot_ent, foot_index)});
+
+			}
 		}
 	};
 

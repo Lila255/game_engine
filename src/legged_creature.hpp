@@ -17,6 +17,7 @@ namespace game
 	{
 		WALKING,
 		NOT_WALKING,
+		WATCHING,
 	};
 
 	// used for keeping track of leg positions for rendering

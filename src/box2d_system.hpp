@@ -25,6 +25,11 @@ namespace game
 	struct b2_user_data
 	{
 		entity ent;
+		entity ent_2;
+		entity ent_3;
+		entity ent_4;
+		entity ent_5;
+		uint64_t index = 0;
 		b2fixture_types type;
 		std::chrono::time_point<std::chrono::steady_clock>  spawn_time;
 		uint16_t lifetime = 500;

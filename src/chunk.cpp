@@ -58,13 +58,13 @@ namespace game
 						if (noise_1 * noise_2 > .320)
 						// if (noise_1 + noise_2 > .970)
 						{ // solid
-							if (noise_2 > 0.725)
+							if (noise_2 > 0.75)
 							{
 								data[z][y][x] = game::STONE;
 							}
 							else
 							{
-								if (noise_3 > 0.758)
+								if (noise_3 > 0.658)
 								{
 									data[z][y][x] = game::SAND;
 								}
@@ -126,7 +126,7 @@ namespace game
 			// 	set_tile_at_no_lock(0, y, BEDROCK);
 			// 	set_tile_at_no_lock(CHUNKS_WIDTH * CHUNK_SIZE - 1, y, BEDROCK);
 			// }
-			if(chunk_x == 0 || chunk_x == CHUNK_SIZE - 1 || chunk_y == 0 || chunk_y == CHUNK_SIZE - 1)
+			if(chunk_x == 0 || chunk_x == CHUNKS_WIDTH - 1 || chunk_y == 0 || chunk_y == CHUNKS_WIDTH - 1)
 			{
 				if(chunk_x == 0)
 				{

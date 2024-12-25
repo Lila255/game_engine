@@ -34,6 +34,8 @@ namespace game
 		// task_scheduler_pointer -> add_task({game_engine::task_scheduler::print_task_counter, 0});
 		std::vector<entity> entities = legged_creatures.get_entities();
 
+		// get player position
+		b2Vec2 player_pos = b2d_system -> get_dynamic_body(game_engine::game_engine_pointer -> player_entitiy) -> GetPosition();
 
 		double noise_1 = perlin_noise_spider.noise1D_01(step_num / 10.0);
 		double noise_2 = perlin_noise_spider.noise1D_01((step_num + 10000) / 10.0);
@@ -43,20 +45,102 @@ namespace game
 			legged_creature &creature = legged_creatures.get(ent);
 			b2Vec2 force = b2Vec2(0, 0);
 			b2Body *body = b2d_system->get_dynamic_body(ent);
+			b2Vec2 legged_creature_pos = body->GetPosition();
 			
 			switch(creature.get_state())
 			{
 				case legged_creature_state::WALKING:
+					{
+						uint64_t connected_legs = creature.connected_legs.size();
+						if(!connected_legs)
+						{
+							creature.set_state(legged_creature_state::NOT_WALKING);
+							continue;
+						}
 
-					break;
+						// check if creature is close to player
+						if(b2Distance(legged_creature_pos, player_pos) < 5)
+						{
+							creature.set_state(legged_creature_state::WATCHING);
+							continue;
+						}
+
+						// check if feet should be unstuck
+						for(int leg_i = 0; leg_i < creature.legs.size(); leg_i++)
+						{
+							legged_creature_leg &l = creature.legs[leg_i];
+							// move leg
+							entity foot_ent = l.foot_entity;
+							b2Body * foot_body = b2d_system -> get_dynamic_body(foot_ent);
+							b2Vec2 foot_pos = foot_body -> GetPosition();
+							// calculate difference of angle between foot and body and target
+							float ang_to_foot = atan2(foot_pos.y - legged_creature_pos.y, foot_pos.x - legged_creature_pos.x);
+							float ang_to_target = atan2(player_pos.y - legged_creature_pos.y, player_pos.x - legged_creature_pos.x);
+
+							// if angle is too high, disconnect leg
+							if(abs(ang_to_foot - ang_to_target) > 1)
+							{
+								foot_body -> SetType(b2_dynamicBody);
+								creature.connected_legs.erase(leg_i);
+							}
+						}
+
+						// walking
+						// move towards the player
+						b2Vec2 legged_creature_pos = body -> GetPosition();
+						// get vector to player
+						b2Vec2 player_vector = player_pos - legged_creature_pos;
+						player_vector.Normalize();
+						// apply force to body
+						force = player_vector;
+						force *= 1 * connected_legs;
+						body -> ApplyLinearImpulseToCenter(force, true);
+						printf("force: %f, %f\n", force.x, force.y);
+						break;
+					}
 				case legged_creature_state::NOT_WALKING:
-					// falling
+					{
+						uint64_t connected_legs = creature.connected_legs.size();
+						if(connected_legs)
+						{
+							creature.set_state(legged_creature_state::WALKING);
+							continue;
+						}
 
-					break;
+						// falling
+						for(int leg_i = 0; leg_i < creature.legs.size(); leg_i++)
+						{
+							legged_creature_leg &l = creature.legs[leg_i];
+							// move leg
+							entity foot_ent = l.foot_entity;
+							b2Body * foot_body = b2d_system -> get_dynamic_body(foot_ent);
+
+							// move foot away from body, if not connected
+							if(!(creature.connected_legs.count(leg_i)))
+							{
+								// apply impulse
+								float ang = leg_i * 2 * M_PI / creature.leg_count + 1.1111109090990;
+								b2Vec2 leg_vector = b2Vec2(cos(ang), sin(ang));
+								leg_vector *= 0.1;
+								foot_body -> ApplyLinearImpulseToCenter(leg_vector, true);
+
+							}
+						}
+
+						break;
+					}
 				default:
-				
+					// check if creature is close to player
+					if(b2Distance(legged_creature_pos, player_pos) > 8)
+					{
+						creature.set_state(legged_creature_state::NOT_WALKING);
+						continue;
+					}
 					break;
 			}
+			// for(legged_creature_leg &l : creature.legs)
+
+
 		}
 	}
 	
@@ -323,8 +407,16 @@ namespace game
 			fixtureDef.restitution = 0.19f;
 			fixtureDef.filter.categoryBits = b2fixture_types::FEET;
 
+			b2_user_data *ud = new b2_user_data(foot_ent, b2fixture_types::FEET);
+			ud -> ent = foot_ent;
+			ud -> ent_2 = ent;
+			ud -> index = l;
+
+			b2FixtureUserData fixtureUserData;
+			fixtureUserData.pointer = (uintptr_t) ud;
+			fixtureDef.userData = fixtureUserData;
+
 			body->CreateFixture(&fixtureDef);
-			
 
 			for (int b = 0; b < leg.bones + 1; b++)
 			{

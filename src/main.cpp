@@ -686,6 +686,9 @@ void run_game(GLFWwindow *window)
 	
 	entity new_spider = eng.create_entity();
 	legged_creature_sys -> create_legged_creature(new_spider, 50, 50, game::legged_creature_type::SPIDER);
+	// legged_creature_sys -> create_legged_creature(new_spider, 75, 50, game::legged_creature_type::SPIDER);
+	// legged_creature_sys -> create_legged_creature(new_spider, 100, 50, game::legged_creature_type::SPIDER);
+
 
 	printf("here: %d\n", glGetError());
 
