@@ -59,26 +59,50 @@ namespace game
 						}
 
 						// check if creature is close to player
-						if(b2Distance(legged_creature_pos, player_pos) < 5)
+						if(b2Distance(legged_creature_pos, player_pos) < 3)
 						{
 							creature.set_state(legged_creature_state::WATCHING);
 							continue;
 						}
 
+
 						// check if feet should be unstuck
 						for(int leg_i = 0; leg_i < creature.legs.size(); leg_i++)
 						{
+							if(creature.connected_legs.size() == 1)
+								break;
+
 							legged_creature_leg &l = creature.legs[leg_i];
 							// move leg
 							entity foot_ent = l.foot_entity;
 							b2Body * foot_body = b2d_system -> get_dynamic_body(foot_ent);
+
+							float ang_to_target = atan2(player_pos.y - legged_creature_pos.y, player_pos.x - legged_creature_pos.x);
+
+							// move foot away from body, if not connected
+							if(!(creature.connected_legs.count(leg_i)))
+							{
+								// apply impulse to foot towards the player
+								b2Vec2 impulse = player_pos - foot_body -> GetPosition();
+								impulse.Normalize();
+
+								// make each leg a bit different
+
+
+
+								impulse *= 0.21;
+								foot_body -> ApplyLinearImpulseToCenter(impulse, true);
+
+				
+								continue;
+							}
+
 							b2Vec2 foot_pos = foot_body -> GetPosition();
 							// calculate difference of angle between foot and body and target
 							float ang_to_foot = atan2(foot_pos.y - legged_creature_pos.y, foot_pos.x - legged_creature_pos.x);
-							float ang_to_target = atan2(player_pos.y - legged_creature_pos.y, player_pos.x - legged_creature_pos.x);
 
 							// if angle is too high, disconnect leg
-							if(abs(ang_to_foot - ang_to_target) > 1)
+							if(abs(ang_to_foot - ang_to_target) > 1.25)
 							{
 								foot_body -> SetType(b2_dynamicBody);
 								creature.connected_legs.erase(leg_i);
@@ -93,7 +117,7 @@ namespace game
 						player_vector.Normalize();
 						// apply force to body
 						force = player_vector;
-						force *= 1 * connected_legs;
+						force *= .25 * connected_legs;
 						body -> ApplyLinearImpulseToCenter(force, true);
 						printf("force: %f, %f\n", force.x, force.y);
 						break;
@@ -131,7 +155,7 @@ namespace game
 					}
 				default:
 					// check if creature is close to player
-					if(b2Distance(legged_creature_pos, player_pos) > 8)
+					if(b2Distance(legged_creature_pos, player_pos) > 5)
 					{
 						creature.set_state(legged_creature_state::NOT_WALKING);
 						continue;

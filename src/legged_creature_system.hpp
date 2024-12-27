@@ -51,6 +51,11 @@ namespace game
 		void start_thread();
 
 		void add_task(game_engine::task t);
+
+		std::vector<entity> get_entities()
+		{
+			return legged_creatures.get_entities();
+		}
 	};
 
 

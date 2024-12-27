@@ -1,6 +1,7 @@
 #include "world_tile_system.hpp"
 #include "box2d_system.hpp"
 #include "tasks.hpp"
+#include "legged_creature_system.hpp"
 
 namespace game
 {
@@ -22,6 +23,7 @@ namespace game
 		std::fill(is_solid_tile.begin(), is_solid_tile.end(), 0);
 		std::fill(is_solid_tile.begin() + tile_type::GLASS, is_solid_tile.begin() + tile_type::SOLID_63 + 1, 1);
 		is_solid_tile[SNOW] = 0;
+		is_solid_tile[TEMPORARY_SNOW] = 0;
 		is_solid_tile[BEDROCK] = 1;
 	}
 
@@ -262,6 +264,14 @@ namespace game
 				uint8_t tile_type = get_write_tile_at(x, y);
 				switch (tile_type)
 				{
+				case AIR:
+					if(rand() % 10000 == 0)
+					{
+						set_tile_at_no_lock(x, y, TEMPORARY_SNOW);
+						// set_tile_at_no_lock(x, y, TEMPORARY_SMOKE);
+					}
+					break;
+
 				case WATER:
 					if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
@@ -474,6 +484,20 @@ namespace game
 						set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
 						set_tile_at_no_lock(x, y + 1, SNOW);
 					}
+					break;
+				
+				case TEMPORARY_SNOW:
+				
+					if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
+					{
+						set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
+						set_tile_at_no_lock(x, y + 1, TEMPORARY_SNOW);
+					}
+					else if (rand() % 8 == 0)
+					{
+						set_tile_at_no_lock(x, y, SNOW);
+					}
+					break;
 				}
 			}
 		}
@@ -583,6 +607,94 @@ namespace game
 				}
 			}
 		}
+		// do the same as ^, but for the bodies in the legged creature system
+		legged_creature_system *legged_creature_system_pointer = ((legged_creature_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<legged_creature_system>()));
+		std::vector<entity> legged_creatures = legged_creature_system_pointer->get_entities();
+
+		// for (entity legged_creature : legged_creatures)
+		// {
+		// 	game_engine::box legged_creature_box = box_system_pointer->get(legged_creature).get_box();
+		// 	b2Body *legged_creature_body = box2d_system_pointer->get_dynamic_body(legged_creature);
+
+		// 	b2Vec2 legged_creature_velocity = legged_creature_body->GetLinearVelocity();
+
+		// 	for (int i = (int)legged_creature_box.x; i < (int)legged_creature_box.x + legged_creature_box.w + 1; i++)
+		// 	{
+		// 		for (int j = (int)legged_creature_box.y; j < (int)legged_creature_box.y + legged_creature_box.h + 1; j++)
+		// 		{
+		// 			tile_type tile = (tile_type)get_write_tile_at(i, j);
+
+		// 			if (tile >= SOLID_TILE_START_INDEX && !is_solid_tile[tile])
+		// 			{
+		// 				set_tile_at_no_lock(i, j, AIR);
+		// 				game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, legged_creature_velocity.x, -legged_creature_velocity.y, 0.5f, tile, AIR, tile, 250)});
+		// 				// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
+		// 			}
+		// 			else if (legged_creature_velocity.y * legged_creature_velocity.y + legged_creature_velocity.x * legged_creature_velocity.x > 3 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
+		// 			{
+		// 				set_tile_at_no_lock(i, j, AIR);
+		// 				game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, legged_creature_velocity.x, -legged_creature_velocity.y, 0.5f, tile, AIR, tile, 250)});
+		// 				// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
+		// 			}
+		// 		}
+		// 	}
+		// }
+		// that, but the legged creatures body is a circle instead of a box. so create projectiles with the right velocity and position
+		for (entity legged_creature : legged_creatures)
+		{
+			game_engine::box legged_creature_box = box_system_pointer->get(legged_creature).get_box();
+			b2Body *legged_creature_body = box2d_system_pointer->get_dynamic_body(legged_creature);
+
+			b2Vec2 legged_creature_velocity = legged_creature_body->GetLinearVelocity();
+
+			b2Vec2 legged_creature_position = legged_creature_body->GetPosition();
+
+			for (int i = (int)legged_creature_box.x; i < (int)legged_creature_box.x + legged_creature_box.w + 1; i++)
+			{
+				for (int j = (int)legged_creature_box.y; j < (int)legged_creature_box.y + legged_creature_box.h + 1; j++)
+				{
+					tile_type tile = (tile_type)get_write_tile_at(i, j);
+
+					// Calculate the collision point on the circle
+					b2Vec2 collision_point = b2Vec2(i, j);
+					
+					// Calculate the normal of the collision point
+					b2Vec2 normal = collision_point - legged_creature_position;
+					normal.Normalize();
+
+					// Calculate the velocity of the collision point
+					b2Vec2 collision_velocity = legged_creature_velocity;// + b2Cross(legged_creature_body->GetAngularVelocity(), collision_point - legged_creature_position);
+
+					
+					// Calculate the relative velocity in terms of the normal direction
+					float normal_velocity = b2Dot(collision_velocity, normal);
+
+					// Calculate the relative velocity in terms of the tangent direction
+					b2Vec2 tangent = b2Vec2(-normal.y, normal.x);
+					float tangent_velocity = b2Dot(collision_velocity, tangent);	
+
+					// debris_velocity
+					b2Vec2 debris_velocity = normal_velocity * normal + tangent_velocity * tangent;
+
+
+
+					if (tile >= SOLID_TILE_START_INDEX && !is_solid_tile[tile])
+					{
+						set_tile_at_no_lock(i, j, AIR);
+						game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, debris_velocity.x, debris_velocity.y, 0.5f, tile, AIR, tile, 250)});
+					}
+					else if (legged_creature_velocity.y * legged_creature_velocity.y + legged_creature_velocity.x * legged_creature_velocity.x > 3 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
+					{
+						set_tile_at_no_lock(i, j, AIR);
+						game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, debris_velocity.x, debris_velocity.y, 0.5f, tile, AIR, tile, 250)});
+					}
+
+
+				}
+			}
+		}
+
+
 
 		std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
 

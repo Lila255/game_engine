@@ -105,7 +105,7 @@ namespace game
 		EMBER,	// 74
 		SNOW,	// 75
 		WAX,	// 76
-		SOLID_13,	// 77
+		TEMPORARY_SNOW,	// 75
 		SOLID_14,	// 78
 		SOLID_15,	// 79
 		SOLID_16,	// 80
