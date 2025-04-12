@@ -22,9 +22,11 @@ namespace game
 
 		std::fill(is_solid_tile.begin(), is_solid_tile.end(), 0);
 		std::fill(is_solid_tile.begin() + tile_type::GLASS, is_solid_tile.begin() + tile_type::SOLID_63 + 1, 1);
+
 		is_solid_tile[SNOW] = 0;
 		is_solid_tile[TEMPORARY_SNOW] = 0;
 		is_solid_tile[BEDROCK] = 1;
+		is_solid_tile[ELECTRIC_BLUE] = 0;
 	}
 
 	world_tile_system::~world_tile_system()
@@ -265,9 +267,9 @@ namespace game
 				switch (tile_type)
 				{
 				case AIR:
-					if(rand() % 10000 == 0)
+					if(((tick_count / 64) % 6 == 5 || (tick_count / 50) % 8 == 7) && rand() % 1200 == 0)
 					{
-						set_tile_at_no_lock(x, y, TEMPORARY_SNOW);
+						set_tile_at_no_lock(x, y, SNOW);
 						// set_tile_at_no_lock(x, y, TEMPORARY_SMOKE);
 					}
 					break;
@@ -703,6 +705,8 @@ namespace game
 		{
 			memcpy(tile_data_copy[i]->get_data(), tile_data_base[i]->get_data(), CHUNK_SIZE * CHUNK_SIZE);
 		}
+
+		
 
 		lock_copy.unlock();
 		lock_base.unlock();

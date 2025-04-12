@@ -7,13 +7,13 @@
 #include "box2d_system.hpp"
 #include "chunk.hpp"
 #include "legged_creature.hpp"
-
+#include "world_tile_system.hpp"
 
 namespace game
 {
 
 	static siv::PerlinNoise perlin_noise_spider(20.0);
-	const float legged_creature_scale = 12.0f;
+	const float legged_creature_scale = 8.0f;
 
 	struct legged_creature_system : public game_engine::system
 	{
@@ -23,6 +23,7 @@ namespace game
 		game_engine::render_system * render_sys;
 		game_engine::box_system *box_sys;
 		game_engine::texture_vbo_system *texture_vbo_sys;
+		game::world_tile_system *world_tile_sys;
 		bool running = 0;
 		const uint64_t time_step_ms = 50;
 
@@ -38,7 +39,7 @@ namespace game
 		void update_rendering(uint64_t tick_count);
 		
 		legged_creature_system() = delete;
-		legged_creature_system(game::box2d_system * b2d_sys, game_engine::render_system * render_system, game_engine::box_system *box_sys, game_engine::texture_vbo_system *texture_vbo_sys) : b2d_system(b2d_sys), render_sys(render_system), box_sys(box_sys), texture_vbo_sys(texture_vbo_sys) 
+		legged_creature_system(game::box2d_system * b2d_sys, game_engine::render_system * render_system, game_engine::box_system *box_sys, game_engine::texture_vbo_system *texture_vbo_sys, game::world_tile_system * world_system) : b2d_system(b2d_sys), render_sys(render_system), box_sys(box_sys), texture_vbo_sys(texture_vbo_sys), world_tile_sys(world_system)
 		{
 			task_scheduler_pointer = new game_engine::task_scheduler();
 		}
@@ -46,7 +47,7 @@ namespace game
 		
 		void add(entity ent, legged_creature &creature);
 		legged_creature& get(entity ent);
-		void create_legged_creature(entity ent, float x, float y, legged_creature_type type);
+		void create_legged_creature(entity ent, float x, float y, legged_creature_type type, entity head_ent, entity tail_ent);
 
 		void start_thread();
 
@@ -56,6 +57,8 @@ namespace game
 		{
 			return legged_creatures.get_entities();
 		}
+
+		void set_running(bool run) { running = run; }
 	};
 
 

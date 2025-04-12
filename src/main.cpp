@@ -218,6 +218,7 @@ void start_physics_thread()
 	game::box2d_system *b2d_sys = (game::box2d_system *)(engine_ptr->get_system(game_engine::family::type<game::box2d_system>()));
 	game::world_tile_system *world_sys = (game::world_tile_system *)(engine_ptr->get_system(game_engine::family::type<game::world_tile_system>()));
 	game_engine::render_system *render_sys = (game_engine::render_system *)(engine_ptr->get_system(game_engine::family::type<game_engine::render_system>()));
+	game::tile_arcing_system *tile_arcing_sys = (game::tile_arcing_system *)(engine_ptr->get_system(game_engine::family::type<game::tile_arcing_system>()));
 
 	start_time = std::chrono::high_resolution_clock::now();
 	const int tick_rate = 20;
@@ -229,6 +230,7 @@ void start_physics_thread()
 		auto start = std::chrono::high_resolution_clock::now();
 
 		world_sys->update(tick_count++);
+		// tile_arcing_sys->update(tick_count);
 		// printf("Tile movements took %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count());
 		std::array<entity, game::NUM_CHUNKS> chunk_entities = world_sys->get_chunk_entities();
 		std::array<game::chunk *, game::NUM_CHUNKS> * chunks = world_sys->get_chunks_base();
@@ -353,8 +355,11 @@ void run_game(GLFWwindow *window)
 	game::chunk_frame_system * chunk_frame_sys = new game::chunk_frame_system(box2d_sys, render_sys, world_sys);
 	eng.add_system(game_engine::family::type<game::chunk_frame_system>(), chunk_frame_sys);
 
-	game::legged_creature_system *legged_creature_sys = new game::legged_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys);
+	game::legged_creature_system *legged_creature_sys = new game::legged_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys, world_sys);
 	eng.add_system(game_engine::family::type<game::legged_creature_system>(), legged_creature_sys);
+	
+	game::tile_arcing_system *tile_arcing_sys = new game::tile_arcing_system(world_sys, box_sys);
+	eng.add_system(game_engine::family::type<game::tile_arcing_system>(), tile_arcing_sys);
 
 	std::thread tree_thread(&game::tree_system::start, tree_sys);
 
@@ -502,8 +507,8 @@ void run_game(GLFWwindow *window)
 	std::array<uint8_t, 4> bee_texture = {game::BEE_YELLOW, game::BEE_YELLOW, game::BEE_BLACK, game::BEE_BLACK};
 	glsl_helper::create_texture_from_data("bee", bee_texture.data(), 2, 2);
 	std::array<uint8_t, 16> spider_texture = {game::tile_type::AIR, game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK, game::tile_type::AIR,
-											  game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK, game::tile_type::WHITE, game::tile_type::BEE_BLACK,
-											  game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK,
+											  game::tile_type::BEE_BLACK, game::tile_type::WHITE, game::tile_type::WHITE, game::tile_type::BEE_BLACK,
+											  game::tile_type::BEE_BLACK, game::tile_type::GREY, game::tile_type::DARK_GREY, game::tile_type::BEE_BLACK,
 											  game::tile_type::AIR, game::tile_type::BEE_BLACK, game::tile_type::BEE_BLACK, game::tile_type::AIR};
 	glsl_helper::create_texture_from_data("spider", spider_texture.data(), 4, 4);
 
@@ -664,11 +669,13 @@ void run_game(GLFWwindow *window)
 	// glUniformMatrix4fv(view_location, 1, GL_FALSE, game_engine::view_matrix);
 
 
-	std::thread world_thread(start_physics_thread);
+	std::thread world_thread(start_physics_thread); 
 	std::thread box_2d_thread(&game::box2d_system::start_thread, box2d_sys);
 	std::thread flying_creature_thread(&game::flying_creature_system::start_thread, flying_creature_sys);
 	// std::thread chunk_frame_thread(&game::chunk_frame_system::start_thread, chunk_frame_sys);
 	std::thread legged_creature_thread(&game::legged_creature_system::start_thread, legged_creature_sys);
+
+	// std::thread tile_arcing_thread(&game::tile_arcing_system::start_thread, tile_arcing_sys);
 
 	uint16_t saved_light_textures = 0;
 	uint16_t light_texture_index = 0;
@@ -684,10 +691,25 @@ void run_game(GLFWwindow *window)
 	entity new_bee = eng.create_entity();
 	// flying_creature_sys -> create_flying_creature(new_bee, 10, 10, game::flying_creature_type::BEE);
 	
-	entity new_spider = eng.create_entity();
-	legged_creature_sys -> create_legged_creature(new_spider, 50, 50, game::legged_creature_type::SPIDER);
-	// legged_creature_sys -> create_legged_creature(new_spider, 75, 50, game::legged_creature_type::SPIDER);
-	// legged_creature_sys -> create_legged_creature(new_spider, 100, 50, game::legged_creature_type::SPIDER);
+	entity new_spider = 0;
+
+	uint16_t centipede_length = 8;
+
+	for(int i = 0; i < centipede_length; i++)
+	{
+		entity old_spider = new_spider;
+		new_spider = eng.create_entity();
+
+		if(old_spider == 0)
+		{
+			entity tile_arc = eng.create_entity();
+			game::tile_arc tile_arc_to_spider = {game::tile_arc_type::ELECTRIC, player_entity, new_spider}; 
+			tile_arcing_sys -> add(tile_arc, tile_arc_to_spider);
+		}
+
+		legged_creature_sys -> create_legged_creature(new_spider, 150, 150 + i * 10, game::legged_creature_type::SPIDER, old_spider, 0); 
+	}
+	// legged_creature_sys -> create_legged_creature(new_spider, 50, 50, game::legged_creature_type::SPIDER);
 
 
 	printf("here: %d\n", glGetError());
@@ -877,6 +899,15 @@ void run_game(GLFWwindow *window)
 		last_time_taken_micro = loop_duration.count();
 		counter++;
 	}
+
+	flying_creature_sys->set_running(false);
+	flying_creature_thread.join();
+	
+	legged_creature_sys->set_running(false);
+	legged_creature_thread.join();
+	
+	tile_arcing_sys->running = false;
+	// tile_arcing_thread.join();
 
 	physics_loop_running = false;
 	box2d_sys->stop_thread();

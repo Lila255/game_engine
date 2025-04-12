@@ -142,9 +142,9 @@ namespace glsl_helper
 		1.0000f, 1.0000f, 1.0000f, 1.0000f, // 135: WHITE
 		0.9294f, 0.7882f, 0.2588f, 1.0000f, // 136: BEE_YELLOW
 		0.1000f, 0.1000f, 0.1000f, 1.0000f, // 137: BEE_BLACK
-		0.5412f, 1.0000f, 1.0000f, 1.0000f, // 138
-		0.5451f, 1.0000f, 1.0000f, 1.0000f, // 139
-		0.5490f, 1.0000f, 1.0000f, 1.0000f, // 140
+		0.7000f, 0.7000f, 0.7000f, 1.0000f, // 138: GREY
+		0.5000f, 0.5000f, 0.5000f, 1.0000f, // 139: DARK_GREY
+		0.6000f, 0.6000f, 1.0000f, 1.0000f, // 140: ELECTRIC_BLUE
 		0.5529f, 1.0000f, 1.0000f, 1.0000f, // 141
 		0.5569f, 1.0000f, 1.0000f, 1.0000f, // 142
 		0.5608f, 1.0000f, 1.0000f, 1.0000f, // 143
@@ -564,7 +564,7 @@ namespace glsl_helper
 					// }
 					// } else
 
-					if (sample_v >= 64) {     // hit something solid
+					if (sample_v >= 64 && sample_v < 128) {     // hit something solid
 
 						if (sample_v < 66)	// can pass through
 						{

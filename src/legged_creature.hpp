@@ -39,8 +39,14 @@ namespace game
 
 	};
 
-	const uint64_t spider_leg_lengths[] = {12, 12, 8};
-	const uint64_t spider_leg_distance_to_start[] = {0, 12, 20};
+	// const uint64_t spider_leg_lengths[] = {6, 4, 4};
+	// const uint64_t spider_leg_distance_to_start[] = {0, 6, 10};
+
+	// const uint64_t spider_leg_lengths[] = {12, 12, 8};
+	// const uint64_t spider_leg_distance_to_start[] = {0, 12, 20};
+
+	const uint64_t spider_leg_lengths[] = {16, 10, 8};
+	const uint64_t spider_leg_distance_to_start[] = {0, 16, 26};
 
 	struct legged_creature
 	{
@@ -57,6 +63,10 @@ namespace game
 		std::vector<legged_creature_leg> legs;
 		std::unordered_set<uint64_t> connected_legs;
 		uint64_t leg_count = 2;
+
+		// to make a centipede, join them together
+		entity head_entity = 0;
+		entity tail_entity = 0;
 		
 		legged_creature(legged_creature_type t) : type(t){};
 		

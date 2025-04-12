@@ -48,6 +48,8 @@ namespace game
 		void start_thread();
 
 		void add_task(game_engine::task t);
+		
+		void set_running(bool run) { running = run; }
 	};
 
 

@@ -59,7 +59,7 @@ namespace game
 						}
 
 						// check if creature is close to player
-						if(b2Distance(legged_creature_pos, player_pos) < 3)
+						if(creature.head_entity == 0 && b2Distance(legged_creature_pos, player_pos) < 1)
 						{
 							creature.set_state(legged_creature_state::WATCHING);
 							continue;
@@ -90,7 +90,7 @@ namespace game
 
 
 
-								impulse *= 0.21;
+								impulse *= 0.16;
 								foot_body -> ApplyLinearImpulseToCenter(impulse, true);
 
 				
@@ -112,14 +112,24 @@ namespace game
 						// walking
 						// move towards the player
 						b2Vec2 legged_creature_pos = body -> GetPosition();
-						// get vector to player
-						b2Vec2 player_vector = player_pos - legged_creature_pos;
-						player_vector.Normalize();
+
+						b2Vec2 body_target;
+						if (creature.head_entity)
+						{
+							body_target = b2d_system -> get_dynamic_body(creature.head_entity) -> GetPosition();
+						}
+						else
+						{
+							body_target = player_pos;
+						}
+						
+						b2Vec2 target_vector = body_target - legged_creature_pos;
+						target_vector.Normalize();
+
 						// apply force to body
-						force = player_vector;
-						force *= .25 * connected_legs;
+						force = target_vector;
+						force *= .12 * connected_legs;
 						body -> ApplyLinearImpulseToCenter(force, true);
-						printf("force: %f, %f\n", force.x, force.y);
 						break;
 					}
 				case legged_creature_state::NOT_WALKING:
@@ -155,7 +165,7 @@ namespace game
 					}
 				default:
 					// check if creature is close to player
-					if(b2Distance(legged_creature_pos, player_pos) > 5)
+					if(b2Distance(legged_creature_pos, player_pos) > 4)
 					{
 						creature.set_state(legged_creature_state::NOT_WALKING);
 						continue;
@@ -315,7 +325,7 @@ namespace game
 
 	// const float legged_creature_scale = 8.0f;
 
-	void legged_creature_system::create_legged_creature(entity ent, float x, float y, legged_creature_type type)
+	void legged_creature_system::create_legged_creature(entity ent, float x, float y, legged_creature_type type, entity head_ent, entity tail_ent)
 	{
 		// legged_creature_system::b2d_system = legged_creature_system::b2d_system ? legged_creature_system::b2d_system : (box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>());
 		
@@ -324,6 +334,8 @@ namespace game
 		b2BodyDef body_def;
 		body_def.type = b2_dynamicBody;
 		body_def.position.Set(x / box2d_scale, y / box2d_scale);
+
+		world_tile_sys -> delete_circle(x, y, 32, {});
 
 		b2Body *body = legged_creature_system::b2d_system->world->CreateBody(&body_def);
 		legged_creature_system::b2d_system->add_dynamic_body(ent, body);
@@ -336,7 +348,7 @@ namespace game
 		fixture_def.friction = 0.3f;
 		fixture_def.restitution = 0.89f;
 		fixture_def.filter.categoryBits = b2fixture_types::LEGGED_CREATURE;
-		fixture_def.filter.maskBits = b2fixture_types::TERRAIN | b2fixture_types::PLAYER;
+		fixture_def.filter.maskBits = b2fixture_types::TERRAIN | b2fixture_types::PLAYER | b2fixture_types::LEGGED_CREATURE;
 
 
 		b2_user_data *ud = new b2_user_data(ent, b2fixture_types::LEGGED_CREATURE);
@@ -360,6 +372,15 @@ namespace game
 
 		legged_creature creature = {type};
 		creature.set_params(8, 3, x, y);
+		if(head_ent)
+		{
+			creature.head_entity = head_ent;
+		}
+		if(tail_ent)
+		{
+			creature.tail_entity = tail_ent;
+		}
+
 		// for (legged_creature_leg &leg : creature.legs)
 		for (int l = 0; l < creature.leg_count; l++)
 		{
@@ -397,7 +418,7 @@ namespace game
 				// shape.SetAsBox(abs(w / box2d_scale) / 2.0, abs(h / box2d_scale) / 2.0);
 				b2FixtureDef fixtureDef;
 				fixtureDef.shape = &shape;
-				fixtureDef.density = 0.15f;
+				fixtureDef.density = 0.0515f;
 				fixtureDef.friction = 0.3f;
 				fixtureDef.filter.categoryBits = b2fixture_types::LEGS;
 				fixtureDef.filter.maskBits = b2fixture_types::TERRAIN | b2fixture_types::PLAYER;
@@ -426,7 +447,7 @@ namespace game
 			circle.m_radius = 1.0 / box2d_scale;
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &circle;
-			fixtureDef.density = 0.05f;
+			fixtureDef.density = 0.032f;
 			fixtureDef.friction = 0.63f;
 			fixtureDef.restitution = 0.19f;
 			fixtureDef.filter.categoryBits = b2fixture_types::FEET;
@@ -483,6 +504,61 @@ namespace game
 
 		}
 		
+		// if(head_ent)
+		// {
+		// 	creature.head_entity = head_ent;
+		// }
+		// if(tail_ent)
+		// {
+		// 	creature.tail_entity = tail_ent;
+		// }
+		if(head_ent && legged_creatures.contains(head_ent))
+		{
+			// create joint between head and creature
+			b2Body *head_body = b2d_system -> get_dynamic_body(head_ent);
+			b2Body *body = b2d_system -> get_dynamic_body(ent);
+
+			b2RevoluteJointDef jointDef;
+			jointDef.bodyA = head_body;
+			jointDef.bodyB = body;
+			
+			// create anchor at the edge/radius of the head and body
+			// get radius of head
+			b2CircleShape * shape = (b2CircleShape *) head_body -> GetFixtureList() -> GetShape();
+			float radius = shape -> m_radius;
+			
+			jointDef.localAnchorA = b2Vec2(0, -radius);
+
+			radius = circle.m_radius;
+			jointDef.localAnchorB = b2Vec2(0, radius);
+
+			jointDef.collideConnected = true;
+			b2d_system -> world -> CreateJoint(&jointDef);
+		}
+		if(tail_ent && legged_creatures.contains(tail_ent))
+		{
+			// create joint between tail and creature
+			b2Body *tail_body = b2d_system -> get_dynamic_body(tail_ent);
+			b2Body *body = b2d_system -> get_dynamic_body(ent);
+
+			b2RevoluteJointDef jointDef;
+			jointDef.bodyA = tail_body;
+			jointDef.bodyB = body;
+			
+			// create anchor at the edge/radius of the head and body
+			// get radius of head
+			b2CircleShape * shape = (b2CircleShape *) tail_body -> GetFixtureList() -> GetShape();
+			float radius = shape -> m_radius;
+			
+			jointDef.localAnchorA = b2Vec2(0, -radius);
+
+			radius = circle.m_radius;
+			jointDef.localAnchorB = b2Vec2(0, radius);
+
+			jointDef.collideConnected = true;
+			b2d_system -> world -> CreateJoint(&jointDef);
+		}
+
 		legged_creatures.add(ent, creature);
 
 

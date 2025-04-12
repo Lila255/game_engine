@@ -167,7 +167,11 @@ namespace game
 		WHITE,		// 135
 		BEE_YELLOW,	// 136
 		BEE_BLACK,	// 137
+		GREY,		// 138
+		DARK_GREY,	// 139
+		ELECTRIC_BLUE,	// 140
 
+		
 		// indestructible tiles
 		BEDROCK,
 
