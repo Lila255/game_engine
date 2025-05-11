@@ -42,11 +42,11 @@ namespace game
 	// const uint64_t spider_leg_lengths[] = {6, 4, 4};
 	// const uint64_t spider_leg_distance_to_start[] = {0, 6, 10};
 
-	// const uint64_t spider_leg_lengths[] = {12, 12, 8};
-	// const uint64_t spider_leg_distance_to_start[] = {0, 12, 20};
+	const uint64_t spider_leg_lengths[] = {12, 12, 8};
+	const uint64_t spider_leg_distance_to_start[] = {0, 12, 20};
 
-	const uint64_t spider_leg_lengths[] = {16, 10, 8};
-	const uint64_t spider_leg_distance_to_start[] = {0, 16, 26};
+	// const uint64_t spider_leg_lengths[] = {16, 10, 8};
+	// const uint64_t spider_leg_distance_to_start[] = {0, 16, 26};
 
 	struct legged_creature
 	{

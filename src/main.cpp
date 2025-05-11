@@ -361,6 +361,9 @@ void run_game(GLFWwindow *window)
 	game::tile_arcing_system *tile_arcing_sys = new game::tile_arcing_system(world_sys, box_sys);
 	eng.add_system(game_engine::family::type<game::tile_arcing_system>(), tile_arcing_sys);
 
+	game::building_component_system *building_component_sys;// = new game::building_component_system(world_sys, box_sys);
+	// eng.add_system(game_engine::family::type<game::building_component_system>(), building_component_sys);
+
 	std::thread tree_thread(&game::tree_system::start, tree_sys);
 
 

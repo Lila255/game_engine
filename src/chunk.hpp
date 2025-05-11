@@ -26,10 +26,11 @@ namespace game
 	enum tile_type
 	{
 		// gas tiles
-		AIR,	// 0
-		SMOKE,	// 1
-		STEAM,	// 2
-		TEMPORARY_SMOKE,	// 3
+		// VACCUUM, // 0
+		AIR,	// 1
+		SMOKE,	// 2
+		STEAM,	// 3
+		TEMPORARY_SMOKE,	// 4
 		GAS_04,	// 4
 		GAS_05,	// 5
 		GAS_06,	// 6
@@ -57,7 +58,6 @@ namespace game
 		GAS_28,	// 28
 		GAS_29,	// 29
 		GAS_30,	// 30
-		GAS_31,	// 31
 		// fluid tiles
 		WATER,	// 32
 		LAVA,	// 33
@@ -181,7 +181,10 @@ namespace game
 	const uint8_t LIQUID_TILE_START_INDEX = 32;
 	extern std::array<uint8_t, 256> is_solid_tile;
 
+	// tile temperature config
+	// static std::array<int16_t, 256> tile_max_temperature {
 
+		
 
 	struct tile_linef
 	{
@@ -248,6 +251,7 @@ namespace game
 	{
 	public:
 		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES> data;
+		std::array<std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES> temperature_data;
 		uint16_t chunk_x;
 		uint16_t chunk_y;
 		entity *background_entity;
@@ -262,6 +266,7 @@ namespace game
 		chunk(uint16_t x, uint16_t y) : chunk_x(x), chunk_y(y)
 		{
 			data = std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES>{};
+			temperature_data = std::array<std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES>{};
 		}
 
 		void create_chunk(uint32_t x, uint32_t y);

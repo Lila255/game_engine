@@ -4,10 +4,11 @@
 namespace glsl_helper
 {
 	std::array<float, 256 * 4> colours{
-		0.0000f, 0.0000f, 0.0000f, 0.0000f, // 0: AIR
-		0.1500f, 0.1500f, 0.1500f, 0.6500f, // 1: SMOKE
-		0.4000f, 1.0000f, 1.0000f, 0.6500f, // 2: STEAM
-		0.1500f, 0.1500f, 0.1500f, 0.5500f, // 3: TEMPORARY_SMOKE
+		// 0.0000f, 0.0000f, 0.0000f, 0.0000f, // 0: VACCUUM
+		0.0000f, 0.0000f, 0.1000f, 0.0000f, // 1: AIR
+		0.1500f, 0.1500f, 0.1500f, 0.6500f, // 2: SMOKE
+		0.4000f, 1.0000f, 1.0000f, 0.6500f, // 3: STEAM
+		0.1500f, 0.1500f, 0.1500f, 0.5500f, // 4: TEMPORARY_SMOKE
 		0.0157f, 1.0000f, 1.0000f, 1.0000f, // 4
 		0.0196f, 1.0000f, 1.0000f, 1.0000f, // 5
 		0.0235f, 1.0000f, 1.0000f, 1.0000f, // 6
@@ -35,7 +36,6 @@ namespace glsl_helper
 		0.1098f, 1.0000f, 1.0000f, 1.0000f, // 28
 		0.1137f, 1.0000f, 1.0000f, 1.0000f, // 29
 		0.1176f, 1.0000f, 1.0000f, 1.0000f, // 30
-		0.1216f, 1.0000f, 1.0000f, 1.0000f, // 31
 		0.0100f, 0.0100f, 0.9800f, 0.7500f, // 32: WATER
 		1.0000f, 0.5500f, 0.1000f, 1.0000f, // 33: LAVA
 		0.0333f, 1.0000f, 0.0333f, 0.7000f, // 34: ACID
@@ -412,7 +412,7 @@ namespace glsl_helper
 				// vec3 rgb = hsv2rgb(hue);
 				float inverse_alpha = 0.0;
 				uint world_value = sampleWorld(v_TexCoord * texture_size);
-				if(world_value < 32) {
+				if(world_value < 64) {
 					// inverse_alpha = value / (6.0 *  16000);// + blurred_value / 512000.0;
 					inverse_alpha = value / (4.0 *  16000) + blurred_value / 1896000.0;
 				} else {
@@ -514,6 +514,7 @@ namespace glsl_helper
 					return;
 				}
 				int ray_index = int(gl_GlobalInvocationID.x);
+				// int ray_index = int((gl_GlobalInvocationID.x % 4) / 4.0 * 16000);
 				float ray_decimal = float(ray_index) / float( 16000);
 				float ray_angle = ((float(ray_index) + random(ray_decimal)) / float( 16000)) * 2.0 * 3.1415926535897932384626433832795;
 				// uint hue_val = uint((float(ray_index) /  16000.0) * 4294967295.0);
@@ -531,16 +532,16 @@ namespace glsl_helper
 
 				// loop until we hit something or we reach max_ray_length
 				for (int i = 0; i < max_ray_length;) {
-					// ivec2 ray_pos_int = ivec2(ray_pos);
+					ivec2 ray_pos_int = ivec2(ray_pos);
 					uint sample_v0 = sampleWorld(ray_pos);
-					// while (ray_pos_int == ivec2(ray_pos)) { // if we're still in the same pixel, move forward a bit
-					ray_pos += step_distance * ray_dir;
-					i++;
-					// }
-
-					if (sample_v0 > 0 && sample_v0 < 64) {
-						refracted_bounces = 1;
+					while (ray_pos_int == ivec2(ray_pos)) { // if we're still in the same pixel, move forward a bit
+						ray_pos += step_distance * ray_dir;
+						i++;
 					}
+
+					// if (sample_v0 > 0 && sample_v0 < 64) {
+					// 	refracted_bounces = 1;
+					// }
 
 					// ray_pos += ray_dir;
 					uint sample_v = sampleWorld(ray_pos);
@@ -564,15 +565,15 @@ namespace glsl_helper
 					// }
 					// } else
 
-					if (sample_v >= 64 && sample_v < 128) {     // hit something solid
+					if (sample_v >= 64) { // && sample_v < 128) {     // hit something solid
 
-						if (sample_v < 66)	// can pass through
-						{
-							// if (sample_v0 != sample_v) {
-							// 	ray_dir = refract_ray(ray_dir, 1.00, 1.10);
-							// }
-						}
-						else {
+						// if (sample_v < 66)	// can pass through
+						// {
+						// 	// if (sample_v0 != sample_v) {
+						// 	// 	ray_dir = refract_ray(ray_dir, 1.00, 1.10);
+						// 	// }
+						// }
+						// else {
 
 							uint surround_values = 0;
 							// for(int j = 0; j < 9; j++)
@@ -595,7 +596,7 @@ namespace glsl_helper
 									if(x == 1 && y == 1) continue;
 									counter++;
 									uint world_sample = sampleWorld(ray_pos + vec2(x - 1, y - 1));
-									if(world_sample > 0) {
+									if(world_sample >= 64) {
 										surround_values |= 1 << (8-counter);
 									}
 
@@ -614,19 +615,22 @@ namespace glsl_helper
 
 
 							// Add a small random variation
-							float noise_scale = 0.69; 
+							float noise_scale = 0.59; 
 							reflection += noise_scale * ((ray_index % 100 - 50) / float(50.0));
 
 							vec2 rrr = normalize(reflection);
 
 							ray_dir = rrr;
-							ray_pos += .5 * ray_dir;
-							if(sampleWorld(ray_pos) >= 32) {
+							ray_pos += 1.5 * ray_dir;
+							if(sampleWorld(ray_pos) >= 64) {
 								break;
 							}
-							bounces++;
+							// if(surround_values == 0)
+							// {
+								bounces++;
+							// }
 							i++;
-						}
+						// }
 					}
 					// if(bounces > 8) {
 					// 	break;
@@ -645,7 +649,7 @@ namespace glsl_helper
 					if(bounces > 0)
 					{
 						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - 2 * refracted_bounces); 
-						// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 + metal_bounces -  2 * refracted_bounces); 
+						// imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 -  2 * refracted_bounces); 
 					} else {
 						imageAtomicAdd(lightingTex,  ivec2(ray_pos.xy), 5 - 2 * refracted_bounces);
 					}

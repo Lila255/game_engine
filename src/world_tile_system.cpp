@@ -784,6 +784,14 @@ namespace game
 		return outlines;
 	}
 
+	std::vector<std::vector<std::pair<float, float>>> *world_tile_system::create_outline_from_custom_shape(std::vector<std::vector<tile_type>> tiles)
+	{
+		std::vector<std::pair<float, float>> outline;
+		
+
+
+	}
+
 	uint32_t world_tile_system::delete_circle(int x, int y, int radius, std::unordered_set<uint8_t> tile_deny_list)
 	{
 		std::unique_lock<std::shared_mutex> lock(chunk_mutex_base);

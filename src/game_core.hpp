@@ -21,6 +21,7 @@
 #include "legged_creature_system.hpp"
 #include "chunk_frame_system.hpp"
 #include "tile_arcing_system.hpp"
+#include "building_component_system.hpp"
 
 #include "tasks.hpp"
 

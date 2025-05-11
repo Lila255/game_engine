@@ -47,6 +47,8 @@ namespace game
 		uint8_t get_write_tile_at(int x, int y);
 		void set_tile_at_no_lock(int x, int y, uint8_t tile_type);
 
+		
+
 	public:
 		entity all_chunk_ent;
 		entity midground_tiles_ent;
@@ -70,6 +72,7 @@ namespace game
 		std::array<chunk *, NUM_CHUNKS> *get_chunks_base();
 		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *, NUM_CHUNKS> get_chunks_data();
 		std::vector<std::vector<std::pair<float, float>>> *create_outlines(int x, int y);
+		std::vector<std::vector<std::pair<float, float>>> * create_outline_from_custom_shape(std::vector<std::vector<tile_type>> tiles);
 		uint32_t delete_circle(int x, int y, int radius, std::unordered_set<uint8_t> tyle_deny_list);
 		std::array<uint8_t, game::NUM_CHUNKS> *get_modified_chunks();
 		void set_modified_chunk(int x, int y, uint8_t value);

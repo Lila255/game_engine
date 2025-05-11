@@ -49,6 +49,7 @@ namespace game
 					// 	data[y][x] = game::AIR;
 					// }
 					// -===============- //
+
 					if ((((y / 5) % 195 == 0) || ((x / 5) % 255 == 0)))
 					{
 						data[z][y][x] = game::AIR;
@@ -99,6 +100,15 @@ namespace game
 					// else {
 					// 	data[y][x] = game::AIR;
 					// }
+					// --------------------------
+					// if ( x == 90 || x == 91 || y == 90 || y == 91)
+					// {
+					// 	data[z][y][x] = game::STONE;
+					// }
+					// else 
+					// {
+					// 	data[z][y][x] = game::AIR;
+					// }
 				}
 			}
 
@@ -133,6 +143,7 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][i][0] = game::BEDROCK;
+						data[z][i][1] = game::BEDROCK;
 					}
 				}
 				else if(chunk_x == CHUNKS_WIDTH - 1)
@@ -140,6 +151,7 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][i][CHUNK_SIZE - 1] = game::BEDROCK;
+						data[z][i][CHUNK_SIZE - 2] = game::BEDROCK;
 					}
 				}
 
@@ -148,6 +160,7 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][0][i] = game::BEDROCK;
+						data[z][1][i] = game::BEDROCK;
 					}
 				} 
 				else if(chunk_y == CHUNKS_WIDTH - 1)
@@ -155,6 +168,7 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][CHUNK_SIZE - 1][i] = game::BEDROCK;
+						data[z][CHUNK_SIZE - 2][i] = game::BEDROCK;
 					}
 				}
 			}

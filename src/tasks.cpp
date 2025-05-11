@@ -476,6 +476,8 @@ namespace game
 		b2Body *foot_body = b2d_sys->get_dynamic_body(params->foot_entity);
 		b2Body *legged_creature_body = b2d_sys->get_dynamic_body(params->legged_creature_entity);
 
+		
+
 		// lock the foot to ground tile
 		foot_body->SetType(b2_staticBody);
 		foot_body->SetLinearVelocity(b2Vec2(0, 0));
