@@ -63,7 +63,7 @@ namespace game
 		LAVA,	// 33
 		ACID,	// 34
 		HONEY,	// 35
-		FLUID_04,	// 36
+		LIQUID_GLASS,	// 36
 		FLUID_05,	// 37
 		FLUID_06,	// 38
 		FLUID_07,	// 39
@@ -106,8 +106,8 @@ namespace game
 		SNOW,	// 75
 		WAX,	// 76
 		TEMPORARY_SNOW,	// 75
-		SOLID_14,	// 78
-		SOLID_15,	// 79
+		ICE,	// 78
+		ASH,	// 79
 		SOLID_16,	// 80
 		SOLID_17,	// 81
 		SOLID_18,	// 82
@@ -173,7 +173,7 @@ namespace game
 
 		
 		// indestructible tiles
-		BEDROCK,
+		BEDROCK,	// 255
 
 	};
 	const uint8_t BACKGROUND_TILE_START_INDEX = 128;
@@ -182,8 +182,10 @@ namespace game
 	extern std::array<uint8_t, 256> is_solid_tile;
 
 	// tile temperature config
-	// static std::array<int16_t, 256> tile_max_temperature {
-
+	extern std::array<int16_t, 256> tile_max_temperature;
+	extern std::unordered_map<tile_type, tile_type> max_temp_tile_change;
+	extern std::array<int16_t, 256> tile_min_temperature;
+	extern std::unordered_map<tile_type, tile_type> min_temp_tile_change;
 		
 
 	struct tile_linef
@@ -223,6 +225,74 @@ namespace game
 			}
 		}
 	};
+		struct line_mapping_pair
+	{
+		std::pair<float, float> p1{-1.f, -1.f};
+		std::pair<float, float> p2{-1.f, -1.f};
+
+		line_mapping_pair() {}
+		line_mapping_pair(std::pair<float, float> p)
+		{
+			p1 = p;
+		}
+
+		void insert(std::pair<float, float> p)
+		{
+			if (p1.first == -1)
+			{
+				p1 = p;
+			}
+			else if (p2.first == -1)
+			{
+				p2 = p;
+			}
+			else
+			{
+				printf("Error: line_mapping_pair already has two points\n");
+			}
+		}
+		std::pair<float, float> get_next()
+		{
+			if (p2.first != -1)
+			{
+				std::pair<float, float> p = p2;
+				p2 = {-1.f, -1.f};
+				return p;
+			}
+			else if (p1.first != -1)
+			{
+				std::pair<float, float> p = p1;
+				p1 = {-1.f, -1.f};
+				return p;
+			}
+			else
+			{
+				printf("Error: line_mapping_pair has no points\n");
+				return {-1.f, -1.f};
+			}
+		}
+		void remove_point(std::pair<float, float> p)
+		{
+			if (p1 == p)
+			{
+				if (p2.first != -1)
+				{
+					p1 = p2;
+					p2 = {-1.f, -1.f};
+				}
+				else
+					p1 = {-1.f, -1.f};
+			}
+			else if (p2 == p)
+			{
+				p2 = {-1.f, -1.f};
+			}
+			else
+			{
+				printf("Error: line_mapping_pair does not contain point\n");
+			}
+		}
+	};
 
 	struct tile_line_hash
 	{
@@ -250,8 +320,6 @@ namespace game
 	struct chunk
 	{
 	public:
-		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES> data;
-		std::array<std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES> temperature_data;
 		uint16_t chunk_x;
 		uint16_t chunk_y;
 		entity *background_entity;
@@ -266,7 +334,7 @@ namespace game
 		chunk(uint16_t x, uint16_t y) : chunk_x(x), chunk_y(y)
 		{
 			data = std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES>{};
-			temperature_data = std::array<std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES>{};
+			temperature_data = std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>{};
 		}
 
 		void create_chunk(uint32_t x, uint32_t y);
@@ -275,9 +343,12 @@ namespace game
 
 		// void create_texture_from_chunk(GLuint &texture);
 		std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>* get_data();
+		std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>* get_temperature_data();
 
 		void set_tile(int x, int y, uint8_t value);
 		uint8_t get_tile(int x, int y);
+		int16_t get_tile_temperature(int x, int y);
+		void set_tile_temperature(int x, int y, int16_t temperature);
 
 		bool isBoundaryTile(int x, int y);
 
@@ -302,6 +373,8 @@ namespace game
 		void update_frame(uint8_t frame);
 	private:
 		uint16_t get_tile_edginess(int x, int y);
+		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES> data;
+		std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE> temperature_data;
 		
 
 	};

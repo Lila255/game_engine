@@ -6,7 +6,7 @@ namespace game
 {
 	void legged_creature_system::start_thread()
 	{
-		printf("Starting flying creature system thread\n");
+		printf("Starting legged creature system thread\n");
 		running = 1;
 		uint64_t step_count = 0;
 
@@ -59,7 +59,7 @@ namespace game
 						}
 
 						// check if creature is close to player
-						if(creature.head_entity == 0 && b2Distance(legged_creature_pos, player_pos) < 1)
+						if(/*creature.head_entity == 0 &&*/ b2Distance(legged_creature_pos, player_pos) < 3)
 						{
 							creature.set_state(legged_creature_state::WATCHING);
 							continue;
@@ -163,9 +163,36 @@ namespace game
 
 						break;
 					}
+				case legged_creature_state::WATCHING:
+					
+					// check if creature is close to player
+					if(b2Distance(legged_creature_pos, player_pos) > 6)
+					{
+						printf("distance to player: %f\n", b2Distance(legged_creature_pos, player_pos));
+						creature.set_state(legged_creature_state::NOT_WALKING);
+						continue;
+					}
+					else
+					{
+						if(step_num % 10 == 0)
+						{
+							// try disconnect all legs.
+							for(int leg_i = 0; leg_i < creature.legs.size(); leg_i++)
+							{
+								legged_creature_leg &l = creature.legs[leg_i];
+								// move leg
+								entity foot_ent = l.foot_entity;
+								b2Body * foot_body = b2d_system -> get_dynamic_body(foot_ent);
+
+								foot_body -> SetType(b2_dynamicBody);
+							}
+							creature.connected_legs.clear();
+						}
+					}
+					break;
 				default:
 					// check if creature is close to player
-					if(b2Distance(legged_creature_pos, player_pos) > 4)
+					if(b2Distance(legged_creature_pos, player_pos) > 6)
 					{
 						creature.set_state(legged_creature_state::NOT_WALKING);
 						continue;

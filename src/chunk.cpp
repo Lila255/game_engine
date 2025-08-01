@@ -5,7 +5,11 @@
 namespace game
 {
 	std::array<uint8_t, 256> is_solid_tile;
-	
+	std::array<int16_t, 256> tile_max_temperature;
+	std::unordered_map<tile_type, tile_type> max_temp_tile_change;
+	std::array<int16_t, 256> tile_min_temperature;
+	std::unordered_map<tile_type, tile_type> min_temp_tile_change;
+
 
 	void chunk::create_chunk(uint32_t x, uint32_t y)
 	{
@@ -56,7 +60,7 @@ namespace game
 					}
 					else
 					{
-						if (noise_1 * noise_2 > .320)
+						if (noise_1 * noise_2 > .250)
 						// if (noise_1 + noise_2 > .970)
 						{ // solid
 							if (noise_2 > 0.75)
@@ -109,6 +113,30 @@ namespace game
 					// {
 					// 	data[z][y][x] = game::AIR;
 					// }
+					// --------------------------
+					// if (x + y < CHUNK_SIZE / 4 || x + y > 2.25 * (CHUNK_SIZE - CHUNK_SIZE / 4)) // || x + y > CHUNK_SIZE * 3 / 4)
+					// // else if (noise_1 * noise_2 > .320)
+					// {
+					// 	data[z][y][x] = game::DIRT;
+					// }
+					// else
+					// {
+					// 	data[z][y][x] = game::AIR;
+
+					// }
+					// --------------------------
+					// if (chunk_x % 2 && chunk_y % 2 && x > 3 * CHUNK_SIZE / 2 && y > 3 * CHUNK_SIZE / 2) 
+					// {
+					// 	data[z][y][x] = game::DIRT;
+					// }
+					// else
+					// {
+					// 	data[z][y][x] = game::AIR;
+
+					// }
+
+
+					temperature_data[y][x] = 23;
 				}
 			}
 
@@ -192,6 +220,10 @@ namespace game
 	{
 			return &data[current_frame];
 	}
+	std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE> *chunk::get_temperature_data()
+	{
+		return &temperature_data;
+	}
 
 	/// @brief Set the tile at the given x and y coordinates
 	/// This does not lock
@@ -215,6 +247,18 @@ namespace game
 			return data[current_frame][y][x];
 		else
 			return 0;
+	}
+	int16_t chunk::get_tile_temperature(int x, int y)
+	{
+		if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE)
+			return temperature_data[y][x];
+		else
+			return 0;
+	}
+	void chunk::set_tile_temperature(int x, int y, int16_t temperature)
+	{
+		if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE)
+			temperature_data[y][x] = temperature;
 	}
 
 	bool chunk::isBoundaryTile(int x, int y)
@@ -580,74 +624,7 @@ namespace game
 		 {{-0.5, 0, 0, 0.5}},
 		 {}}};
 
-	struct line_mapping_pair
-	{
-		std::pair<float, float> p1{-1.f, -1.f};
-		std::pair<float, float> p2{-1.f, -1.f};
 
-		line_mapping_pair() {}
-		line_mapping_pair(std::pair<float, float> p)
-		{
-			p1 = p;
-		}
-
-		void insert(std::pair<float, float> p)
-		{
-			if (p1.first == -1)
-			{
-				p1 = p;
-			}
-			else if (p2.first == -1)
-			{
-				p2 = p;
-			}
-			else
-			{
-				printf("Error: line_mapping_pair already has two points\n");
-			}
-		}
-		std::pair<float, float> get_next()
-		{
-			if (p2.first != -1)
-			{
-				std::pair<float, float> p = p2;
-				p2 = {-1.f, -1.f};
-				return p;
-			}
-			else if (p1.first != -1)
-			{
-				std::pair<float, float> p = p1;
-				p1 = {-1.f, -1.f};
-				return p;
-			}
-			else
-			{
-				printf("Error: line_mapping_pair has no points\n");
-				return {-1.f, -1.f};
-			}
-		}
-		void remove_point(std::pair<float, float> p)
-		{
-			if (p1 == p)
-			{
-				if (p2.first != -1)
-				{
-					p1 = p2;
-					p2 = {-1.f, -1.f};
-				}
-				else
-					p1 = {-1.f, -1.f};
-			}
-			else if (p2 == p)
-			{
-				p2 = {-1.f, -1.f};
-			}
-			else
-			{
-				printf("Error: line_mapping_pair does not contain point\n");
-			}
-		}
-	};
 
 	void chunk::create_outlines(std::vector<std::vector<std::pair<float, float>>> *chunk_outline)
 	{
@@ -802,7 +779,7 @@ namespace game
 			}
 			catch (std::exception e)
 			{
-				printf("Exception: %s\n", e.what());
+				// printf("Exception  : %s\n", e.what());
 				continue;
 			}
 		}

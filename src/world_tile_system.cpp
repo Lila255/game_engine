@@ -7,6 +7,24 @@ namespace game
 {
 	// const uint16_t NUM_CHUNKS = 16; // 3x3 chunks in world
 	// const uint16_t CHUNKS_WIDTH = 4;
+	
+	// const std::array<std::vector<tile_linef>, 16> edges_lines = {
+	// 	{{},
+	// 	 {{-0.5, 0, 0, 0.5}},
+	// 	 {{0, 0.5, 0.5, 0}},
+	// 	 {{-0.5, 0, 0.5, 0}},
+	// 	 {{0, -0.5, 0.5, 0}},
+	// 	 {{-0.5, 0, 0, -0.5}, {0, 0.5, 0.5, 0}},
+	// 	 {{0, 0.5, 0, -0.5}},
+	// 	 {{-0.5, 0, 0, -0.5}},
+	// 	 {{-0.5, 0, 0, -0.5}},
+	// 	 {{0, -0.5, 0, 0.5}},
+	// 	 {{-0.5, 0, 0, 0.5}, {0, -0.5, 0.5, 0}},
+	// 	 {{0, -0.5, 0.5, 0}},
+	// 	 {{-0.5, 0, 0.5, 0}},
+	// 	 {{0, 0.5, 0.5, 0}},
+	// 	 {{-0.5, 0, 0, 0.5}},
+	// 	 {}}};
 
 	world_tile_system::world_tile_system()
 	{
@@ -24,13 +42,75 @@ namespace game
 		std::fill(is_solid_tile.begin() + tile_type::GLASS, is_solid_tile.begin() + tile_type::SOLID_63 + 1, 1);
 
 		is_solid_tile[SNOW] = 0;
+		is_solid_tile[ASH] = 0;
 		is_solid_tile[TEMPORARY_SNOW] = 0;
 		is_solid_tile[BEDROCK] = 1;
 		is_solid_tile[ELECTRIC_BLUE] = 0;
+
+		const uint16_t max_temperature = 32765;
+		tile_max_temperature.fill(100);
+		tile_min_temperature.fill(-32765);
+
+		tile_min_temperature[SMOKE] = -20;
+		min_temp_tile_change[SMOKE] = ASH;
+		
+		tile_min_temperature[STEAM] = 100;
+		min_temp_tile_change[STEAM] = WATER;
+
+
+		// make all gas tiles use the max temp
+		for (int i = 0; i < LIQUID_TILE_START_INDEX; i++)
+		{
+			tile_max_temperature[i] = max_temperature;
+		}
+		tile_max_temperature[WATER] = 100;
+		max_temp_tile_change[WATER] = STEAM;
+		tile_min_temperature[WATER] = 0;
+		min_temp_tile_change[WATER] = ICE;
+
+		tile_max_temperature[LAVA] = 3500;
+		// max_temp_tile_change[LAVA] = 
+		tile_min_temperature[LAVA] = 1500;
+		min_temp_tile_change[LAVA] = STONE;
+
+		tile_max_temperature[ACID] = 250;
+		tile_max_temperature[HONEY] = 500;
+
+		tile_min_temperature[LIQUID_GLASS] = 1400;
+		min_temp_tile_change[LIQUID_GLASS] = GLASS;
+		
+		// solids
+		tile_max_temperature[GLASS] = 1400;
+		max_temp_tile_change[GLASS] = LIQUID_GLASS;
+
+		tile_max_temperature[LEAF] = 120;
+		max_temp_tile_change[LEAF] = EMBER;
+		tile_max_temperature[STONE] = 1500;
+		max_temp_tile_change[STONE] = LAVA;
+		tile_max_temperature[DIRT] = 250;
+		max_temp_tile_change[DIRT] = SAND;
+		tile_max_temperature[SAND] = 1400;
+		max_temp_tile_change[SAND] = LIQUID_GLASS;
+		tile_max_temperature[GRASS] = 250;
+		max_temp_tile_change[GRASS] = SAND;
+		tile_max_temperature[WOOD] = 200;
+		max_temp_tile_change[WOOD] = EMBER;
+		tile_max_temperature[GOLD] = 1064;
+		// max_temp_tile_change[GOLD] = LIQUID_GOLD;
+		tile_max_temperature[TREE_SEED] = 250;
+		max_temp_tile_change[TREE_SEED] = EMBER;
+		tile_max_temperature[ROOT] = 200;
+		max_temp_tile_change[ROOT] = EMBER;
+		tile_max_temperature[SNOW] = 0;
+		max_temp_tile_change[SNOW] = WATER;
+		
 	}
 
 	world_tile_system::~world_tile_system()
 	{
+		chunk_mutex_base.lock();
+		chunk_mutex_copy.lock();
+	
 		for (int i = 0; i < NUM_CHUNKS; i++)
 		{
 			delete tile_data_base[i];
@@ -194,6 +274,61 @@ namespace game
 		(tile_data_copy[chunk])->set_tile(tile_x, tile_y, t);
 	}
 
+	int16_t world_tile_system::get_tile_temperature_at(int x, int y)
+	{
+		int chunk_x = x / CHUNK_SIZE;
+		int chunk_y = y / CHUNK_SIZE;
+		int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int tile_x = x % CHUNK_SIZE;
+		int tile_y = y % CHUNK_SIZE;
+		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+			return 0;
+		if (tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
+			return 0;
+		// std::shared_lock<std::shared_mutex> lock(chunk_mutex_base);
+		return (tile_data_base[chunk])->get_tile_temperature(tile_x, tile_y);
+	}
+
+	void world_tile_system::set_tile_temperature_at(int x, int y,  int16 temperature)
+	{
+		int chunk_x = x / CHUNK_SIZE;
+		int chunk_y = y / CHUNK_SIZE;
+		int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int tile_x = x % CHUNK_SIZE;
+		int tile_y = y % CHUNK_SIZE;
+		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+			return;
+
+		if (tile_data_base[chunk]->get_tile_temperature(tile_x, tile_y) != temperature)
+		{
+			set_modified_chunk(chunk_x, chunk_y, 1);
+		}
+
+		tile_data_base[chunk]->set_tile_temperature(tile_x, tile_y, temperature);
+	}
+
+						// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
+						// set_tile_at_no_lock(x + 1, y + 1, SAND);
+
+	void world_tile_system::switch_tiles_no_lock(int x1, int y1, int x2, int y2)
+	{
+		tile_type t1 = (tile_type)get_write_tile_at(x1, y1);
+		tile_type t2 = (tile_type)get_write_tile_at(x2, y2);
+
+		if (t1 == t2 || t1 == BEDROCK || t2 == BEDROCK)
+			return;
+		
+		// get temperatures so we can swap those too
+		uint16_t t1_temp = get_tile_temperature_at(x1, y1);
+		uint16_t t2_temp = get_tile_temperature_at(x2, y2);
+
+		set_tile_at_no_lock(x1, y1, t2);
+		set_tile_at_no_lock(x2, y2, t1);
+
+		set_tile_temperature_at(x1, y1, t2_temp);
+		set_tile_temperature_at(x2, y2, t1_temp);
+	}
+
 	void world_tile_system::set_tile_at_no_lock(int x, int y, uint8_t tile_type)
 	{
 		int chunk_x = x / CHUNK_SIZE;
@@ -252,6 +387,109 @@ namespace game
 		std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
 
 		uint8_t direction = tick_count % 2;
+		
+		int heat_dx[] = {0, 1, 0, -1};
+		int heat_dy[] = {-1, 0, 1, 0};
+				
+		
+		std::array<std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>, NUM_CHUNKS> tile_temperature_changes;
+		for (int i = 0; i < NUM_CHUNKS; i++)
+		{
+			tile_temperature_changes[i].fill({});
+		}
+
+		for (int y = CHUNKS_WIDTH * CHUNK_SIZE - 1; y >= 0; y--)
+		{
+			int chunk_y = y / CHUNK_SIZE;
+
+			for (int x = direction ? 0 : CHUNKS_WIDTH * CHUNK_SIZE - 1; x < CHUNKS_WIDTH * CHUNK_SIZE && x >= 0; x += direction ? 1 : -1)
+			{
+				int chunk_x = x / CHUNK_SIZE;
+				int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+				int tile_x = x % CHUNK_SIZE;
+				int tile_y = y % CHUNK_SIZE;
+
+				uint8_t tile_t = get_write_tile_at(x, y);
+				int16_t tile_temp = get_tile_temperature_at(x, y);
+
+				// check if tile is overheated
+				if (tile_temp > tile_max_temperature[tile_t] + 2)
+				{
+					if(max_temp_tile_change.count((tile_type)tile_t))
+					{
+						set_tile_at_no_lock(x, y, max_temp_tile_change[(tile_type)tile_t]);
+					} 
+					else 
+					{
+						// printf(" overheated with temperaTile %d at (%d, %d) is overheated with temperature %d, but no max temp change defined.\n", tile_t, x, y, tile_temp);
+					}
+				}
+				// check if tile is too cold
+				else if (tile_temp < tile_min_temperature[tile_t] - 2)
+				{
+					if(min_temp_tile_change.count((tile_type)tile_t))
+					{
+						set_tile_at_no_lock(x, y, min_temp_tile_change[(tile_type)tile_t]);
+					} 
+					else 
+					{
+						// printf(" too cold with temperaTile %d at (%d, %d) is too cold with temperature %d, but no min temp change defined.\n", tile_t, x, y, tile_temp);
+					}
+				}
+
+				// transfer heat to adjacent tiles
+				// TODO: make the direction random order
+				for(int i = 0; i < 4; i++)
+				{
+					int adjacent_x = x + heat_dx[i];
+					int adjacent_y = y + heat_dy[i];
+
+					if(adjacent_x < 0 || adjacent_x >= CHUNKS_WIDTH * CHUNK_SIZE || adjacent_y < 0 || adjacent_y >= CHUNKS_WIDTH * CHUNK_SIZE)
+					{
+						continue;
+					}
+
+					int16_t adjacent_tile_temp = get_tile_temperature_at(adjacent_x, adjacent_y);
+					if (adjacent_tile_temp < tile_temp - 2)
+					{
+						// TODO: Create tile temperature storage units + tile temperature transfer rates
+						int16_t temp_change = (tile_temp - adjacent_tile_temp) / 10;
+						if (temp_change > 0)
+						{
+							// set_tile_temperature_at(adjacent_x, adjacent_y, adjacent_tile_temp + temp_change);
+							// set_tile_temperature_at(x, y, tile_temp - temp_change);
+
+							tile_temperature_changes[chunk][adjacent_y % CHUNK_SIZE][adjacent_x % CHUNK_SIZE] += temp_change;
+							tile_temperature_changes[chunk][tile_y % CHUNK_SIZE][tile_x % CHUNK_SIZE] -= temp_change;
+						}
+					}
+				}
+			}
+		}
+		// apply temperature changes
+		for (int i = 0; i < NUM_CHUNKS; i++)
+		{
+			int chunk_x = i % CHUNKS_WIDTH;
+			int chunk_y = i / CHUNKS_WIDTH;
+
+			// std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
+			// std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
+
+			for (int y = 0; y < CHUNK_SIZE; y++)
+			{
+				for (int x = 0; x < CHUNK_SIZE; x++)
+				{
+					int16_t temp_change = tile_temperature_changes[i][y][x];
+					if (temp_change != 0)
+					{
+						int tile_x = x + chunk_x * CHUNK_SIZE;
+						int tile_y = y + chunk_y * CHUNK_SIZE;
+						set_tile_temperature_at(tile_x, tile_y, get_tile_temperature_at(tile_x, tile_y) + temp_change);
+					}
+				}
+			}
+		}
+
 		for (int y = CHUNKS_WIDTH * CHUNK_SIZE - 1; y >= 0; y--)
 		{
 			int chunk_y = y / CHUNK_SIZE;
@@ -264,6 +502,7 @@ namespace game
 				int tile_y = y % CHUNK_SIZE;
 
 				uint8_t tile_type = get_write_tile_at(x, y);
+
 				switch (tile_type)
 				{
 				case AIR:
@@ -274,53 +513,61 @@ namespace game
 					}
 					break;
 
-				case WATER:
-					if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
-					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
-						set_tile_at_no_lock(x, y + 1, WATER);
-						break;
-					}
-					if (game_engine::in_set(get_write_tile_at(x - 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
-					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y + 1));
-						set_tile_at_no_lock(x - 1, y + 1, WATER);
-						break;
-					}
-					if (game_engine::in_set(get_write_tile_at(x + 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
-					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
-						set_tile_at_no_lock(x + 1, y + 1, WATER);
-						break;
-					}
-					if (!(rand() % 4))
-					{
-						if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS && get_simple_tile_type(get_write_tile_at(x - 1, y)) == GAS)
-						{
-							if (rand() % 3)
-							{
-								set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y));
-								set_tile_at_no_lock(x - 1, y, WATER);
-							}
-							else
-							{
-								set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y));
-								set_tile_at_no_lock(x + 1, y, WATER);
-							}
-						}
-						else if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS)
-						{
-							set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y));
-							set_tile_at_no_lock(x + 1, y, WATER);
-							break;
-						}
-						else if (get_simple_tile_type(get_write_tile_at(x - 1, y)) == GAS)
-						{
-							set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y));
-							set_tile_at_no_lock(x - 1, y, WATER);
-							break;
-						}
-					}
+				// case WATER:
+				// 	if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
+				// 	{
+				// 		// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
+				// 		// set_tile_at_no_lock(x, y + 1, WATER);
+				// 		switch_tiles_no_lock(x, y, x, y + 1);
+				// 		break;
+				// 	}
+				// 	if (game_engine::in_set(get_write_tile_at(x - 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
+				// 	{
+				// 		// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y + 1));
+				// 		// set_tile_at_no_lock(x - 1, y + 1, WATER);
+				// 		switch_tiles_no_lock(x, y, x - 1, y + 1);
+				// 		break;
+				// 	}
+				// 	if (game_engine::in_set(get_write_tile_at(x + 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
+				// 	{
+				// 		// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
+				// 		// set_tile_at_no_lock(x + 1, y + 1, WATER);
+				// 		switch_tiles_no_lock(x, y, x + 1, y + 1);
+				// 		break;
+				// 	}
+				// 	if (!(rand() % 4))
+				// 	{
+				// 		if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS && get_simple_tile_type(get_write_tile_at(x - 1, y)) == GAS)
+				// 		{
+				// 			if (rand() % 3)
+				// 			{
+				// 				// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y));
+				// 				// set_tile_at_no_lock(x - 1, y, WATER);
+				// 				switch_tiles_no_lock(x, y, x - 1, y);
+				// 			}
+				// 			else
+				// 			{
+				// 				// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y));
+				// 				// set_tile_at_no_lock(x + 1, y, WATER);
+				// 				switch_tiles_no_lock(x, y, x + 1, y);
+				// 			}
+				// 		}
+				// 		else if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS)
+				// 		{
+				// 			// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y));
+				// 			// set_tile_at_no_lock(x + 1, y, WATER);
+				// 			switch_tiles_no_lock(x, y, x + 1, y);
+				// 			break;
+				// 		}
+				// 		else if (get_simple_tile_type(get_write_tile_at(x - 1, y)) == GAS)
+				// 		{
+				// 			// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y));
+				// 			// set_tile_at_no_lock(x - 1, y, WATER);
+				// 			switch_tiles_no_lock(x, y, x - 1, y);
+				// 			break;
+				// 		}
+				// 	}
+				//	 break;
 
 					// if (game_engine::in_set(get_write_tile_at(x - 1, y), AIR, SMOKE, TEMPORARY_SMOKE))
 					// {
@@ -334,7 +581,6 @@ namespace game
 					// 	set_tile_at_no_lock(x + 1, y, WATER);
 					// 	break;
 					// }
-					break;
 				case ACID:
 					// if (rand() % 10 == 0 && get_write_tile_at(x, y + 1) >= GLASS && get_write_tile_at(x, y + 1) < BEDROCK)
 					// {
@@ -345,32 +591,37 @@ namespace game
 
 					if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
-						set_tile_at_no_lock(x, y + 1, ACID);
+						// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
+						// set_tile_at_no_lock(x, y + 1, ACID);
+						switch_tiles_no_lock(x, y, x, y + 1);
 						break;
 					}
 					if (game_engine::in_set(get_write_tile_at(x - 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y + 1));
-						set_tile_at_no_lock(x - 1, y + 1, ACID);
+						// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y + 1));
+						// set_tile_at_no_lock(x - 1, y + 1, ACID);
+						switch_tiles_no_lock(x, y, x - 1, y + 1);
 						break;
 					}
 					if (game_engine::in_set(get_write_tile_at(x + 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
-						set_tile_at_no_lock(x + 1, y + 1, ACID);
+						// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
+						// set_tile_at_no_lock(x + 1, y + 1, ACID);
+						switch_tiles_no_lock(x, y, x + 1, y + 1);
 						break;
 					}
 					if (game_engine::in_set(get_write_tile_at(x - 1, y), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y));
-						set_tile_at_no_lock(x - 1, y, ACID);
+						// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y));
+						// set_tile_at_no_lock(x - 1, y, ACID);
+						switch_tiles_no_lock(x, y, x - 1, y);
 						break;
 					}
 					if (game_engine::in_set(get_write_tile_at(x + 1, y), AIR, SMOKE, TEMPORARY_SMOKE))
 					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y));
-						set_tile_at_no_lock(x + 1, y, ACID);
+						// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y));
+						// set_tile_at_no_lock(x + 1, y, ACID);
+						switch_tiles_no_lock(x, y, x + 1, y);
 						break;
 					}
 					if (rand() % 3 == 0 && get_write_tile_at(x, y + 1) >= GLASS && get_write_tile_at(x, y + 1) < BEDROCK)
@@ -418,18 +669,21 @@ namespace game
 				case SAND:
 					if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
 					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
-						set_tile_at_no_lock(x, y + 1, SAND);
+						// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
+						// set_tile_at_no_lock(x, y + 1, SAND);
+						switch_tiles_no_lock(x, y, x, y + 1);
 					}
 					else if (game_engine::in_set(get_write_tile_at(x - 1, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
 					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y + 1));
-						set_tile_at_no_lock(x - 1, y + 1, SAND);
+						// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y + 1));
+						// set_tile_at_no_lock(x - 1, y + 1, SAND);
+						switch_tiles_no_lock(x, y, x - 1, y + 1);
 					}
 					else if (game_engine::in_set(get_write_tile_at(x + 1, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
 					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
-						set_tile_at_no_lock(x + 1, y + 1, SAND);
+						// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
+						// set_tile_at_no_lock(x + 1, y + 1, SAND);
+						switch_tiles_no_lock(x, y, x + 1, y + 1);
 					}
 					break;
 
@@ -481,10 +735,11 @@ namespace game
 					break;
 
 				case SNOW:
-					if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
+					if (get_simple_tile_type(get_write_tile_at(x, y + 1)) == GAS)
 					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
-						set_tile_at_no_lock(x, y + 1, SNOW);
+						// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
+						// set_tile_at_no_lock(x, y + 1, SNOW);
+						switch_tiles_no_lock(x, y, x, y + 1);
 					}
 					break;
 				
@@ -492,12 +747,59 @@ namespace game
 				
 					if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
 					{
-						set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
-						set_tile_at_no_lock(x, y + 1, TEMPORARY_SNOW);
+						// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
+						// set_tile_at_no_lock(x, y + 1, TEMPORARY_SNOW);
+						switch_tiles_no_lock(x, y, x, y + 1);
 					}
 					else if (rand() % 8 == 0)
 					{
 						set_tile_at_no_lock(x, y, SNOW);
+						set_tile_temperature_at(x, y, -100);
+					}
+					break;
+
+				default:
+					game::tile_simple_type simple_type = get_simple_tile_type(tile_type);
+
+					switch (simple_type)
+					{
+					case LIQUID:
+						if (get_simple_tile_type(get_write_tile_at(x, y + 1)) == GAS)
+						{
+							// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
+							// set_tile_at_no_lock(x, y + 1, tile_type);
+							switch_tiles_no_lock(x, y, x, y + 1);
+						}
+						else if (get_simple_tile_type(get_write_tile_at(x - 1, y + 1)) == GAS)
+						{
+							// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y + 1));
+							// set_tile_at_no_lock(x - 1, y + 1, tile_type);
+							switch_tiles_no_lock(x, y, x - 1, y + 1);
+						}
+						else if (get_simple_tile_type(get_write_tile_at(x + 1, y + 1)) == GAS)
+						{
+							// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
+							// set_tile_at_no_lock(x + 1, y + 1, tile_type);
+							switch_tiles_no_lock(x, y, x + 1, y + 1);
+						}
+						else if (get_simple_tile_type(get_write_tile_at(x, y + 1)) == LIQUID)
+						{
+							if (get_write_tile_at(x, y + 1) < tile_type)
+							{
+								switch_tiles_no_lock(x, y, x, y + 1);
+							}
+						}
+						break;
+					case GAS:
+						if (get_simple_tile_type(get_write_tile_at(x, y - 1)) == GAS && get_write_tile_at(x, y - 1) < tile_type)
+						{
+							switch_tiles_no_lock(x, y, x, y - 1);
+						}
+						else if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS && get_write_tile_at(x + 1, y) < tile_type)
+						{
+							switch_tiles_no_lock(x, y, x + 1, y);
+						}
+						break;
 					}
 					break;
 				}
@@ -594,17 +896,18 @@ namespace game
 			for (int j = (int)character_box.y; j < (int)character_box.y + character_box.h + 1; j++)
 			{
 				tile_type tile = (tile_type)get_write_tile_at(i, j);
+				int16_t tile_temp = get_tile_temperature_at(i, j);
 
 				if (tile >= SOLID_TILE_START_INDEX && !is_solid_tile[tile])
 				{
 					set_tile_at_no_lock(i, j, AIR);
-					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -velocity.y, 0.5f, tile, AIR, tile, 250)});
+					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -velocity.y, 0.5f, tile, AIR, tile, 250, tile_temp)});
 					// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
 				}
 				else if (velocity.y * velocity.y + velocity.x * velocity.x > 3 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
 				{
 					set_tile_at_no_lock(i, j, AIR);
-					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -velocity.y, 0.5f, tile, AIR, tile, 250)});
+					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -velocity.y, 0.5f, tile, AIR, tile, 250, tile_temp)});
 					// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
 				}
 			}
@@ -656,6 +959,7 @@ namespace game
 				for (int j = (int)legged_creature_box.y; j < (int)legged_creature_box.y + legged_creature_box.h + 1; j++)
 				{
 					tile_type tile = (tile_type)get_write_tile_at(i, j);
+					int16_t temperature = get_tile_temperature_at(i, j);
 
 					// Calculate the collision point on the circle
 					b2Vec2 collision_point = b2Vec2(i, j);
@@ -683,12 +987,12 @@ namespace game
 					if (tile >= SOLID_TILE_START_INDEX && !is_solid_tile[tile])
 					{
 						set_tile_at_no_lock(i, j, AIR);
-						game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, debris_velocity.x, debris_velocity.y, 0.5f, tile, AIR, tile, 250)});
+						game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, debris_velocity.x, debris_velocity.y, 0.5f, tile, AIR, tile, 250, temperature)});
 					}
 					else if (legged_creature_velocity.y * legged_creature_velocity.y + legged_creature_velocity.x * legged_creature_velocity.x > 3 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
 					{
 						set_tile_at_no_lock(i, j, AIR);
-						game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, debris_velocity.x, debris_velocity.y, 0.5f, tile, AIR, tile, 250)});
+						game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, debris_velocity.x, debris_velocity.y, 0.5f, tile, AIR, tile, 250, temperature)});
 					}
 
 
@@ -704,6 +1008,7 @@ namespace game
 		for (int i = 0; i < NUM_CHUNKS; i++)
 		{
 			memcpy(tile_data_copy[i]->get_data(), tile_data_base[i]->get_data(), CHUNK_SIZE * CHUNK_SIZE);
+			memcpy(tile_data_copy[i]->get_temperature_data(), tile_data_base[i]->get_temperature_data(), CHUNK_SIZE * CHUNK_SIZE * sizeof(int16_t));
 		}
 
 		
@@ -784,13 +1089,84 @@ namespace game
 		return outlines;
 	}
 
-	std::vector<std::vector<std::pair<float, float>>> *world_tile_system::create_outline_from_custom_shape(std::vector<std::vector<tile_type>> tiles)
+	const int adjacent_tiles_dx[4] = {-1, 0, 0, -1}; // bottom left, bottom right, top right, top left
+	const int adjacent_tiles_dy[4] = {0, 0, -1, -1};
+	const int offset[4] = {1, 2, 4, 8};
+	uint16_t world_tile_system::get_tile_edginess(int chunk_x, int chunk_y, int x, int y)
 	{
-		std::vector<std::pair<float, float>> outline;
+		uint16_t edginess = 0;
+
+		for (int i = 0; i < 4; i++)
+		{
+			int adjacent_x = x + adjacent_tiles_dx[i];
+			int adjacent_y = y + adjacent_tiles_dy[i];
+			if (adjacent_x < 0 || adjacent_x >= CHUNK_SIZE || adjacent_y < 0 || adjacent_y >= CHUNK_SIZE)
+			{
+				continue;
+			}
+			// if (data[adjacent_y][adjacent_x] >= SOLID_TILE_START_INDEX)
+			// if (is_solid_tile[data[current_frame][adjacent_y][adjacent_x]])
+			if(tile_data_copy[chunk_x + chunk_y * CHUNKS_WIDTH]->get_tile(adjacent_x, adjacent_y) >= SOLID_TILE_START_INDEX)
+			{
+				edginess += offset[i];
+			}
+		}
+
+		return edginess;
+	}
+
+
+	// std::vector<std::vector<std::pair<float, float>>> *world_tile_system::create_outlines_from_chunk(int chunk_x, int chunk_y)
+	// {
+	// 	std::vector<std::vector<std::pair<float, float>>> *outlines = new std::vector<std::vector<std::pair<float, float>>>;
+	// 	std::shared_lock<std::shared_mutex> lock(chunk_mutex_copy);
+
+	// 	std::unordered_map<std::pair<float, float>, line_mapping_pair, chunk_coord_pair_hash> edge_lines;
+	// 	std::unordered_map<std::pair<float, float>, line_mapping_pair, chunk_coord_pair_hash> edge_lines_reverse;
+
+	// 	for (int y = 0; y < CHUNK_SIZE + 1; y++)
+	// 	{
+	// 		for (int x = 0; x < CHUNK_SIZE + 1; x++)
+	// 		{
+	// 			// if (data[y][x] >= SOLID_TILE_START_INDEX)
+	// 			// {
+	// 			uint16_t edginess = get_tile_edginess(chunk_x, chunk_y, x, y);
+	// 			for (tile_linef line : edges_lines[edginess])
+	// 			{
+	// 				line.x1 += x;
+	// 				line.y1 += y;
+	// 				line.x2 += x;
+	// 				line.y2 += y;
+	// 				if (!edge_lines.count({line.x1, line.y1}))
+	// 				{
+	// 					edge_lines[{line.x1, line.y1}] = line_mapping_pair({line.x2, line.y2});
+
+	// 					if (!edge_lines_reverse.count({line.x2, line.y2}))
+	// 						edge_lines_reverse[{line.x2, line.y2}] = line_mapping_pair({line.x1, line.y1});
+	// 					else
+	// 						edge_lines_reverse[{line.x2, line.y2}].insert({line.x1, line.y1});
+	// 				}
+	// 				else
+	// 				{
+	// 					edge_lines[{line.x1, line.y1}].insert({line.x2, line.y2});
+	// 					if (!edge_lines_reverse.count({line.x2, line.y2}))
+	// 						edge_lines_reverse[{line.x2, line.y2}] = line_mapping_pair({line.x1, line.y1});
+	// 					else
+	// 						edge_lines_reverse[{line.x2, line.y2}].insert({line.x1, line.y1});
+	// 				}
+	// 			}
+	// 			// }
+	// 		}
+	// 	}
+	// }
+
+	// std::vector<std::vector<std::pair<float, float>>> *world_tile_system::create_outline_from_custom_shape(std::vector<std::vector<tile_type>> tiles)
+	// {
+	// 	std::vector<std::pair<float, float>> outline;
 		
 
-
-	}
+	// 	return 
+	// }
 
 	uint32_t world_tile_system::delete_circle(int x, int y, int radius, std::unordered_set<uint8_t> tile_deny_list)
 	{

@@ -28,6 +28,7 @@ namespace game
 			proj.debri_tile_type = (tile_type)(params->debri_tile_type);
 			proj.temporary_trail_tile_type = (tile_type)(params->temp_tile_type);
 			proj.permanent_trail_tile_type = (tile_type)(params->perm_tile_type);
+			proj.tile_temperature = params->tile_temperature;
 		}
 	}
 
@@ -473,16 +474,17 @@ namespace game
 		box2d_system *b2d_sys = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()));
 		legged_creature_system *legged_creature_sys = ((legged_creature_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<legged_creature_system>()));
 		legged_creature &c = legged_creature_sys->get(params->legged_creature_entity);
+		b2d_mutex.lock();
 		b2Body *foot_body = b2d_sys->get_dynamic_body(params->foot_entity);
 		b2Body *legged_creature_body = b2d_sys->get_dynamic_body(params->legged_creature_entity);
 
 		
-
 		// lock the foot to ground tile
 		foot_body->SetType(b2_staticBody);
 		foot_body->SetLinearVelocity(b2Vec2(0, 0));
 		foot_body->SetAngularVelocity(0);
 
 		c.connected_legs.insert(params->leg_index);
+		b2d_mutex.unlock();
 	}
 }

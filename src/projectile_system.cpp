@@ -22,7 +22,6 @@ namespace game
 		{
 			projectile &projectile = projectiles.get(proj_entity);
 			// printf("\tx: %f, y: %f\n", projectile.body->GetPosition().x, projectile.body->GetPosition().y);
-			
 
 			b2_user_data *ud = (b2_user_data *)(projectile.body->GetFixtureList()->GetUserData().pointer);
 			
@@ -64,10 +63,14 @@ namespace game
 				if (projectile.permanent_trail_tile_type != 0 && world_tiles->get_tile_at(position.x, position.y) == 0)
 				{
 					world_tiles->set_tile_at_with_lock(position.x, position.y, projectile.permanent_trail_tile_type);
+					world_tiles->set_tile_temperature_at(position.x, position.y, projectile.tile_temperature);
 				}
 				else if (projectile.temporary_trail_tile_type != 0 && world_tiles->get_tile_at(position.x, position.y) == 0)
 				{
 					world_tiles->set_tile_copy_at(position.x, position.y, projectile.temporary_trail_tile_type);
+					int16_t tile_temperature = world_tiles->get_tile_temperature_at(position.x, position.y);
+					int16_t new_temperature = tile_temperature + (projectile.tile_temperature - tile_temperature) / 20;
+					world_tiles->set_tile_temperature_at(position.x, position.y, new_temperature);
 				}
 			}
 		}

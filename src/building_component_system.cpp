@@ -17,7 +17,12 @@ namespace game
 
 	void building_component_system::add(entity ent, building_component &building_comp)
 	{
+		building_components.add(ent, building_comp);
 		
+		// create boxy2d body using the building component's shape
+
+		// create/get texture
+		// create/get vbo
 	}
 
 	void building_component_system::start_thread()

@@ -698,20 +698,20 @@ void run_game(GLFWwindow *window)
 
 	uint16_t centipede_length = 8;
 
-	for(int i = 0; i < centipede_length; i++)
-	{
-		entity old_spider = new_spider;
-		new_spider = eng.create_entity();
+	// for(int i = 0; i < centipede_length; i++)
+	// {
+	// 	entity old_spider = new_spider;
+	// 	new_spider = eng.create_entity();
 
-		if(old_spider == 0)
-		{
-			entity tile_arc = eng.create_entity();
-			game::tile_arc tile_arc_to_spider = {game::tile_arc_type::ELECTRIC, player_entity, new_spider}; 
-			tile_arcing_sys -> add(tile_arc, tile_arc_to_spider);
-		}
+	// 	if(old_spider == 0)
+	// 	{
+	// 		entity tile_arc = eng.create_entity();
+	// 		game::tile_arc tile_arc_to_spider = {game::tile_arc_type::ELECTRIC, player_entity, new_spider}; 
+	// 		tile_arcing_sys -> add(tile_arc, tile_arc_to_spider);
+	// 	}
 
-		legged_creature_sys -> create_legged_creature(new_spider, 150, 150 + i * 10, game::legged_creature_type::SPIDER, old_spider, 0); 
-	}
+	// 	legged_creature_sys -> create_legged_creature(new_spider, 150, 150 + i * 10, game::legged_creature_type::SPIDER, old_spider, 0); 
+	// }
 	// legged_creature_sys -> create_legged_creature(new_spider, 50, 50, game::legged_creature_type::SPIDER);
 
 
@@ -736,7 +736,7 @@ void run_game(GLFWwindow *window)
 
 		for(int c = 0; c < game::NUM_CHUNKS; c++)
 		{
-			render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(&((world_sys->get_chunks_copy())->at(c)->data)), (c % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (c / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
+			render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)((world_sys->get_chunks_copy())->at(c)->get_data()), (c % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (c / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
 		}
 		
 		// printf("b2d_time: %lums\n", duration_b2d.count() / 1000);

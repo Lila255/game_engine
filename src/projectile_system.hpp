@@ -14,6 +14,7 @@ namespace game
 		tile_type debri_tile_type;
 		tile_type permanent_trail_tile_type;
 		tile_type temporary_trail_tile_type;
+		int16_t tile_temperature;
 	};
 
 	struct projectile_system : public game_engine::system

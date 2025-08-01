@@ -87,7 +87,7 @@ namespace game
 						x += perlin_noise_1.noise1D((i + tick_count * 5) / 10.0) * 2;
 						y += y_change;
 						y += perlin_noise_1.noise1D((i + tick_count * 5) / 10.0) * 2;
-						world_tile_sys->set_tile_copy_at((int)x, (int)y, ELECTRIC_BLUE);
+						// world_tile_sys->set_tile_copy_at((int)x, (int)y, ELECTRIC_BLUE);
 					}
 
 					break;

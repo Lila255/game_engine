@@ -11,6 +11,7 @@ namespace game
 	// extern const uint16_t NUM_CHUNKS; // 3x3 chunks in world
 	// extern const uint16_t CHUNKS_WIDTH;
 
+	extern std::array<std::vector<tile_linef>, 16> edges_lines;
 
 	// coordinate pair with hash
 	struct tile_coord
@@ -59,9 +60,13 @@ namespace game
 
 		void set_all_chunk_ent(entity ent);
 		uint8_t get_tile_at(int x, int y);
+		int16_t get_tile_temperature_at(int x, int y);
+		void set_tile_temperature_at(int x, int y, int16_t temperature);
+		
 		void set_tile_at_with_lock(int x, int y, uint8_t tile_type);
 		void set_tile_at_with_search_and_lock(int x, int y, uint8_t tile_type);
 		void set_tile_copy_at(int x, int y, uint8_t tile_type);
+		void switch_tiles_no_lock(int x1, int y1, int x2, int y2);
 		std::array<entity, NUM_CHUNKS> get_chunk_entities();
 		void update(){};
 		void update(uint64_t tick_count);
@@ -71,7 +76,9 @@ namespace game
 		std::array<chunk *, NUM_CHUNKS> *get_chunks_copy();
 		std::array<chunk *, NUM_CHUNKS> *get_chunks_base();
 		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *, NUM_CHUNKS> get_chunks_data();
+		uint16_t get_tile_edginess(int chunk_x, int chunk_y, int x, int y);
 		std::vector<std::vector<std::pair<float, float>>> *create_outlines(int x, int y);
+		std::vector<std::vector<std::pair<float, float>>> *create_outlines_from_chunk(int x, int y);
 		std::vector<std::vector<std::pair<float, float>>> * create_outline_from_custom_shape(std::vector<std::vector<tile_type>> tiles);
 		uint32_t delete_circle(int x, int y, int radius, std::unordered_set<uint8_t> tyle_deny_list);
 		std::array<uint8_t, game::NUM_CHUNKS> *get_modified_chunks();
