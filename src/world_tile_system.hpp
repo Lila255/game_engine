@@ -60,8 +60,9 @@ namespace game
 
 		void set_all_chunk_ent(entity ent);
 		uint8_t get_tile_at(int x, int y);
-		int16_t get_tile_temperature_at(int x, int y);
-		void set_tile_temperature_at(int x, int y, int16_t temperature);
+		float get_tile_temperature_at(int x, int y);
+		void set_tile_temperature_at(int x, int y, float temperature);
+		void add_tile_temperature(int x, int y, float temperature);
 		
 		void set_tile_at_with_lock(int x, int y, uint8_t tile_type);
 		void set_tile_at_with_search_and_lock(int x, int y, uint8_t tile_type);

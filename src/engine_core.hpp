@@ -189,17 +189,18 @@ namespace game_engine
 
 		void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
 		{
-			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+			if ((button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_RIGHT) && action == GLFW_PRESS)
 			{
 				// std::cout << "Left mouse button pressed" << std::endl;
 				pressed_mouse_buttons.insert(button);
 			}
-			else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+			else if ((button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_RIGHT) && action == GLFW_RELEASE)
 			{
 				// std::cout << "Left mouse button released" << std::endl;
 				if (pressed_mouse_buttons.count(button) > 0)
 					pressed_mouse_buttons.erase(button);
 			}
+
 		}
 	};
 	

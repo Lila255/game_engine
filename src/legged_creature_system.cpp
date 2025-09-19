@@ -47,6 +47,11 @@ namespace game
 			b2Body *body = b2d_system->get_dynamic_body(ent);
 			b2Vec2 legged_creature_pos = body->GetPosition();
 			
+			if(creature.head_entity == 0)
+			{
+				world_tile_sys -> add_tile_temperature(legged_creature_pos.x * game::box2d_scale, legged_creature_pos.y * game::box2d_scale, 5000);
+			}
+
 			switch(creature.get_state())
 			{
 				case legged_creature_state::WALKING:
@@ -362,7 +367,7 @@ namespace game
 		body_def.type = b2_dynamicBody;
 		body_def.position.Set(x / box2d_scale, y / box2d_scale);
 
-		world_tile_sys -> delete_circle(x, y, 32, {});
+		world_tile_sys -> delete_circle(x, y, 24, {});
 
 		b2Body *body = legged_creature_system::b2d_system->world->CreateBody(&body_def);
 		legged_creature_system::b2d_system->add_dynamic_body(ent, body);

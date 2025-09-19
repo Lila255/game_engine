@@ -78,7 +78,7 @@ namespace game
 					// printf("Terrain hit\n");
 
 					tile_type t = LAVA;
-					int16_t temperature = 26000;
+					int16_t temperature = 4600;
 					if (ud_a->type == b2fixture_types::PROJECTILE)
 					{
 						// delete circle shape around projectile

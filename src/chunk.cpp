@@ -4,12 +4,13 @@
 
 namespace game
 {
-	std::array<uint8_t, 256> is_solid_tile;
-	std::array<int16_t, 256> tile_max_temperature;
-	std::unordered_map<tile_type, tile_type> max_temp_tile_change;
-	std::array<int16_t, 256> tile_min_temperature;
-	std::unordered_map<tile_type, tile_type> min_temp_tile_change;
-
+	std::array<uint8_t, 256> is_solid_tile;							// indicate which tiles are solid
+	std::array<float, 256> tile_max_temperature;					// maximum temperature a tile can have
+	std::unordered_map<tile_type, tile_type> max_temp_tile_change;	// tile to change to when overheated
+	std::array<float, 256> tile_min_temperature;					// minimum temperature a tile can have
+	std::unordered_map<tile_type, tile_type> min_temp_tile_change;	// tile to change to when cooled
+	float absolute_max_temperature = 32765; 						// maximum temperature any tile can have
+	std::array<float, 256> tile_heat_capacity;						// heat capacity of each tile(combines density and specific heat, as there is no density value stored)
 
 	void chunk::create_chunk(uint32_t x, uint32_t y)
 	{
@@ -22,9 +23,9 @@ namespace game
 			{
 				for (int x = 0; x < CHUNK_SIZE; x++)
 				{
-					double n_x = (x + chunk_x * game::CHUNK_SIZE) / 35.0;
-					double n_y = (y + chunk_y * game::CHUNK_SIZE) / 35.0;
-					double n_z = (z + chunk_x * game::CHUNK_SIZE) / 64.0;
+					double n_x = (x + chunk_x * game::CHUNK_SIZE) / 61.0;
+					double n_y = (y + chunk_y * game::CHUNK_SIZE) / 61.0;
+					double n_z = (z + chunk_x * game::CHUNK_SIZE) / 84.0;
 					double noise_1 = perlin_noise_1.noise3D_01(n_x, n_y, n_z);
 					double noise_2 = perlin_noise_2.noise3D_01(n_x, n_y, n_z);
 					double noise_3 = perlin_noise_3.noise3D_01(n_x, n_y, n_z);
@@ -54,7 +55,7 @@ namespace game
 					// }
 					// -===============- //
 
-					if ((((y / 5) % 195 == 0) || ((x / 5) % 255 == 0)))
+					if ( 1 == 2 && (((y / 5) % 195 == 0) || ((x / 5) % 255 == 0)))
 					{
 						data[z][y][x] = game::AIR;
 					}
@@ -136,7 +137,7 @@ namespace game
 					// }
 
 
-					temperature_data[y][x] = 23;
+					temperature_data[y][x] = 10;
 				}
 			}
 
@@ -220,7 +221,7 @@ namespace game
 	{
 			return &data[current_frame];
 	}
-	std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE> *chunk::get_temperature_data()
+	std::array<std::array<float, CHUNK_SIZE>, CHUNK_SIZE> *chunk::get_temperature_data()
 	{
 		return &temperature_data;
 	}
@@ -248,17 +249,31 @@ namespace game
 		else
 			return 0;
 	}
-	int16_t chunk::get_tile_temperature(int x, int y)
+	float chunk::get_tile_temperature(int x, int y)
 	{
 		if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE)
 			return temperature_data[y][x];
 		else
 			return 0;
 	}
-	void chunk::set_tile_temperature(int x, int y, int16_t temperature)
+	void chunk::set_tile_temperature(int x, int y, float temperature)
 	{
 		if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE)
 			temperature_data[y][x] = temperature;
+	}
+	void chunk::add_tile_temperature(int x, int y, float temperature)
+	{
+		if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE)
+		{
+			if(temperature_data[y][x] + temperature > absolute_max_temperature)
+			{
+				temperature = absolute_max_temperature - temperature_data[y][x];
+			}
+			else 
+			{
+				temperature_data[y][x] += temperature;
+			}
+		}
 	}
 
 	bool chunk::isBoundaryTile(int x, int y)

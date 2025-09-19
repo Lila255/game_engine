@@ -441,6 +441,44 @@ namespace glsl_helper
 		)";
 	}
 
+	std::string temperature_overlay_shader()
+	{
+		return R"(
+			#version 430
+			layout(binding = 0, r16i) uniform readonly iimage2D tile_temps;
+			uniform ivec2 texture_size; // size of the displayed texture
+			in vec2 v_TexCoord;
+			out vec4 out_Color;
+			
+			int sampleWorld(vec2 texCoord) {
+				if (texCoord.x < 0.0 || texCoord.x >= texture_size.x || texCoord.y < 0.0 || texCoord.y >= texture_size.y) {
+					return -1;	// -1 is out of bounds, uint max value so doing value > 0 will work
+				}
+				int value = imageLoad(tile_temps, ivec2(texCoord.xy)).r;
+				return value;
+			}
+
+			void main()
+			{
+				int world_value = sampleWorld(v_TexCoord * texture_size);
+				float temp_decimal = float(world_value) / 1.0;
+				// if(temp_decimal < -1.0) {
+				// 	temp_decimal = -1.0;
+				// } else if(temp_decimal > 1.0) {
+				// 	temp_decimal = 1.0;
+				// }
+				if(world_value >= 0)
+				{
+					out_Color = vec4(world_value, 0, 0, .75);
+				}
+				else
+				{
+					out_Color = vec4(1, 1, -world_value, .25);
+				}
+			}
+		)";
+	}
+
 	std::string light_compute_shader()
 	{
 		return R"(

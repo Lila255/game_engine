@@ -537,6 +537,14 @@ namespace game_engine
 			glBindTexture(GL_TEXTURE_2D, 0);
 			// rendering_mutex.unlock();
 		}
+		void update_texture_section_16(entity ent, int16_t * data, int x, int y, int width, int height, int texture_index = 0)
+		{
+			sprite &t = m_sprite_textures.get(ent);
+			glBindTexture(GL_TEXTURE_2D, t.textures[texture_index].id);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_RED, GL_SHORT, (uint8_t *)data);
+			glBindTexture(GL_TEXTURE_2D, 0);
+			// rendering_mutex.unlock();
+		}
 
 		void update_keys()
 		{

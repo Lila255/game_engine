@@ -47,7 +47,6 @@ namespace game
 		is_solid_tile[BEDROCK] = 1;
 		is_solid_tile[ELECTRIC_BLUE] = 0;
 
-		const uint16_t max_temperature = 32765;
 		tile_max_temperature.fill(100);
 		tile_min_temperature.fill(-32765);
 
@@ -61,49 +60,83 @@ namespace game
 		// make all gas tiles use the max temp
 		for (int i = 0; i < LIQUID_TILE_START_INDEX; i++)
 		{
-			tile_max_temperature[i] = max_temperature;
+			tile_max_temperature[i] = absolute_max_temperature;
 		}
 		tile_max_temperature[WATER] = 100;
-		max_temp_tile_change[WATER] = STEAM;
-		tile_min_temperature[WATER] = 0;
-		min_temp_tile_change[WATER] = ICE;
-
 		tile_max_temperature[LAVA] = 3500;
-		// max_temp_tile_change[LAVA] = 
-		tile_min_temperature[LAVA] = 1500;
-		min_temp_tile_change[LAVA] = STONE;
-
 		tile_max_temperature[ACID] = 250;
 		tile_max_temperature[HONEY] = 500;
-
-		tile_min_temperature[LIQUID_GLASS] = 1400;
-		min_temp_tile_change[LIQUID_GLASS] = GLASS;
-		
 		// solids
 		tile_max_temperature[GLASS] = 1400;
+		tile_max_temperature[LEAF] = 120;
+		tile_max_temperature[STONE] = 1500;
+		tile_max_temperature[DIRT] = 250;
+		tile_max_temperature[SAND] = 1400;
+		tile_max_temperature[GRASS] = 250;
+		tile_max_temperature[WOOD] = 200;
+		tile_max_temperature[GOLD] = 1064;
+		tile_max_temperature[TREE_SEED] = 250;
+		tile_max_temperature[ROOT] = 200;
+		tile_max_temperature[SNOW] = 0;
+
+		// min temps
+		tile_min_temperature[STEAM] = 100;
+		tile_min_temperature[WATER] = 0;
+		tile_min_temperature[LAVA] = 1500;
+		tile_min_temperature[LIQUID_GLASS] = 1400;
+
+		// max temp changes
+		max_temp_tile_change[WATER] = STEAM;
 		max_temp_tile_change[GLASS] = LIQUID_GLASS;
 
-		tile_max_temperature[LEAF] = 120;
 		max_temp_tile_change[LEAF] = EMBER;
-		tile_max_temperature[STONE] = 1500;
 		max_temp_tile_change[STONE] = LAVA;
-		tile_max_temperature[DIRT] = 250;
 		max_temp_tile_change[DIRT] = SAND;
-		tile_max_temperature[SAND] = 1400;
 		max_temp_tile_change[SAND] = LIQUID_GLASS;
-		tile_max_temperature[GRASS] = 250;
 		max_temp_tile_change[GRASS] = SAND;
-		tile_max_temperature[WOOD] = 200;
 		max_temp_tile_change[WOOD] = EMBER;
-		tile_max_temperature[GOLD] = 1064;
 		// max_temp_tile_change[GOLD] = LIQUID_GOLD;
-		tile_max_temperature[TREE_SEED] = 250;
 		max_temp_tile_change[TREE_SEED] = EMBER;
-		tile_max_temperature[ROOT] = 200;
 		max_temp_tile_change[ROOT] = EMBER;
-		tile_max_temperature[SNOW] = 0;
 		max_temp_tile_change[SNOW] = WATER;
+
+		// min temp changes
+		min_temp_tile_change[STEAM] = WATER;
+		min_temp_tile_change[WATER] = ICE;
+		min_temp_tile_change[LAVA] = STONE;
+		min_temp_tile_change[LIQUID_GLASS] = GLASS;
+
+		// tile heat capacity, with density baked in.
+		// Joules to raise 1000kg of tile by 1 degree Celsius.
+		// Tile mass is constant, so we can bake it into the heat capacity.
+		tile_heat_capacity.fill(0.001f);
 		
+		tile_heat_capacity[AIR] = 0.00125f;
+		tile_heat_capacity[STEAM] = 1.864f;
+		std::fill(tile_heat_capacity.begin() + tile_type::WATER, tile_heat_capacity.begin() + tile_type::FLUID_31 + 1, 1.0f);
+		tile_heat_capacity[WATER] = 4.186f;
+		tile_heat_capacity[LAVA] = 10.0f;
+		tile_heat_capacity[ACID] = 1.0f;
+		tile_heat_capacity[HONEY] = 1.0f;
+		tile_heat_capacity[LIQUID_GLASS] = 0.84f;
+		std::fill(tile_heat_capacity.begin() + tile_type::GLASS, tile_heat_capacity.begin() + tile_type::SOLID_63 + 1, 1.0f);
+		tile_heat_capacity[GLASS] = 0.84f;
+		tile_heat_capacity[STONE] = 1.84f;
+		tile_heat_capacity[DIRT] = 0.84f;
+		tile_heat_capacity[SAND] = 0.84f;
+		tile_heat_capacity[GRASS] = tile_heat_capacity[DIRT];
+		tile_heat_capacity[WOOD] = 1.0f;
+		tile_heat_capacity[GOLD] = 0.129f;
+		tile_heat_capacity[TREE_SEED] = tile_heat_capacity[WOOD];
+		tile_heat_capacity[ROOT] = tile_heat_capacity[WOOD];
+		tile_heat_capacity[EMBER] = tile_heat_capacity[WOOD];
+		tile_heat_capacity[SNOW] = 2.09f;
+		tile_heat_capacity[WAX] = 3.4f;
+		tile_heat_capacity[ICE] = 3.4f;
+		tile_heat_capacity[ASH] = 0.25f;
+
+
+		tile_heat_capacity[BEDROCK] = 1000000.0f;
 	}
 
 	world_tile_system::~world_tile_system()
@@ -274,7 +307,7 @@ namespace game
 		(tile_data_copy[chunk])->set_tile(tile_x, tile_y, t);
 	}
 
-	int16_t world_tile_system::get_tile_temperature_at(int x, int y)
+	float world_tile_system::get_tile_temperature_at(int x, int y)
 	{
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
@@ -289,7 +322,7 @@ namespace game
 		return (tile_data_base[chunk])->get_tile_temperature(tile_x, tile_y);
 	}
 
-	void world_tile_system::set_tile_temperature_at(int x, int y,  int16 temperature)
+	void world_tile_system::set_tile_temperature_at(int x, int y, float temperature)
 	{
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
@@ -299,12 +332,26 @@ namespace game
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 			return;
 
-		if (tile_data_base[chunk]->get_tile_temperature(tile_x, tile_y) != temperature)
-		{
-			set_modified_chunk(chunk_x, chunk_y, 1);
-		}
+		// if (tile_data_base[chunk]->get_tile_temperature(tile_x, tile_y) != temperature)
+		// {
+		// 	set_modified_chunk(chunk_x, chunk_y, 1);
+		// }
 
 		tile_data_base[chunk]->set_tile_temperature(tile_x, tile_y, temperature);
+	}
+
+	void world_tile_system::add_tile_temperature(int x, int y, float temperature)
+	{
+		int chunk_x = x / CHUNK_SIZE;
+		int chunk_y = y / CHUNK_SIZE;
+		int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int tile_x = x % CHUNK_SIZE;
+		int tile_y = y % CHUNK_SIZE;
+		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+			return;
+		
+		tile_data_base[chunk]->add_tile_temperature(tile_x, tile_y, temperature);
+
 	}
 
 						// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
@@ -319,8 +366,8 @@ namespace game
 			return;
 		
 		// get temperatures so we can swap those too
-		uint16_t t1_temp = get_tile_temperature_at(x1, y1);
-		uint16_t t2_temp = get_tile_temperature_at(x2, y2);
+		float t1_temp = get_tile_temperature_at(x1, y1);
+		float t2_temp = get_tile_temperature_at(x2, y2);
 
 		set_tile_at_no_lock(x1, y1, t2);
 		set_tile_at_no_lock(x2, y2, t1);
@@ -388,21 +435,24 @@ namespace game
 
 		uint8_t direction = tick_count % 2;
 		
-		int heat_dx[] = {0, 1, 0, -1};
-		int heat_dy[] = {-1, 0, 1, 0};
+		int heat_dx[] = {0, -1};
+		int heat_dy[] = {-1, 0};
+		// int heat_dx[] = {0, 1, 0, -1};
+		// int heat_dy[] = {-1, 0, 1, 0};
 				
 		
-		std::array<std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>, NUM_CHUNKS> tile_temperature_changes;
-		for (int i = 0; i < NUM_CHUNKS; i++)
-		{
-			tile_temperature_changes[i].fill({});
-		}
+		// std::array<std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>, NUM_CHUNKS> tile_temperature_changes;
+		// for (int i = 0; i < NUM_CHUNKS; i++)
+		// {
+		// 	tile_temperature_changes[i].fill({});
+		// }
 
-		for (int y = CHUNKS_WIDTH * CHUNK_SIZE - 1; y >= 0; y--)
+		for (int y = 1; y < CHUNKS_WIDTH * CHUNK_SIZE - 1; y++)
 		{
 			int chunk_y = y / CHUNK_SIZE;
 
-			for (int x = direction ? 0 : CHUNKS_WIDTH * CHUNK_SIZE - 1; x < CHUNKS_WIDTH * CHUNK_SIZE && x >= 0; x += direction ? 1 : -1)
+			for (int x = 1; x < CHUNKS_WIDTH * CHUNK_SIZE - 1; x++)
+			// for (int x = direction ? 0 : CHUNKS_WIDTH * CHUNK_SIZE - 1; x < CHUNKS_WIDTH * CHUNK_SIZE && x >= 0; x += direction ? 1 : -1)
 			{
 				int chunk_x = x / CHUNK_SIZE;
 				int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
@@ -410,7 +460,7 @@ namespace game
 				int tile_y = y % CHUNK_SIZE;
 
 				uint8_t tile_t = get_write_tile_at(x, y);
-				int16_t tile_temp = get_tile_temperature_at(x, y);
+				float tile_temp = get_tile_temperature_at(x, y);
 
 				// check if tile is overheated
 				if (tile_temp > tile_max_temperature[tile_t] + 2)
@@ -439,7 +489,7 @@ namespace game
 
 				// transfer heat to adjacent tiles
 				// TODO: make the direction random order
-				for(int i = 0; i < 4; i++)
+				for(int i = 0; i < 2; i++)
 				{
 					int adjacent_x = x + heat_dx[i];
 					int adjacent_y = y + heat_dy[i];
@@ -449,46 +499,94 @@ namespace game
 						continue;
 					}
 
-					int16_t adjacent_tile_temp = get_tile_temperature_at(adjacent_x, adjacent_y);
-					if (adjacent_tile_temp < tile_temp - 2)
+					uint8_t adjacent_tile_t = get_write_tile_at(adjacent_x, adjacent_y);
+
+					float adjacent_tile_temp = get_tile_temperature_at(adjacent_x, adjacent_y);
+					if (abs(adjacent_tile_temp - tile_temp) > .25)
 					{
 						// TODO: Create tile temperature storage units + tile temperature transfer rates
-						int16_t temp_change = (tile_temp - adjacent_tile_temp) / 10;
-						if (temp_change > 0)
+						float temp_difference = (adjacent_tile_temp - tile_temp) / 50;
+						
+						float tile_new_temp = tile_temp + temp_difference / tile_heat_capacity[tile_t];
+						float adjacent_tile_new_temp = adjacent_tile_temp - temp_difference / tile_heat_capacity[adjacent_tile_t];
+
+						if(adjacent_tile_temp > 200 && adjacent_tile_t == LAVA && tile_t == SAND)
 						{
+							tile_t = tile_t;
+						}
+
+						if (tile_new_temp > tile_temp && tile_new_temp > adjacent_tile_temp // overheated tile
+							|| tile_new_temp < tile_temp && tile_new_temp < adjacent_tile_temp // overcooled tile
+							|| adjacent_tile_new_temp > adjacent_tile_temp && adjacent_tile_new_temp > tile_temp // overheated adjacent tile
+							|| adjacent_tile_new_temp < adjacent_tile_temp && adjacent_tile_new_temp < tile_temp // overcooled adjacent tile
+						)
+						{
+							temp_difference = (adjacent_tile_temp - tile_temp) / (1.0f / tile_heat_capacity[tile_t] + 1.0f / tile_heat_capacity[adjacent_tile_t]);
+							tile_new_temp = tile_temp + temp_difference / tile_heat_capacity[tile_t];
+							adjacent_tile_new_temp = adjacent_tile_temp - temp_difference / tile_heat_capacity[adjacent_tile_t];
+						}
+						
+						// {
+						// 	temp_difference = (adjacent_tile_temp - tile_temp) / (1.0f / tile_heat_capacity[tile_t] + 1.0f / tile_heat_capacity[adjacent_tile_t]);
+						// 	tile_new_temp = tile_temp + temp_difference / tile_heat_capacity[tile_t];
+						// 	adjacent_tile_new_temp = adjacent_tile_temp - temp_difference / tile_heat_capacity[adjacent_tile_t];
+						// }
+						// else if (adjacent_tile_new_temp < tile_temp) // overshoot on destination
+						// {
+						// 	temp_difference = (tile_temp - adjacent_tile_temp) / (1.0f / tile_heat_capacity[tile_t] + 1.0f / tile_heat_capacity[adjacent_tile_t]);
+						// 	tile_new_temp = tile_temp + temp_difference / tile_heat_capacity[tile_t];
+						// 	adjacent_tile_new_temp = adjacent_tile_temp - temp_difference / tile_heat_capacity[adjacent_tile_t];
+						// }
+						set_tile_temperature_at(x, y, tile_new_temp);
+						set_tile_temperature_at(adjacent_x, adjacent_y, adjacent_tile_new_temp);
+
+						// add_tile_temperature(x, y, temp_difference / tile_heat_capacity[tile_t]);
+						// add_tile_temperature(adjacent_x, adjacent_y, -temp_difference / tile_heat_capacity[adjacent_tile_t]);
+
+						tile_temp = tile_new_temp;
+						// tile_temp = get_tile_temperature_at(x, y);
+
+						// float delta_tile_temp = (effective_conductivity / 20.0) / tile_heat_capacity[tile_t];
+						// float adjacent_delta_tile_temp = -(effective_conductivity / 20.0) / tile_heat_capacity[adjacent_tile_t];
+
+						// if (delta_tile_temp > 0)
+						// {
 							// set_tile_temperature_at(adjacent_x, adjacent_y, adjacent_tile_temp + temp_change);
 							// set_tile_temperature_at(x, y, tile_temp - temp_change);
 
-							tile_temperature_changes[chunk][adjacent_y % CHUNK_SIZE][adjacent_x % CHUNK_SIZE] += temp_change;
-							tile_temperature_changes[chunk][tile_y % CHUNK_SIZE][tile_x % CHUNK_SIZE] -= temp_change;
-						}
+							// tile_temperature_changes[chunk][adjacent_y % CHUNK_SIZE][adjacent_x % CHUNK_SIZE] += adjacent_delta_tile_temp;
+							// tile_temperature_changes[chunk][tile_y % CHUNK_SIZE][tile_x % CHUNK_SIZE] -= delta_tile_temp;
+						// }
+
+
+
 					}
 				}
 			}
 		}
 		// apply temperature changes
-		for (int i = 0; i < NUM_CHUNKS; i++)
-		{
-			int chunk_x = i % CHUNKS_WIDTH;
-			int chunk_y = i / CHUNKS_WIDTH;
+		// for (int i = 0; i < NUM_CHUNKS; i++)
+		// {
+		// 	int chunk_x = i % CHUNKS_WIDTH;
+		// 	int chunk_y = i / CHUNKS_WIDTH;
 
-			// std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
-			// std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
+		// 	// std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
+		// 	// std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
 
-			for (int y = 0; y < CHUNK_SIZE; y++)
-			{
-				for (int x = 0; x < CHUNK_SIZE; x++)
-				{
-					int16_t temp_change = tile_temperature_changes[i][y][x];
-					if (temp_change != 0)
-					{
-						int tile_x = x + chunk_x * CHUNK_SIZE;
-						int tile_y = y + chunk_y * CHUNK_SIZE;
-						set_tile_temperature_at(tile_x, tile_y, get_tile_temperature_at(tile_x, tile_y) + temp_change);
-					}
-				}
-			}
-		}
+		// 	for (int y = 0; y < CHUNK_SIZE; y++)
+		// 	{
+		// 		for (int x = 0; x < CHUNK_SIZE; x++)
+		// 		{
+		// 			int16_t temp_change = tile_temperature_changes[i][y][x];
+		// 			if (temp_change != 0)
+		// 			{
+		// 				int tile_x = x + chunk_x * CHUNK_SIZE;
+		// 				int tile_y = y + chunk_y * CHUNK_SIZE;
+		// 				set_tile_temperature_at(tile_x, tile_y, get_tile_temperature_at(tile_x, tile_y) + temp_change);
+		// 			}
+		// 		}
+		// 	}
+		// }
 
 		for (int y = CHUNKS_WIDTH * CHUNK_SIZE - 1; y >= 0; y--)
 		{
@@ -509,6 +607,7 @@ namespace game
 					if(((tick_count / 64) % 6 == 5 || (tick_count / 50) % 8 == 7) && rand() % 1200 == 0)
 					{
 						set_tile_at_no_lock(x, y, SNOW);
+						set_tile_temperature_at(x, y, -20.f);
 						// set_tile_at_no_lock(x, y, TEMPORARY_SMOKE);
 					}
 					break;
@@ -667,19 +766,19 @@ namespace game
 					break;
 
 				case SAND:
-					if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
+					if (get_write_tile_at(x, y + 1) < SOLID_TILE_START_INDEX)
 					{
 						// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
 						// set_tile_at_no_lock(x, y + 1, SAND);
 						switch_tiles_no_lock(x, y, x, y + 1);
 					}
-					else if (game_engine::in_set(get_write_tile_at(x - 1, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
+					else if (get_write_tile_at(x - 1, y + 1) < SOLID_TILE_START_INDEX)
 					{
 						// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y + 1));
 						// set_tile_at_no_lock(x - 1, y + 1, SAND);
 						switch_tiles_no_lock(x, y, x - 1, y + 1);
 					}
-					else if (game_engine::in_set(get_write_tile_at(x + 1, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
+					else if (get_write_tile_at(x + 1, y + 1) < SOLID_TILE_START_INDEX)
 					{
 						// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
 						// set_tile_at_no_lock(x + 1, y + 1, SAND);
@@ -735,7 +834,7 @@ namespace game
 					break;
 
 				case SNOW:
-					if (get_simple_tile_type(get_write_tile_at(x, y + 1)) == GAS)
+					if (rand() % 2 == 0 && get_simple_tile_type(get_write_tile_at(x, y + 1)) == GAS)
 					{
 						// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
 						// set_tile_at_no_lock(x, y + 1, SNOW);
@@ -896,7 +995,7 @@ namespace game
 			for (int j = (int)character_box.y; j < (int)character_box.y + character_box.h + 1; j++)
 			{
 				tile_type tile = (tile_type)get_write_tile_at(i, j);
-				int16_t tile_temp = get_tile_temperature_at(i, j);
+				float tile_temp = get_tile_temperature_at(i, j);
 
 				if (tile >= SOLID_TILE_START_INDEX && !is_solid_tile[tile])
 				{
@@ -959,7 +1058,7 @@ namespace game
 				for (int j = (int)legged_creature_box.y; j < (int)legged_creature_box.y + legged_creature_box.h + 1; j++)
 				{
 					tile_type tile = (tile_type)get_write_tile_at(i, j);
-					int16_t temperature = get_tile_temperature_at(i, j);
+					float temperature = get_tile_temperature_at(i, j);
 
 					// Calculate the collision point on the circle
 					b2Vec2 collision_point = b2Vec2(i, j);
@@ -1008,7 +1107,7 @@ namespace game
 		for (int i = 0; i < NUM_CHUNKS; i++)
 		{
 			memcpy(tile_data_copy[i]->get_data(), tile_data_base[i]->get_data(), CHUNK_SIZE * CHUNK_SIZE);
-			memcpy(tile_data_copy[i]->get_temperature_data(), tile_data_base[i]->get_temperature_data(), CHUNK_SIZE * CHUNK_SIZE * sizeof(int16_t));
+			memcpy(tile_data_copy[i]->get_temperature_data(), tile_data_base[i]->get_temperature_data(), CHUNK_SIZE * CHUNK_SIZE * sizeof(float));
 		}
 
 		

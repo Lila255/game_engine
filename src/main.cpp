@@ -121,36 +121,35 @@ void custom_key_callback(std::unordered_set<int> &keys)
 
 void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 {
+	// get mouse position
+	double xpos, ypos = -1;
+	glfwGetCursorPos(window, &xpos, &ypos);
+
 	// if mouse click
 	if (buttons.count(GLFW_MOUSE_BUTTON_LEFT) > 0)
 	{
-		// // get mouse position
-		// double xpos, ypos = -1;
-		// glfwGetCursorPos(window, &xpos, &ypos);
-		// printf("Cursor pos: x: %f, y: %f\n", xpos, ypos);
 		// // get character position
-		// game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
-		// entity player = game_engine::game_engine_pointer->player_entitiy;
-		// b2Body *body = b2d_sys->get_dynamic_body(player);
-		// b2Vec2 player_pos = body->GetPosition();
+		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+		entity player = game_engine::game_engine_pointer->player_entitiy;
+		b2Body *body = b2d_sys->get_dynamic_body(player);
+		b2Vec2 player_pos = body->GetPosition();
+
 		// // get mouse position
-		// int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x);
-		// int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y);
+		int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
+		int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
 		// printf("x: %d, y: %d\n", world_x, world_y);
 		// // get world tile system
-		// game::world_tile_system *world_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
-		// world_sys->delete_circle(world_x, world_y, 8, &chunk_outlines);
-		// buttons.erase(GLFW_MOUSE_BUTTON_LEFT);
-		// *** OLD CODE ***
-
-		// get mouse position
-		double xpos, ypos = -1;
-		glfwGetCursorPos(window, &xpos, &ypos);
-		printf("Cursor pos: x: %f, y: %f\n", xpos, ypos);
+		game::world_tile_system *world_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
+		world_sys->delete_circle(world_x, world_y, 18, {});
+		buttons.erase(GLFW_MOUSE_BUTTON_LEFT);
+		
+	}
+	else if (buttons.count(GLFW_MOUSE_BUTTON_RIGHT) > 0)
+	{
 
 		// get angle from center of screen to mouse
 		double angle = atan2(game_engine::window_height / 2.0 - ypos, xpos - game_engine::window_width / 2.0);
-		printf("Angle: %f\n", angle);
+		// printf("Angle: %f\n", angle);
 
 		// lock b2d mutex
  		// game::b2d_mutex.lock();
@@ -184,7 +183,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		texture_vbo_sys->add(projectile_entity);
 
 		// projectile_sys -> add_entity(projectile)
-		buttons.erase(GLFW_MOUSE_BUTTON_LEFT);
+		buttons.erase(GLFW_MOUSE_BUTTON_RIGHT);
 
 		// unlock b2d mutex
 		// game::b2d_mutex.unlock();
@@ -322,6 +321,10 @@ void run_game(GLFWwindow *window)
 	// generic texture shader
 	game_engine::shader_programs.push_back(load_shaders(glsl_helper::vert_2(), glsl_helper::frag_2())[0]);
 
+	printf("Error_1.5: x%d\n", glGetError());
+	game_engine::shader_programs.push_back(load_shaders(glsl_helper::vert_2(), glsl_helper::temperature_overlay_shader())[0]);
+	printf("Error_1.5: x%d\n", glGetError());
+	
 	GLuint compute_shader = load_compute_shader(glsl_helper::light_compute_shader());
 
 	GLuint light_blurring_compute_shader = load_compute_shader(glsl_helper::light_blurring_compute_shader());
@@ -426,6 +429,23 @@ void run_game(GLFWwindow *window)
 	sprt.add_texture({background_texture, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
 	render_sys->add(background_entity, sprt);
 // (GLuint id, GLuint binding, GLuint format, uint32_t width, uint32_t height)
+	
+	// GLuint temperature_overlay_texture;
+	// glGenTextures(1, &temperature_overlay_texture);
+	// glBindTexture(GL_TEXTURE_2D, temperature_overlay_texture);
+	// // set data and size
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	// printf("Error_1.15: x%d\n", glGetError());
+	// entity temperature_overlay_entity = eng.create_entity();
+	// box_sys->add(temperature_overlay_entity, {0.f, 0.f, -4.7, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	// texture_vbo_sys->add(temperature_overlay_entity);
+	// game_engine::sprite temp_sprt(game_engine::shader_programs[2]);
+	// temp_sprt.add_texture({temperature_overlay_texture, 0, GL_R16, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	// render_sys->add(temperature_overlay_entity, temp_sprt);
+	// printf("Error_1.5: x%d\n", glGetError());
+
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -544,6 +564,9 @@ void run_game(GLFWwindow *window)
 	chunk_outlines.push_back({player_shape});
 	box2d_sys->create_dynamic_body(player_entity, player_shape);
 	b2Body *player_body = box2d_sys->get_dynamic_body(player_entity);
+	b2Vec2 player_pos = player_body->GetPosition();
+	world_sys->delete_circle((int)(player_pos.x * game::box2d_scale), (int)(player_pos.y * game::box2d_scale), 18, {});
+
 
 	// create light components
 	uint16_t light_texture_count = 48;
@@ -690,7 +713,7 @@ void run_game(GLFWwindow *window)
 	// store start time
 	auto last_fps_start = std::chrono::high_resolution_clock::now();
 	
-	printf("before bee: %d\n", glGetError());
+	// printf("before bee: %d\n", glGetError());
 	entity new_bee = eng.create_entity();
 	// flying_creature_sys -> create_flying_creature(new_bee, 10, 10, game::flying_creature_type::BEE);
 	
@@ -703,19 +726,19 @@ void run_game(GLFWwindow *window)
 	// 	entity old_spider = new_spider;
 	// 	new_spider = eng.create_entity();
 
-	// 	if(old_spider == 0)
-	// 	{
-	// 		entity tile_arc = eng.create_entity();
-	// 		game::tile_arc tile_arc_to_spider = {game::tile_arc_type::ELECTRIC, player_entity, new_spider}; 
-	// 		tile_arcing_sys -> add(tile_arc, tile_arc_to_spider);
-	// 	}
-
-	// 	legged_creature_sys -> create_legged_creature(new_spider, 150, 150 + i * 10, game::legged_creature_type::SPIDER, old_spider, 0); 
+	// 	// if(old_spider == 0)
+	// 	// {
+	// 	// 	entity tile_arc = eng.create_entity();
+	// 	// 	game::tile_arc tile_arc_to_spider = {game::tile_arc_type::ELECTRIC, player_entity, new_spider}; 
+	// 	// 	tile_arcing_sys -> add(tile_arc, tile_arc_to_spider);
+	// 	// }
+	// 	world_sys->delete_circle(150, 50 + i * 10, 60, {});
+	// 	legged_creature_sys -> create_legged_creature(new_spider, 150, 50 + i * 10, game::legged_creature_type::SPIDER, old_spider, 0); 
 	// }
-	// legged_creature_sys -> create_legged_creature(new_spider, 50, 50, game::legged_creature_type::SPIDER);
+	// 	// legged_creature_sys -> create_legged_creature(new_spider, 50, 50, game::legged_creature_type::SPIDER);
 
 
-	printf("here: %d\n", glGetError());
+	// printf("here: %d\n", glGetError());
 
 
 
@@ -737,6 +760,7 @@ void run_game(GLFWwindow *window)
 		for(int c = 0; c < game::NUM_CHUNKS; c++)
 		{
 			render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)((world_sys->get_chunks_copy())->at(c)->get_data()), (c % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (c / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
+			// render_sys->update_texture_section_16(temperature_overlay_entity, (int16_t *)((world_sys->get_chunks_copy())->at(c)->get_temperature_data()->data()), (c % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (c / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
 		}
 		
 		// printf("b2d_time: %lums\n", duration_b2d.count() / 1000);

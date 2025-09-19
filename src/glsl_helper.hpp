@@ -28,6 +28,8 @@ namespace glsl_helper
 	std::string vert_2();
 
 	std::string frag_2();
+	
+	std::string temperature_overlay_shader();
 
 	std::string light_compute_shader();
 

@@ -177,17 +177,17 @@ namespace game
 
 	};
 	const uint8_t BACKGROUND_TILE_START_INDEX = 128;
-	const uint8_t SOLID_TILE_START_INDEX = 64;
-	const uint8_t LIQUID_TILE_START_INDEX = 32;
+	const uint8_t SOLID_TILE_START_INDEX = 63;
+	const uint8_t LIQUID_TILE_START_INDEX = 31;
 	extern std::array<uint8_t, 256> is_solid_tile;
 
 	// tile temperature config
-	extern std::array<int16_t, 256> tile_max_temperature;
+	extern std::array<float, 256> tile_max_temperature;
 	extern std::unordered_map<tile_type, tile_type> max_temp_tile_change;
-	extern std::array<int16_t, 256> tile_min_temperature;
+	extern std::array<float, 256> tile_min_temperature;
 	extern std::unordered_map<tile_type, tile_type> min_temp_tile_change;
-		
-
+	extern float absolute_max_temperature;
+	extern std::array<float, 256> tile_heat_capacity;
 	struct tile_linef
 	{
 		float x1, y1, x2, y2;
@@ -334,7 +334,7 @@ namespace game
 		chunk(uint16_t x, uint16_t y) : chunk_x(x), chunk_y(y)
 		{
 			data = std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES>{};
-			temperature_data = std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>{};
+			temperature_data = std::array<std::array<float, CHUNK_SIZE>, CHUNK_SIZE>{};
 		}
 
 		void create_chunk(uint32_t x, uint32_t y);
@@ -343,12 +343,13 @@ namespace game
 
 		// void create_texture_from_chunk(GLuint &texture);
 		std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>* get_data();
-		std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>* get_temperature_data();
+		std::array<std::array<float, CHUNK_SIZE>, CHUNK_SIZE>* get_temperature_data();
 
 		void set_tile(int x, int y, uint8_t value);
 		uint8_t get_tile(int x, int y);
-		int16_t get_tile_temperature(int x, int y);
-		void set_tile_temperature(int x, int y, int16_t temperature);
+		float get_tile_temperature(int x, int y);
+		void set_tile_temperature(int x, int y, float temperature);
+		void add_tile_temperature(int x, int y, float temperature);
 
 		bool isBoundaryTile(int x, int y);
 
@@ -374,7 +375,7 @@ namespace game
 	private:
 		uint16_t get_tile_edginess(int x, int y);
 		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_FRAMES> data;
-		std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE> temperature_data;
+		std::array<std::array<float, CHUNK_SIZE>, CHUNK_SIZE> temperature_data;
 		
 
 	};
