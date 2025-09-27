@@ -211,7 +211,6 @@ namespace game_engine
 	
 	void static static_mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
 	{
-		printf("Mouse button callback called %d \n", button);
 		game_engine_pointer->mouse_button_callback(window, button, action, mods);
 	}
 

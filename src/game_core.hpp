@@ -21,6 +21,7 @@
 #include "legged_creature_system.hpp"
 #include "chunk_frame_system.hpp"
 #include "tile_arcing_system.hpp"
+#include "tile_pathfinding_system.hpp"
 #include "building_component_system.hpp"
 
 #include "tasks.hpp"
@@ -78,7 +79,7 @@ namespace game
 					// printf("Terrain hit\n");
 
 					tile_type t = LAVA;
-					int16_t temperature = 4600;
+					int16_t temperature = 2100;
 					if (ud_a->type == b2fixture_types::PROJECTILE)
 					{
 						// delete circle shape around projectile
@@ -95,7 +96,7 @@ namespace game
 
 						// create flying_creature_nest
 						// game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
-						// flying_creature_sys->add_task({&create_flying_creature_nest_task, new create_flying_creature_nest_params(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width * 2, fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height * 2)});
+						flying_creature_sys->add_task({&create_flying_creature_nest_task, new create_flying_creature_nest_params(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width * 2, fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height * 2)});
 						// game_engine::task_scheduler_pointer->add_task({&update_tile_task, new update_tile_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale), WAX)});
 
 						// set projectile type to empty in ud_a
@@ -111,7 +112,7 @@ namespace game
 						// // create flying_creature_nest
 						// game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
 						// // game_engine::task_scheduler_pointer->add_task({&create_flying_creature_nest_task, new create_flying_creature_nest_params(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width * 2, fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height * 2)});
-						// flying_creature_sys->add_task({&create_flying_creature_nest_task, new create_flying_creature_nest_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale))});
+						flying_creature_sys->add_task({&create_flying_creature_nest_task, new create_flying_creature_nest_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale))});
 						// game_engine::task_scheduler_pointer->add_task({&update_tile_task, new update_tile_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale), WAX)});
 						
 						
@@ -186,7 +187,7 @@ namespace game
 					std::pair<int, int> tile_pos;
 					switch(creature.get_state())
 					{
-						case flying_creature_state::RETRIEVING:
+						case flying_creature_state::TRAVELING:
 							// if creature has collided with wax, deposit collected mass
 							
 							if(world_tiles -> find_tile_in_rect(tile_pos, pos.x * game::box2d_scale - 2, pos.y * game::box2d_scale - 2, 8, 8, {WAX}))

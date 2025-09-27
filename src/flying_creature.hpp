@@ -16,7 +16,7 @@ namespace game
 	{
 		IDLE,
 		EATING,
-		RETRIEVING
+		TRAVELING
 	};
 
 	struct flying_creature

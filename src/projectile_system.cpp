@@ -60,10 +60,19 @@ namespace game
 			}
 			else if (ud->type == b2fixture_types::DEBRIS)
 			{
-				if (projectile.permanent_trail_tile_type != 0 && world_tiles->get_tile_at(position.x, position.y) == 0)
+				tile_type tile = (tile_type)world_tiles->get_write_tile_at(position.x, position.y);
+				tile_simple_type simple_tile = world_tiles->get_simple_tile_type(tile);
+				tile_simple_type debris_simple_tile = world_tiles->get_simple_tile_type(projectile.debri_tile_type);
+
+
+				if (projectile.permanent_trail_tile_type != 0 && simple_tile < debris_simple_tile)
 				{
 					world_tiles->set_tile_at_with_lock(position.x, position.y, projectile.permanent_trail_tile_type);
 					world_tiles->set_tile_temperature_at(position.x, position.y, projectile.tile_temperature);
+				}
+				else if(projectile.permanent_trail_tile_type == 0 && debris_simple_tile <= simple_tile && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - ud->spawn_time).count() > 500)
+				{
+					ud->type = b2fixture_types::EMPTY;
 				}
 				else if (projectile.temporary_trail_tile_type != 0 && world_tiles->get_tile_at(position.x, position.y) == 0)
 				{
@@ -72,6 +81,7 @@ namespace game
 					int16_t new_temperature = tile_temperature + (projectile.tile_temperature - tile_temperature) / 20;
 					world_tiles->set_tile_temperature_at(position.x, position.y, new_temperature);
 				}
+				
 			}
 		}
 	}

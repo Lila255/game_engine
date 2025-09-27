@@ -33,6 +33,13 @@ namespace game
 		}
 	};
 	
+	enum tile_simple_type
+	{
+		GAS,
+		LIQUID,
+		SOLID,
+		BACKGROUND_TILE
+	};
 
 	struct world_tile_system : public game_engine::system
 	{
@@ -45,12 +52,12 @@ namespace game
 		
 		std::shared_mutex chunk_mutex_base;
 		std::shared_mutex chunk_mutex_copy;
-		uint8_t get_write_tile_at(int x, int y);
 		void set_tile_at_no_lock(int x, int y, uint8_t tile_type);
-
 		
-
-	public:
+		
+		
+		public:
+		uint8_t get_write_tile_at(int x, int y);
 		entity all_chunk_ent;
 		entity midground_tiles_ent;
 		// std::mutex tile_mutex;
@@ -60,6 +67,8 @@ namespace game
 
 		void set_all_chunk_ent(entity ent);
 		uint8_t get_tile_at(int x, int y);
+		tile_simple_type get_simple_tile_type(uint8_t tile);
+
 		float get_tile_temperature_at(int x, int y);
 		void set_tile_temperature_at(int x, int y, float temperature);
 		void add_tile_temperature(int x, int y, float temperature);

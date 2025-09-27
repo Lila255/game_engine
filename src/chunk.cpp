@@ -172,7 +172,9 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][i][0] = game::BEDROCK;
+						temperature_data[i][0] = -1000;
 						data[z][i][1] = game::BEDROCK;
+						temperature_data[i][1] = -1000;
 					}
 				}
 				else if(chunk_x == CHUNKS_WIDTH - 1)
@@ -180,7 +182,9 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][i][CHUNK_SIZE - 1] = game::BEDROCK;
+						temperature_data[i][CHUNK_SIZE - 1] = -1000;
 						data[z][i][CHUNK_SIZE - 2] = game::BEDROCK;
+						temperature_data[i][CHUNK_SIZE - 2] = -1000;
 					}
 				}
 
@@ -189,7 +193,9 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][0][i] = game::BEDROCK;
+						temperature_data[i][0] = -1000;
 						data[z][1][i] = game::BEDROCK;
+						temperature_data[i][1] = -1000;
 					}
 				} 
 				else if(chunk_y == CHUNKS_WIDTH - 1)
@@ -197,7 +203,9 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][CHUNK_SIZE - 1][i] = game::BEDROCK;
+						temperature_data[i][CHUNK_SIZE - 1] = -1000;
 						data[z][CHUNK_SIZE - 2][i] = game::BEDROCK;
+						temperature_data[i][CHUNK_SIZE - 2] = -1000;
 					}
 				}
 			}

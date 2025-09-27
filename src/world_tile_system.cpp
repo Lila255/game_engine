@@ -102,7 +102,7 @@ namespace game
 
 		// min temp changes
 		min_temp_tile_change[STEAM] = WATER;
-		min_temp_tile_change[WATER] = ICE;
+		min_temp_tile_change[WATER] = SNOW;
 		min_temp_tile_change[LAVA] = STONE;
 		min_temp_tile_change[LIQUID_GLASS] = GLASS;
 
@@ -137,6 +137,7 @@ namespace game
 
 
 		tile_heat_capacity[BEDROCK] = 1000000.0f;
+		
 	}
 
 	world_tile_system::~world_tile_system()
@@ -400,15 +401,8 @@ namespace game
 		return chunk_entities;
 	}
 
-	enum tile_simple_type
-	{
-		GAS,
-		LIQUID,
-		SOLID,
-		BACKGROUND_TILE
-	};
 
-	tile_simple_type get_simple_tile_type(uint8_t tile)
+	tile_simple_type world_tile_system::get_simple_tile_type(uint8_t tile)
 	{
 		if (tile < LIQUID_TILE_START_INDEX)
 		{
@@ -834,7 +828,7 @@ namespace game
 					break;
 
 				case SNOW:
-					if (rand() % 2 == 0 && get_simple_tile_type(get_write_tile_at(x, y + 1)) == GAS)
+					if (get_simple_tile_type(get_write_tile_at(x, y + 1)) == GAS)
 					{
 						// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
 						// set_tile_at_no_lock(x, y + 1, SNOW);
@@ -881,22 +875,38 @@ namespace game
 							// set_tile_at_no_lock(x + 1, y + 1, tile_type);
 							switch_tiles_no_lock(x, y, x + 1, y + 1);
 						}
+						else if (get_simple_tile_type(get_write_tile_at(x - 1, y)) == GAS)
+						{
+							// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y));
+							// set_tile_at_no_lock(x - 1, y, tile_type);
+							switch_tiles_no_lock(x, y, x - 1, y);
+						}
+						else if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS)
+						{
+							// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y));
+							// set_tile_at_no_lock(x + 1, y, tile_type);
+							switch_tiles_no_lock(x, y, x + 1, y);
+						}
+						else if (get_simple_tile_type(get_write_tile_at(x - 1, y)) == LIQUID)
+						{
+							if (get_write_tile_at(x - 1, y) < tile_type)
+							{
+								switch_tiles_no_lock(x, y, x - 1, y);
+							}
+						}
+						else if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == LIQUID)
+						{
+							if (get_write_tile_at(x + 1, y) < tile_type)
+							{
+								switch_tiles_no_lock(x, y, x + 1, y);
+							}
+						}
 						else if (get_simple_tile_type(get_write_tile_at(x, y + 1)) == LIQUID)
 						{
 							if (get_write_tile_at(x, y + 1) < tile_type)
 							{
 								switch_tiles_no_lock(x, y, x, y + 1);
 							}
-						}
-						break;
-					case GAS:
-						if (get_simple_tile_type(get_write_tile_at(x, y - 1)) == GAS && get_write_tile_at(x, y - 1) < tile_type)
-						{
-							switch_tiles_no_lock(x, y, x, y - 1);
-						}
-						else if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS && get_write_tile_at(x + 1, y) < tile_type)
-						{
-							switch_tiles_no_lock(x, y, x + 1, y);
 						}
 						break;
 					}
@@ -918,6 +928,11 @@ namespace game
 				uint8_t tile_type = get_write_tile_at(x, y);
 				switch (tile_type)
 				{
+				// case VACUUM:
+				// 	break;
+				case AIR:
+					break;
+
 				case SMOKE:
 					if (game_engine::in_set(get_write_tile_at(x, y - 1), AIR, WATER))
 					{
@@ -976,6 +991,45 @@ namespace game
 						set_tile_at_no_lock(x + 1, y, TEMPORARY_SMOKE);
 					}
 					break;
+
+					
+				default:
+					game::tile_simple_type simple_type = get_simple_tile_type(tile_type);
+					
+					switch (simple_type)
+					{
+					case GAS:
+						
+						if (get_simple_tile_type(get_write_tile_at(x, y - 1)) == GAS && get_write_tile_at(x, y - 1) < tile_type)
+						{
+							if (rand() % 3 && get_simple_tile_type(get_write_tile_at(x, y - 2)) == GAS && get_write_tile_at(x, y - 2) < tile_type)
+							{
+								switch_tiles_no_lock(x, y, x, y - 2);
+							}
+							else
+							{
+								switch_tiles_no_lock(x, y, x, y - 1);
+							}
+						}
+						else if (get_simple_tile_type(get_write_tile_at(x - 1, y - 1)) == GAS && get_write_tile_at(x - 1, y - 1) < tile_type)
+						{
+							switch_tiles_no_lock(x, y, x - 1, y - 1);
+						}
+						else if (get_simple_tile_type(get_write_tile_at(x + 1, y - 1)) == GAS && get_write_tile_at(x + 1, y - 1) < tile_type)
+						{
+							switch_tiles_no_lock(x, y, x + 1, y - 1);
+						}
+						else if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS && get_write_tile_at(x + 1, y) < tile_type)
+						{
+							switch_tiles_no_lock(x, y, x + 1, y);
+						}
+						else if (get_simple_tile_type(get_write_tile_at(x - 1, y)) == GAS && get_write_tile_at(x - 1, y) < tile_type)
+						{
+							switch_tiles_no_lock(x, y, x - 1, y);
+						}
+						
+						break;
+					}
 				}
 			}
 		}
@@ -1099,7 +1153,7 @@ namespace game
 			}
 		}
 
-
+		
 
 		std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
 

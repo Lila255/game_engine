@@ -1,4 +1,5 @@
 #include "legged_creature_system.hpp"
+#include "tile_pathfinding.hpp"
 #include "box2d_system.hpp"
 // #include ""
 
@@ -70,6 +71,19 @@ namespace game
 							continue;
 						}
 
+						std::pair<int, int> target_tile;
+						// if(creature.head_entity == 0)
+						// {
+						// 	auto tile_pathfinding_sys = (game::tile_pathfinding_system *)(game_engine::game_engine_pointer -> get_system(game_engine::family::type<game::tile_pathfinding_system>()));
+						// 	tile_pathfinding &tp = tile_pathfinding_sys -> get(ent);
+						// 	if(tp.path.size() == 0)
+						// 	{
+						// 		continue;
+						// 	}
+						// 	target_tile = tp.path.at(min((size_t)tp.path.size() - 1, 5));
+						// 	target_tile.first  /= game::box2d_scale;
+						// 	target_tile.second /= game::box2d_scale;
+						// }
 
 						// check if feet should be unstuck
 						for(int leg_i = 0; leg_i < creature.legs.size(); leg_i++)
@@ -82,21 +96,24 @@ namespace game
 							entity foot_ent = l.foot_entity;
 							b2Body * foot_body = b2d_system -> get_dynamic_body(foot_ent);
 
-							float ang_to_target = atan2(player_pos.y - legged_creature_pos.y, player_pos.x - legged_creature_pos.x);
+							float ang_to_target = atan2(target_tile.second - legged_creature_pos.y, target_tile.first - legged_creature_pos.x);
 
 							// move foot away from body, if not connected
 							if(!(creature.connected_legs.count(leg_i)))
 							{
 								// apply impulse to foot towards the player
-								b2Vec2 impulse = player_pos - foot_body -> GetPosition();
-								impulse.Normalize();
 
-								// make each leg a bit different
+								// // b2Vec2 impulse = player_pos - foot_body -> GetPosition();
+
+								// b2Vec2 impulse = {target_tile.first - foot_body -> GetPosition().x, target_tile.second - foot_body -> GetPosition().y};
+								// impulse.Normalize();
+
+								// // make each leg a bit different
 
 
 
-								impulse *= 0.16;
-								foot_body -> ApplyLinearImpulseToCenter(impulse, true);
+								// impulse *= 0.16;
+								// foot_body -> ApplyLinearImpulseToCenter(impulse, true);
 
 				
 								continue;
@@ -125,7 +142,7 @@ namespace game
 						}
 						else
 						{
-							body_target = player_pos;
+							body_target = b2Vec2(target_tile.first, target_tile.second);
 						}
 						
 						b2Vec2 target_vector = body_target - legged_creature_pos;
@@ -133,7 +150,7 @@ namespace game
 
 						// apply force to body
 						force = target_vector;
-						force *= .12 * connected_legs;
+						force *= .22 * connected_legs;
 						body -> ApplyLinearImpulseToCenter(force, true);
 						break;
 					}
@@ -407,6 +424,13 @@ namespace game
 		if(head_ent)
 		{
 			creature.head_entity = head_ent;
+		}
+		else
+		{
+			auto pathfinding_comp = tile_pathfinding(ent, game_engine::game_engine_pointer -> player_entitiy, 8, 4, 3, 0);
+			// pathfinding_comp.start_x = 10;
+			// pathfinding_comp.start_y = 10;
+			pathfinding_system -> add_component(ent, pathfinding_comp);
 		}
 		if(tail_ent)
 		{

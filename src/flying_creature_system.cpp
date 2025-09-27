@@ -1,4 +1,5 @@
 #include "flying_creature_system.hpp"
+#include "tile_pathfinding.hpp"
 // #include ""
 
 namespace game
@@ -34,11 +35,11 @@ namespace game
 		std::vector<entity> entities = flying_creatures.get_entities();
 
 
-		double noise_1 = perlin_noise__bees.noise1D_01(step_num / 10.0);
-		double noise_2 = perlin_noise__bees.noise1D_01((step_num + 10000) / 10.0);
-
+		
 		for (auto &ent : entities)
 		{
+			double noise_1 = perlin_noise__bees.noise1D_01(ent * 1000 + step_num / 10.0);
+			double noise_2 = perlin_noise__bees.noise1D_01(ent * 1000 + (step_num + 10000) / 10.0);
 			flying_creature &creature = flying_creatures.get(ent);
 			b2Vec2 force = b2Vec2(0, 0);
 			b2Body *body = b2d_system->get_dynamic_body(ent);
@@ -49,7 +50,7 @@ namespace game
 					// creature is idle, find job
 					if(creature.get_collected_mass() > 10)
 					{
-						creature.set_state(flying_creature_state::RETRIEVING);
+						creature.set_state(flying_creature_state::TRAVELING);
 						break;
 					}
 					// find food
@@ -66,37 +67,46 @@ namespace game
 
 					if(creature.get_collected_mass() > 10)
 					{
-						creature.set_state(flying_creature_state::RETRIEVING);
+						creature.set_state(flying_creature_state::TRAVELING);
 					}
 					break;
 				
-				case flying_creature_state::RETRIEVING:
+				case flying_creature_state::TRAVELING:
 				
 					if(creature.get_collected_mass() == 0)
 					{
-						creature.set_state(flying_creature_state::IDLE);
+						creature.set_state(flying_creature_state::TRAVELING);
 						break;						
 					}
 					// creature is retrieving
 					// if creature has collided with wax, deposit collected mass
 					b2Vec2 position = body->GetPosition();
 					std::pair<int, int> tile_pos = {position.x * box2d_scale, position.y * box2d_scale};
+					std::pair<int, int> target_tile;
 
+					auto tile_pathfinding_sys = (game::tile_pathfinding_system *)(game_engine::game_engine_pointer -> get_system(game_engine::family::type<game::tile_pathfinding_system>()));
+					tile_pathfinding &tp = tile_pathfinding_sys -> get(ent);
+					if (tp.path.size() > 1)
+					{
+						target_tile = tp.path.at(min((size_t)tp.path.size() - 1, 5));
+						target_tile.first;
+						target_tile.second;
+					}
 
-					if(creature.target_home.first > tile_pos.first)
+					if(target_tile.first > tile_pos.first)
 					{
 						force.x = 1;
 					}
-					else if(creature.target_home.first < tile_pos.first)
+					else if(target_tile.first < tile_pos.first)
 					{
 						force.x = -1;
 					}
 
-					if(creature.target_home.second > tile_pos.second)
+					if(target_tile.second > tile_pos.second)
 					{
 						force.y = 1;
 					}
-					else if(creature.target_home.second < tile_pos.second)
+					else if(target_tile.second < tile_pos.second)
 					{
 						force.y = -1;
 					}
@@ -211,6 +221,10 @@ namespace game
 
 		flying_creature creature = {type};
 		flying_creatures.add(ent, creature);
+		creature.set_state(TRAVELING);
+
+		auto pathfinding_comp = tile_pathfinding(ent, game_engine::game_engine_pointer -> player_entitiy, 8, 2, 3, 1);
+		pathfinding_system->add_component(ent, pathfinding_comp);
 
 		b2d_mutex.unlock();
 

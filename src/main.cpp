@@ -223,9 +223,22 @@ void start_physics_thread()
 	const int tick_rate = 20;
 	uint64_t tick_count = 0;
 	// std::array<std::array<uint8_t, game::CHUNKS_WIDTH>, game::CHUNKS_WIDTH> modified_chunks;
+	
+	// record average time of physics loop every 100 ticks
+	uint64_t total_time = 0;
+	
 
 	while (physics_loop_running)
 	{
+		if(tick_count % 100 == 0 && tick_count != 0)
+		{
+			printf("Average physics loop time: %lld ms\n", total_time / 100);
+			total_time = 0;
+		}
+
+		// custom_key_callback(engine_ptr->pressed_keys);
+		// custom_mouse_callback(glfwGetCurrentContext(), engine_ptr->pressed_mouse_buttons);
+		// start time
 		auto start = std::chrono::high_resolution_clock::now();
 
 		world_sys->update(tick_count++);
@@ -266,8 +279,8 @@ void start_physics_thread()
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		// printf("Physics loop took %lld ms\n", duration);
 		// printf("Physics loop took %lld ms\n", duration);
-		
-		
+		total_time += duration;
+
 		// sleep for 1 / tick_rate seconds
 		if(duration < 1000.0 / tick_rate)
 			std::this_thread::sleep_for(std::chrono::milliseconds(uint64_t((1000 - duration / 1000.0) / tick_rate)));
@@ -352,13 +365,13 @@ void run_game(GLFWwindow *window)
 	game::tree_system *tree_sys = new game::tree_system(world_sys);
 	eng.add_system(game_engine::family::type<game::tree_system>(), tree_sys);
 
-	game::flying_creature_system *flying_creature_sys = new game::flying_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys);
-	eng.add_system(game_engine::family::type<game::flying_creature_system>(), flying_creature_sys);
-
 	game::chunk_frame_system * chunk_frame_sys = new game::chunk_frame_system(box2d_sys, render_sys, world_sys);
 	eng.add_system(game_engine::family::type<game::chunk_frame_system>(), chunk_frame_sys);
 
-	game::legged_creature_system *legged_creature_sys = new game::legged_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys, world_sys);
+	game::tile_pathfinding_system * tile_pathfinding_sys = new game::tile_pathfinding_system(world_sys);
+	eng.add_system(game_engine::family::type<game::tile_pathfinding_system>(), tile_pathfinding_sys);
+
+	game::legged_creature_system *legged_creature_sys = new game::legged_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys, world_sys, tile_pathfinding_sys);
 	eng.add_system(game_engine::family::type<game::legged_creature_system>(), legged_creature_sys);
 	
 	game::tile_arcing_system *tile_arcing_sys = new game::tile_arcing_system(world_sys, box_sys);
@@ -368,7 +381,10 @@ void run_game(GLFWwindow *window)
 	// eng.add_system(game_engine::family::type<game::building_component_system>(), building_component_sys);
 
 	std::thread tree_thread(&game::tree_system::start, tree_sys);
+	std::thread tile_pathfinding_thread(&game::tile_pathfinding_system::start_thread, tile_pathfinding_sys);
 
+	game::flying_creature_system *flying_creature_sys = new game::flying_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys, tile_pathfinding_sys);
+	eng.add_system(game_engine::family::type<game::flying_creature_system>(), flying_creature_sys);
 
 	box2d_sys->world -> SetContactListener(new game::b2_contact_listener());
 	world_sys->generate_world();
@@ -719,7 +735,7 @@ void run_game(GLFWwindow *window)
 	
 	entity new_spider = 0;
 
-	uint16_t centipede_length = 8;
+	uint16_t centipede_length = 7;
 
 	// for(int i = 0; i < centipede_length; i++)
 	// {
@@ -732,10 +748,10 @@ void run_game(GLFWwindow *window)
 	// 	// 	game::tile_arc tile_arc_to_spider = {game::tile_arc_type::ELECTRIC, player_entity, new_spider}; 
 	// 	// 	tile_arcing_sys -> add(tile_arc, tile_arc_to_spider);
 	// 	// }
-	// 	world_sys->delete_circle(150, 50 + i * 10, 60, {});
+	// 	world_sys->delete_circle(150, 50 + i * 10, 25, {});
 	// 	legged_creature_sys -> create_legged_creature(new_spider, 150, 50 + i * 10, game::legged_creature_type::SPIDER, old_spider, 0); 
 	// }
-	// 	// legged_creature_sys -> create_legged_creature(new_spider, 50, 50, game::legged_creature_type::SPIDER);
+		// legged_creature_sys -> create_legged_creature(new_spider, 50, 50, game::legged_creature_type::SPIDER);
 
 
 	// printf("here: %d\n", glGetError());
@@ -754,8 +770,8 @@ void run_game(GLFWwindow *window)
 		// box2d_sys->update(last_time_taken_micro);
 		projectile_sys->update(last_time_taken_micro);
 		game::b2d_mutex.unlock();
-		// flying_creature_sys->update_rendering(last_time_taken_micro);
-		legged_creature_sys->update_rendering(last_time_taken_micro);
+		flying_creature_sys->update_rendering(last_time_taken_micro);
+		// legged_creature_sys->update_rendering(last_time_taken_micro);
 
 		for(int c = 0; c < game::NUM_CHUNKS; c++)
 		{
@@ -939,7 +955,8 @@ void run_game(GLFWwindow *window)
 	physics_loop_running = false;
 	box2d_sys->stop_thread();
 	box_2d_thread.join();
-
+	tile_pathfinding_sys->set_running(false);
+	tile_pathfinding_thread.join();
 	world_thread.join();
 	tree_sys->set_running(false);
 	tree_thread.join();
