@@ -108,8 +108,8 @@ namespace game
 		TEMPORARY_SNOW,	// 75
 		ICE,	// 78
 		ASH,	// 79
-		SOLID_16,	// 80
-		SOLID_17,	// 81
+		CONVEYOR_BELT,	// 80
+		CONVEYOR_TOOTH,	// 81
 		SOLID_18,	// 82
 		SOLID_19,	// 83
 		SOLID_20,	// 84
@@ -180,7 +180,8 @@ namespace game
 	const uint8_t SOLID_TILE_START_INDEX = 63;
 	const uint8_t LIQUID_TILE_START_INDEX = 31;
 	extern std::array<uint8_t, 256> is_solid_tile;
-
+	extern std::array<uint8_t, 256> is_tile_fixed;
+	
 	// tile temperature config
 	extern std::array<float, 256> tile_max_temperature;
 	extern std::unordered_map<tile_type, tile_type> max_temp_tile_change;

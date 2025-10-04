@@ -77,6 +77,7 @@ namespace game
 		void set_tile_at_with_search_and_lock(int x, int y, uint8_t tile_type);
 		void set_tile_copy_at(int x, int y, uint8_t tile_type);
 		void switch_tiles_no_lock(int x1, int y1, int x2, int y2);
+		void switch_tiles_with_lock(int x1, int y1, int x2, int y2);
 		std::array<entity, NUM_CHUNKS> get_chunk_entities();
 		void update(){};
 		void update(uint64_t tick_count);
@@ -96,5 +97,8 @@ namespace game
 		bool find_tile_in_rect(std::pair<int, int> &result, int x, int y, int w, int h, std::unordered_set<uint8_t> tile_types);
 		// std::pair<int, int> get_tile_in_rect(int x, int y, int w, int h, std::unordered_set<uint8_t> tile_types);
 		std::string to_csv_string();
+
+		// get chunk mutex for writing
+		std::shared_mutex* get_chunk_mutex_base() { return &chunk_mutex_base; }
 	};
 }

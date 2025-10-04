@@ -119,6 +119,9 @@ void custom_key_callback(std::unordered_set<int> &keys)
 	}
 }
 
+static uint64_t mouse_click_counter = 0;
+static std::pair<double, double> last_mouse_click = {-1, -1};
+
 void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 {
 	// get mouse position
@@ -146,7 +149,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 	}
 	else if (buttons.count(GLFW_MOUSE_BUTTON_RIGHT) > 0)
 	{
-
+		/*
 		// get angle from center of screen to mouse
 		double angle = atan2(game_engine::window_height / 2.0 - ypos, xpos - game_engine::window_width / 2.0);
 		// printf("Angle: %f\n", angle);
@@ -187,7 +190,40 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 
 		// unlock b2d mutex
 		// game::b2d_mutex.unlock();
+		*/
 
+		if(mouse_click_counter % 2 == 0)
+		{
+			last_mouse_click = {xpos, ypos};
+		} else 
+		{
+			// create conveyor belt between last_mouse_click and current mouse position
+			// game::world_tile_system *world_tile_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
+			
+			game::tile_conveyor_system *tile_conveyor_sys = (game::tile_conveyor_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::tile_conveyor_system>()));
+			entity conveyor_entity = game_engine::game_engine_pointer->create_entity();
+			game::tile_conveyor conveyor;
+			
+			game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+			entity player = game_engine::game_engine_pointer->player_entitiy;
+			b2Body *body = b2d_sys->get_dynamic_body(player);
+			b2Vec2 player_pos = body->GetPosition();
+			int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
+			int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
+			conveyor.start_x = world_x;
+			conveyor.start_y = world_y;
+			world_x = (int)((1.0 * last_mouse_click.first / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
+			world_y = (int)((1.0 * last_mouse_click.second / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
+			conveyor.end_x = world_x;
+			conveyor.end_y = world_y;
+			conveyor.speed = 1;
+			conveyor.moving = 1;
+			conveyor.teeth_spacing = 6;
+			
+			tile_conveyor_sys->add_component(conveyor_entity, conveyor);
+		}
+		mouse_click_counter++;
+		buttons.erase(GLFW_MOUSE_BUTTON_RIGHT);
 	}
 }
 
@@ -385,6 +421,9 @@ void run_game(GLFWwindow *window)
 
 	game::flying_creature_system *flying_creature_sys = new game::flying_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys, tile_pathfinding_sys);
 	eng.add_system(game_engine::family::type<game::flying_creature_system>(), flying_creature_sys);
+
+	game::tile_conveyor_system *tile_conveyor_sys = new game::tile_conveyor_system(world_sys, tile_pathfinding_sys);
+	eng.add_system(game_engine::family::type<game::tile_conveyor_system>(), tile_conveyor_sys);
 
 	box2d_sys->world -> SetContactListener(new game::b2_contact_listener());
 	world_sys->generate_world();
@@ -716,7 +755,7 @@ void run_game(GLFWwindow *window)
 	std::thread flying_creature_thread(&game::flying_creature_system::start_thread, flying_creature_sys);
 	// std::thread chunk_frame_thread(&game::chunk_frame_system::start_thread, chunk_frame_sys);
 	std::thread legged_creature_thread(&game::legged_creature_system::start_thread, legged_creature_sys);
-
+	std::thread tile_conveyor_thread(&game::tile_conveyor_system::start_thread, tile_conveyor_sys);
 	// std::thread tile_arcing_thread(&game::tile_arcing_system::start_thread, tile_arcing_sys);
 
 	uint16_t saved_light_textures = 0;
@@ -946,6 +985,9 @@ void run_game(GLFWwindow *window)
 	flying_creature_sys->set_running(false);
 	flying_creature_thread.join();
 	
+	tile_conveyor_sys->set_running(false);
+	tile_conveyor_thread.join();
+
 	legged_creature_sys->set_running(false);
 	legged_creature_thread.join();
 	

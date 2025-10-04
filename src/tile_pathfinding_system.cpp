@@ -24,10 +24,14 @@ namespace game
 			return;
 
 		std::vector<entity> entities = pathfinding_components.get_entities();
-		printf("Pathfinding for %d entities\n", (int)entities.size());
+		printf("Pathfinding for %d entities", (int)entities.size());
+		uint32_t active_count = 0;
 		for (entity ent : entities)
 		{
 			tile_pathfinding &tp = pathfinding_components.get(ent);
+			if (tp.keep_live == 0 && tp.path.size() > 0)
+				continue; // only pathfind once if keep_live is 0
+			active_count++;
 			tp.path.clear();
 			int start_x = tp.start_x;
 			int start_y = tp.start_y;
@@ -73,7 +77,7 @@ namespace game
 				// if(open_set.size() % 100 == 0){
 				// 	printf("Remaining open set size: %d\n", (int)open_set.size());
 				// }
-				if (abs(current_node->x - end_x) + abs(current_node->y - end_y) < tp.step_distance * 4.5)
+				if (abs(current_node->x - end_x) + abs(current_node->y - end_y) < tp.step_distance * 1.5)
 				{
 					path_found = true;
 					end_node = current_node;
@@ -82,7 +86,7 @@ namespace game
 
 				closed_set.insert({(uint32_t)current_node->x, (uint32_t)current_node->y});
 
-				for (int i = 0; i < 8; i++)
+				for (int i = 0; i < 8; i+=8/tp.directions)
 				{
 					int new_x = current_node->x + tp.step_distance * pathfinding_dx[i];
 					int new_y = current_node->y + tp.step_distance * pathfinding_dy[i];
@@ -159,7 +163,7 @@ namespace game
 
 			if (path_found)
 			{
-				// printf("Path found for entity \n");
+				printf("Path found for entity \n");
 				node *current = end_node;
 				while (current != nullptr)
 				{
@@ -181,6 +185,7 @@ namespace game
 				delete n;
 			}
 		}
+		printf(", %d active pathfinding operations\n", (int)active_count);
 	}
 
 	void tile_pathfinding_system::start_thread()

@@ -47,6 +47,12 @@ namespace game
 		is_solid_tile[BEDROCK] = 1;
 		is_solid_tile[ELECTRIC_BLUE] = 0;
 
+		std::fill(is_tile_fixed.begin(), is_tile_fixed.end(), 0);
+		std::fill(is_tile_fixed.begin() + tile_type::GLASS, is_tile_fixed.begin() + tile_type::SOLID_63 + 1, 1);
+		is_tile_fixed[SNOW] = 0;
+		is_tile_fixed[ASH] = 0;
+		is_tile_fixed[SAND] = 0;
+
 		tile_max_temperature.fill(100);
 		tile_min_temperature.fill(-32765);
 
@@ -375,6 +381,28 @@ namespace game
 
 		set_tile_temperature_at(x1, y1, t2_temp);
 		set_tile_temperature_at(x2, y2, t1_temp);
+	}
+
+	void world_tile_system::switch_tiles_with_lock(int x1, int y1, int x2, int y2)
+	{
+		std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
+		// std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
+		tile_type t1 = (tile_type)get_write_tile_at(x1, y1);
+		tile_type t2 = (tile_type)get_write_tile_at(x2, y2);
+
+		if (t1 == t2 || t1 == BEDROCK || t2 == BEDROCK)
+			return;
+		
+		// get temperatures so we can swap those too
+		float t1_temp = get_tile_temperature_at(x1, y1);
+		float t2_temp = get_tile_temperature_at(x2, y2);
+
+		set_tile_at_no_lock(x1, y1, t2);
+		set_tile_at_no_lock(x2, y2, t1);
+
+		set_tile_temperature_at(x1, y1, t2_temp);
+		set_tile_temperature_at(x2, y2, t1_temp);
+		
 	}
 
 	void world_tile_system::set_tile_at_no_lock(int x, int y, uint8_t tile_type)
@@ -1057,7 +1085,7 @@ namespace game
 					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -velocity.y, 0.5f, tile, AIR, tile, 250, tile_temp)});
 					// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
 				}
-				else if (velocity.y * velocity.y + velocity.x * velocity.x > 3 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
+				else if (velocity.y * velocity.y + velocity.x * velocity.x > 3 && (tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX || !is_tile_fixed[tile] && tile >= SOLID_TILE_START_INDEX))
 				{
 					set_tile_at_no_lock(i, j, AIR);
 					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -velocity.y, 0.5f, tile, AIR, tile, 250, tile_temp)});

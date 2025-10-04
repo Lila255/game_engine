@@ -5,6 +5,7 @@
 namespace game
 {
 	std::array<uint8_t, 256> is_solid_tile;							// indicate which tiles are solid
+	std::array<uint8_t, 256> is_tile_fixed;							// indicate which tiles are fixed in place
 	std::array<float, 256> tile_max_temperature;					// maximum temperature a tile can have
 	std::unordered_map<tile_type, tile_type> max_temp_tile_change;	// tile to change to when overheated
 	std::array<float, 256> tile_min_temperature;					// minimum temperature a tile can have
@@ -172,9 +173,9 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][i][0] = game::BEDROCK;
-						temperature_data[i][0] = -1000;
+						temperature_data[i][0] = 10000;
 						data[z][i][1] = game::BEDROCK;
-						temperature_data[i][1] = -1000;
+						temperature_data[i][1] = 10000;
 					}
 				}
 				else if(chunk_x == CHUNKS_WIDTH - 1)
@@ -182,9 +183,9 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][i][CHUNK_SIZE - 1] = game::BEDROCK;
-						temperature_data[i][CHUNK_SIZE - 1] = -1000;
+						temperature_data[i][CHUNK_SIZE - 1] = 10000;
 						data[z][i][CHUNK_SIZE - 2] = game::BEDROCK;
-						temperature_data[i][CHUNK_SIZE - 2] = -1000;
+						temperature_data[i][CHUNK_SIZE - 2] = 10000;
 					}
 				}
 
@@ -193,9 +194,9 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][0][i] = game::BEDROCK;
-						temperature_data[i][0] = -1000;
+						temperature_data[i][0] = 10000;
 						data[z][1][i] = game::BEDROCK;
-						temperature_data[i][1] = -1000;
+						temperature_data[i][1] = 10000;
 					}
 				} 
 				else if(chunk_y == CHUNKS_WIDTH - 1)
@@ -203,9 +204,9 @@ namespace game
 					for(int i = 0; i < CHUNK_SIZE; i++)
 					{
 						data[z][CHUNK_SIZE - 1][i] = game::BEDROCK;
-						temperature_data[i][CHUNK_SIZE - 1] = -1000;
+						temperature_data[i][CHUNK_SIZE - 1] = 10000;
 						data[z][CHUNK_SIZE - 2][i] = game::BEDROCK;
-						temperature_data[i][CHUNK_SIZE - 2] = -1000;
+						temperature_data[i][CHUNK_SIZE - 2] = 10000;
 					}
 				}
 			}
