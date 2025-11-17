@@ -6,6 +6,7 @@
 #include <queue>
 #include <utility>
 #include <functional>
+#include <mutex>
 
 #include "PerlinNoise.hpp"
 // #include "engine_core.hpp"
@@ -27,7 +28,9 @@ namespace game_engine
 		}
 	};
 
+	extern std::mutex id_mutex;
 	struct id_generator {
+	private:
 	public:
 		static uint32_t generate() noexcept ;// {
 			// static uint32_t current_max = 0;

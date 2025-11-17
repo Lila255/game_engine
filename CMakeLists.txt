@@ -39,7 +39,7 @@ target_link_libraries(game PRIVATE glfw GLEW::glew opengl32 poly2tri::poly2tri b
 # print the build type
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 # if in debug mode, copy debug dlls
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 	add_custom_command(TARGET game POST_BUILD
 										 COMMAND ${CMAKE_COMMAND} -E copy_if_different
 										 "${VCPKG_ROOT}/installed/x64-windows/debug/bin/glew32d.dll"

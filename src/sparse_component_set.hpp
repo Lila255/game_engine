@@ -196,12 +196,12 @@ namespace game_engine
 			return m_dense;
 		}
 
-		std::vector<GLuint>::iterator begin()
+		std::vector<component_type>::iterator begin()
 		{
 			return m_dense.begin();
 		}
 		
-		std::vector<GLuint>::iterator end()
+		std::vector<component_type>::iterator end()
 		{
 			return m_dense.end();
 		}

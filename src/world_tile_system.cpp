@@ -2,12 +2,13 @@
 #include "box2d_system.hpp"
 #include "tasks.hpp"
 #include "legged_creature_system.hpp"
+#include "flying_creature_system.hpp"
 
 namespace game
 {
 	// const uint16_t NUM_CHUNKS = 16; // 3x3 chunks in world
 	// const uint16_t CHUNKS_WIDTH = 4;
-	
+
 	// const std::array<std::vector<tile_linef>, 16> edges_lines = {
 	// 	{{},
 	// 	 {{-0.5, 0, 0, 0.5}},
@@ -33,7 +34,7 @@ namespace game
 			int chunk_x = i % CHUNKS_WIDTH;
 			int chunk_y = i / CHUNKS_WIDTH;
 			tile_data_base[i] = new chunk(chunk_x, chunk_y);
-			tile_data_copy[i] = new chunk(chunk_x, chunk_y);
+			// tile_data_copy[i] = new chunk(chunk_x, chunk_y);
 			// chunk_data[i] = new std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
 			set_modified_chunk(chunk_x, chunk_y, 1);
 		}
@@ -58,10 +59,9 @@ namespace game
 
 		tile_min_temperature[SMOKE] = -20;
 		min_temp_tile_change[SMOKE] = ASH;
-		
+
 		tile_min_temperature[STEAM] = 100;
 		min_temp_tile_change[STEAM] = WATER;
-
 
 		// make all gas tiles use the max temp
 		for (int i = 0; i < LIQUID_TILE_START_INDEX; i++)
@@ -84,6 +84,9 @@ namespace game
 		tile_max_temperature[TREE_SEED] = 250;
 		tile_max_temperature[ROOT] = 200;
 		tile_max_temperature[SNOW] = 0;
+		tile_max_temperature[INSULATION_FOAM] = 10;
+		tile_max_temperature[CHARCOAL] = 200;
+		tile_max_temperature[IRON] = 1538;
 
 		// min temps
 		tile_min_temperature[STEAM] = 100;
@@ -95,30 +98,34 @@ namespace game
 		max_temp_tile_change[WATER] = STEAM;
 		max_temp_tile_change[GLASS] = LIQUID_GLASS;
 
-		max_temp_tile_change[LEAF] = EMBER;
+		max_temp_tile_change[LEAF] = LIGHT_EMBER;
 		max_temp_tile_change[STONE] = LAVA;
 		max_temp_tile_change[DIRT] = SAND;
 		max_temp_tile_change[SAND] = LIQUID_GLASS;
 		max_temp_tile_change[GRASS] = SAND;
 		max_temp_tile_change[WOOD] = EMBER;
-		// max_temp_tile_change[GOLD] = LIQUID_GOLD;
+		max_temp_tile_change[CHARCOAL] = EMBER;
 		max_temp_tile_change[TREE_SEED] = EMBER;
 		max_temp_tile_change[ROOT] = EMBER;
 		max_temp_tile_change[SNOW] = WATER;
+		max_temp_tile_change[INSULATION_FOAM] = INSULATION;
 
 		// min temp changes
 		min_temp_tile_change[STEAM] = WATER;
 		min_temp_tile_change[WATER] = SNOW;
 		min_temp_tile_change[LAVA] = STONE;
 		min_temp_tile_change[LIQUID_GLASS] = GLASS;
+		min_temp_tile_change[EMBER] = CHARCOAL;
+		min_temp_tile_change[LIGHT_EMBER] = ASH;
 
 		// tile heat capacity, with density baked in.
 		// Joules to raise 1000kg of tile by 1 degree Celsius.
 		// Tile mass is constant, so we can bake it into the heat capacity.
 		tile_heat_capacity.fill(0.001f);
-		
+
 		tile_heat_capacity[AIR] = 0.00125f;
 		tile_heat_capacity[STEAM] = 1.864f;
+		tile_heat_capacity[POLLUTION] = 0.5f;
 		std::fill(tile_heat_capacity.begin() + tile_type::WATER, tile_heat_capacity.begin() + tile_type::FLUID_31 + 1, 1.0f);
 		tile_heat_capacity[WATER] = 4.186f;
 		tile_heat_capacity[LAVA] = 10.0f;
@@ -140,21 +147,44 @@ namespace game
 		tile_heat_capacity[WAX] = 3.4f;
 		tile_heat_capacity[ICE] = 3.4f;
 		tile_heat_capacity[ASH] = 0.25f;
-
+		tile_heat_capacity[INSULATION] = 0.05f;
+		tile_heat_capacity[INSULATION_FOAM] = 0.21f;
+		tile_heat_capacity[IRON] = 0.45f;
 
 		tile_heat_capacity[BEDROCK] = 1000000.0f;
+
+		tile_thermal_conductivity.fill(1.0f);
+		tile_thermal_conductivity[WATER] = 2.6f;
+		tile_thermal_conductivity[INSULATION] = 0.0001f;
+		tile_thermal_conductivity[INSULATION_FOAM] = 0.001f;
+		tile_thermal_conductivity[IRON] = 55.0f;
+
+		tile_debris_fall_speed_multiplier.fill(1.0f);
+		tile_debris_fall_speed_multiplier[SNOW] = 0.3f;
+
+		tile_phase_change_count_multiplier.fill(1);
+		std::fill(tile_phase_change_count_multiplier.begin() + tile_type::AIR, tile_phase_change_count_multiplier.begin() + tile_type::FLUID_31 + 1, 3);
+		// make liquids have a higher phase change count
+		std::fill(tile_phase_change_count_multiplier.begin() + tile_type::WATER, tile_phase_change_count_multiplier.begin() + tile_type::FLUID_31 + 1, -3);
+
+		tile_phase_change_count_multiplier[INSULATION] = 4;
+
+		task_scheduler_pointer = new game_engine::task_scheduler();
+		task_scheduler_pointer->set_max_threads(16);
 		
+		task_scheduler_thread = std::thread(&game_engine::task_scheduler::start, task_scheduler_pointer);
 	}
 
 	world_tile_system::~world_tile_system()
 	{
-		chunk_mutex_base.lock();
-		chunk_mutex_copy.lock();
-	
+		task_scheduler_pointer->shutdown({0,0});
+		task_scheduler_thread.join();
+
+
 		for (int i = 0; i < NUM_CHUNKS; i++)
 		{
 			delete tile_data_base[i];
-			delete tile_data_copy[i];
+			// delete tile_data_copy[i];
 		}
 	}
 
@@ -167,40 +197,50 @@ namespace game
 	{
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int chunk_num = chunk_x + chunk_y * CHUNKS_WIDTH;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
-		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+		
+		if (chunk_num < 0 || chunk_num >= NUM_CHUNKS)
 			return (tile_type)0;
+
 		if (tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
 			return (tile_type)0;
-		std::shared_lock<std::shared_mutex> lock(chunk_mutex_copy);
 
-		return (tile_data_copy[chunk])->get_tile(tile_x, tile_y);
+		chunk *c = tile_data_base[chunk_num];
+		c -> lock_chunk_copy_shared();
+		uint8_t tile = c -> get_tile_copy(tile_x, tile_y);
+		c -> unlock_chunk_copy_shared();
+
+		return tile;
 	}
 
 	uint8_t world_tile_system::get_write_tile_at(int x, int y)
 	{
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int chunk_num = chunk_x + chunk_y * CHUNKS_WIDTH;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
-		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+
+		if (chunk_num < 0 || chunk_num >= NUM_CHUNKS)
 			return (tile_type)0;
+
 		if (tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
 			return (tile_type)0;
-		// std::unique_lock<std::shared_mutex> lock(write_chunk_mutex);
-		// std::shared_lock<std::shared_mutex> lock(chunk_mutex_base);
 
-		return (tile_data_base[chunk])->get_tile(tile_x, tile_y);
+		(tile_data_base[chunk_num])->lock_chunk_shared();
+		uint8_t tile = (tile_data_base[chunk_num])->get_tile(tile_x, tile_y);
+		(tile_data_base[chunk_num])->unlock_chunk_shared();
+
+		return tile;
 	}
 
 	void world_tile_system::set_tile_at_with_lock(int x, int y, uint8_t t)
 	{
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int chunk_num = chunk_x + chunk_y * CHUNKS_WIDTH;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
@@ -208,19 +248,18 @@ namespace game
 
 		uint8_t current_tile = get_tile_at(x, y);
 
+		
 		if (current_tile == BEDROCK)
-			return;
-
-		std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
-		std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
-
+		return;
+		
+		(tile_data_base[chunk_num])->lock_chunk();
 		if (is_solid_tile[t] != is_solid_tile[current_tile])
 		{
 			set_modified_chunk(chunk_x, chunk_y, 1);
 		}
 
-		(tile_data_base[chunk])->set_tile(tile_x, tile_y, t);
-		(tile_data_copy[chunk])->set_tile(tile_x, tile_y, t);
+		(tile_data_base[chunk_num])->set_tile(tile_x, tile_y, t);
+		(tile_data_base[chunk_num])->unlock_chunk();
 	}
 
 	void world_tile_system::set_tile_at_with_search_and_lock(int x, int y, uint8_t t)
@@ -232,9 +271,6 @@ namespace game
 		int tile_y = y % CHUNK_SIZE;
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 			return;
-
-		std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
-		std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
 
 		std::unordered_set<tile_coord, tile_coord_hash> checked_tiles;
 		std::queue<tile_coord> tile_queue;
@@ -275,9 +311,6 @@ namespace game
 
 			if (current_tile_type != t && ((is_solid) || (is_liquid && current_tile_type < LIQUID_TILE_START_INDEX) || (is_gas && current_tile_type < LIQUID_TILE_START_INDEX)))
 			{
-				lock_base.unlock();
-				lock_copy.unlock();
-
 				set_tile_at_with_lock(current_tile.x, current_tile.y, t);
 				return;
 			}
@@ -310,8 +343,10 @@ namespace game
 		int tile_y = y % CHUNK_SIZE;
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 			return;
-		std::unique_lock<std::shared_mutex> lock(chunk_mutex_copy);
-		(tile_data_copy[chunk])->set_tile(tile_x, tile_y, t);
+
+		(tile_data_base[chunk])->lock_chunk_copy();
+		(tile_data_base[chunk])->set_tile_copy(tile_x, tile_y, t);
+		(tile_data_base[chunk])->unlock_chunk_copy();
 	}
 
 	float world_tile_system::get_tile_temperature_at(int x, int y)
@@ -325,44 +360,99 @@ namespace game
 			return 0;
 		if (tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
 			return 0;
-		// std::shared_lock<std::shared_mutex> lock(chunk_mutex_base);
-		return (tile_data_base[chunk])->get_tile_temperature(tile_x, tile_y);
+		
+		(tile_data_base[chunk])->lock_chunk_shared();
+		float temp = (tile_data_base[chunk])->get_tile_temperature(tile_x, tile_y);
+		(tile_data_base[chunk])->unlock_chunk_shared();
+		return temp;
+	}
+
+	uint16_t world_tile_system::get_tile_misc_data_at(int x, int y)
+	{
+		int chunk_x = x / CHUNK_SIZE;
+		int chunk_y = y / CHUNK_SIZE;
+		int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int tile_x = x % CHUNK_SIZE;
+		int tile_y = y % CHUNK_SIZE;
+		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+			return 0;
+		if (tile_x < 0 || tile_x >= CHUNK_SIZE || tile_y < 0 || tile_y >= CHUNK_SIZE)
+			return 0;
+		
+		(tile_data_base[chunk])->lock_chunk_shared();
+		uint16_t misc_data = (tile_data_base[chunk])->get_misc_data_at(tile_x, tile_y);
+		(tile_data_base[chunk])->unlock_chunk_shared();
+		return misc_data;
+	}
+
+	void world_tile_system::set_tile_misc_data_at(int x, int y, uint16_t value)
+	{
+		int chunk_x = x / CHUNK_SIZE;
+		int chunk_y = y / CHUNK_SIZE;
+		int chunk_num = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int tile_x = x % CHUNK_SIZE;
+		int tile_y = y % CHUNK_SIZE;
+		if (chunk_num < 0 || chunk_num >= NUM_CHUNKS)
+			return;
+		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+			return;
+		(tile_data_base[chunk_num])->lock_chunk();
+		(tile_data_base[chunk_num])->set_misc_data_at(tile_x, tile_y, value);
+		(tile_data_base[chunk_num])->unlock_chunk();
+	}
+
+	void world_tile_system::add_tile_misc_data_at(int x, int y, int16_t value)
+	{
+		int chunk_x = x / CHUNK_SIZE;
+		int chunk_y = y / CHUNK_SIZE;
+		int chunk_num = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int tile_x = x % CHUNK_SIZE;
+		int tile_y = y % CHUNK_SIZE;
+		if (chunk_num < 0 || chunk_num >= NUM_CHUNKS)
+			return;
+		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+			return;
+		(tile_data_base[chunk_num])->lock_chunk();
+		(tile_data_base[chunk_num])->add_misc_data_at(tile_x, tile_y, value);
+		(tile_data_base[chunk_num])->unlock_chunk();
 	}
 
 	void world_tile_system::set_tile_temperature_at(int x, int y, float temperature)
 	{
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int chunk_num = chunk_x + chunk_y * CHUNKS_WIDTH;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
+		if (chunk_num < 0 || chunk_num >= NUM_CHUNKS)
+			return;
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 			return;
 
-		// if (tile_data_base[chunk]->get_tile_temperature(tile_x, tile_y) != temperature)
-		// {
-		// 	set_modified_chunk(chunk_x, chunk_y, 1);
-		// }
-
-		tile_data_base[chunk]->set_tile_temperature(tile_x, tile_y, temperature);
+		// (tile_data_base[chunk_num])->lock_chunk();
+		tile_data_base[chunk_num]->set_tile_temperature(tile_x, tile_y, temperature);
+		// (tile_data_base[chunk_num])->unlock_chunk();
 	}
 
 	void world_tile_system::add_tile_temperature(int x, int y, float temperature)
 	{
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		int chunk = chunk_x + chunk_y * CHUNKS_WIDTH;
+		int chunk_num = chunk_x + chunk_y * CHUNKS_WIDTH;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
+		if (chunk_num < 0 || chunk_num >= NUM_CHUNKS)
+			return;
 		if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
 			return;
-		
-		tile_data_base[chunk]->add_tile_temperature(tile_x, tile_y, temperature);
 
+		(tile_data_base[chunk_num])->lock_chunk();
+		tile_data_base[chunk_num]->add_tile_temperature(tile_x, tile_y, temperature);
+		(tile_data_base[chunk_num])->unlock_chunk();
 	}
 
-						// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
-						// set_tile_at_no_lock(x + 1, y + 1, SAND);
+	// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
+	// set_tile_at_no_lock(x + 1, y + 1, SAND);
 
 	void world_tile_system::switch_tiles_no_lock(int x1, int y1, int x2, int y2)
 	{
@@ -371,28 +461,33 @@ namespace game
 
 		if (t1 == t2 || t1 == BEDROCK || t2 == BEDROCK)
 			return;
-		
+
 		// get temperatures so we can swap those too
 		float t1_temp = get_tile_temperature_at(x1, y1);
 		float t2_temp = get_tile_temperature_at(x2, y2);
+
+		uint16_t t1_misc = get_tile_misc_data_at(x1, y1);
+		uint16_t t2_misc = get_tile_misc_data_at(x2, y2);
 
 		set_tile_at_no_lock(x1, y1, t2);
 		set_tile_at_no_lock(x2, y2, t1);
 
 		set_tile_temperature_at(x1, y1, t2_temp);
 		set_tile_temperature_at(x2, y2, t1_temp);
+
+		set_tile_misc_data_at(x1, y1, t2_misc);
+		set_tile_misc_data_at(x2, y2, t1_misc);
 	}
 
 	void world_tile_system::switch_tiles_with_lock(int x1, int y1, int x2, int y2)
 	{
-		std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
 		// std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
 		tile_type t1 = (tile_type)get_write_tile_at(x1, y1);
 		tile_type t2 = (tile_type)get_write_tile_at(x2, y2);
 
 		if (t1 == t2 || t1 == BEDROCK || t2 == BEDROCK)
 			return;
-		
+
 		// get temperatures so we can swap those too
 		float t1_temp = get_tile_temperature_at(x1, y1);
 		float t2_temp = get_tile_temperature_at(x2, y2);
@@ -402,7 +497,6 @@ namespace game
 
 		set_tile_temperature_at(x1, y1, t2_temp);
 		set_tile_temperature_at(x2, y2, t1_temp);
-		
 	}
 
 	void world_tile_system::set_tile_at_no_lock(int x, int y, uint8_t tile_type)
@@ -424,45 +518,252 @@ namespace game
 		(tile_data_base[chunk])->set_tile(tile_x, tile_y, tile_type);
 	}
 
+	bool world_tile_system::try_consume_nearby_tile_no_lock(int x, int y, tile_type tile_type)
+	{
+		std::unordered_set<tile_coord, tile_coord_hash> checked_tiles;
+		std::queue<tile_coord> tile_queue;
+		tile_queue.push(tile_coord(x, y));
+		int dx[] = {0, 1, 0, -1};
+		int dy[] = {-1, 0, 1, 0};
+
+		while (!tile_queue.empty() && checked_tiles.size() < 20)
+		{
+			tile_coord current_tile = tile_queue.front();
+			tile_queue.pop();
+			// if (checked_tiles.count(current_tile))
+			// 	continue;
+			if (current_tile.x < 0 || current_tile.x >= CHUNKS_WIDTH * CHUNK_SIZE || current_tile.y < 0 || current_tile.y >= CHUNKS_WIDTH * CHUNK_SIZE)
+				continue;
+
+			uint8_t current_tile_type = get_write_tile_at(current_tile.x, current_tile.y);
+
+			if (current_tile_type == tile_type)
+			{
+				set_tile_at_no_lock(current_tile.x, current_tile.y, AIR);
+				return true;
+			}
+			else
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					tile_coord new_tile = tile_coord(current_tile.x + dx[i], current_tile.y + dy[i]);
+
+					if (!checked_tiles.count(new_tile))
+					{
+						tile_queue.push(new_tile);
+						checked_tiles.insert(new_tile);
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	bool world_tile_system::try_place_tile_with_displacement_no_lock(int x, int y, tile_type tile_type, float temperature, uint16_t misc_data, int recursion_depth, int search_size)
+	{
+		// int chunk_x = x / CHUNK_SIZE;
+		// int chunk_y = y / CHUNK_SIZE;
+		// int chunk_num = chunk_x + chunk_y * CHUNKS_WIDTH;
+		// if (chunk_x < 0 || chunk_x >= CHUNKS_WIDTH || chunk_y < 0 || chunk_y >= CHUNKS_WIDTH)
+		// 	return false;
+		// if (chunk_num < 0 || chunk_num >= NUM_CHUNKS)
+		// 	return false;
+		
+		// chunk *c = tile_data_base[chunk_num];
+		// bool success = c->try_place_tile_with_displacement_no_lock(x, y, tile_type, temperature, misc_data, recursion_depth, search_size);
+		// return success;
+
+
+		std::unordered_set<tile_coord, tile_coord_hash> checked_tiles;
+		std::queue<tile_coord> tile_queue;
+		tile_queue.push(tile_coord(x, y));
+		int dx[] = {0, 1, 0, -1};
+		int dy[] = {-1, 0, 1, 0};
+
+		tile_simple_type simple_type = get_simple_tile_type((uint8_t)tile_type);
+
+		bool found_non_solid = false;
+		while (!tile_queue.empty() && (!found_non_solid && checked_tiles.size() < search_size || found_non_solid && checked_tiles.size() < search_size))
+		{
+			tile_coord current_tile = tile_queue.front();
+			tile_queue.pop();
+			// if (checked_tiles.count(current_tile))
+			// 	continue;
+			if (current_tile.x < 0 || current_tile.x >= CHUNKS_WIDTH * CHUNK_SIZE || current_tile.y < 0 || current_tile.y >= CHUNKS_WIDTH * CHUNK_SIZE)
+				continue;
+
+			uint8_t current_tile_type = get_write_tile_at(current_tile.x, current_tile.y);
+			float current_tile_temp = get_tile_temperature_at(current_tile.x, current_tile.y);
+			uint16_t current_tile_misc = get_tile_misc_data_at(current_tile.x, current_tile.y);
+
+			if (!found_non_solid && is_solid_tile[current_tile_type] == 0)
+			{
+				found_non_solid = true;
+				tile_queue = {};
+			}
+
+			if ((found_non_solid && is_solid_tile[current_tile_type] == 0) && (current_tile_type != tile_type || recursion_depth == 0))
+			{
+				// try place the tile here
+				tile_simple_type current_simple_type = get_simple_tile_type(current_tile_type);
+				if (simple_type >= current_simple_type || is_solid_tile[current_tile_type] == 0)
+				{
+					switch (current_tile_type)
+					{
+					case AIR:
+						// case VACUUM:
+						set_tile_at_no_lock(current_tile.x, current_tile.y, tile_type);
+						set_tile_temperature_at(current_tile.x, current_tile.y, temperature);
+						set_tile_misc_data_at(current_tile.x, current_tile.y, misc_data);
+						return true;
+
+					default:
+						// if the current tile is not fixed, we can replace it
+						if (simple_type > current_simple_type)
+						{
+							// we can try displace this tile
+
+							if (recursion_depth > 10)
+							{
+								printf("recursion depth exceeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeded\n");
+								return false;
+							}
+							bool success = try_place_tile_with_displacement_no_lock(current_tile.x, current_tile.y, (game::tile_type)current_tile_type, current_tile_temp, current_tile_misc, recursion_depth + 1, search_size);
+
+							if (success)
+							{
+								set_tile_at_no_lock(current_tile.x, current_tile.y, tile_type);
+								set_tile_temperature_at(current_tile.x, current_tile.y, temperature);
+								set_tile_misc_data_at(current_tile.x, current_tile.y, misc_data);
+								return true;
+							}
+							else
+							{
+								return false;
+							}
+						}
+						break;
+					}
+				}
+			}
+
+			for (int i = 0; i < 4; i++)
+			{
+				tile_coord new_tile = tile_coord(current_tile.x + dx[i], current_tile.y + dy[i]);
+
+				if (!checked_tiles.count(new_tile))
+				{
+					if (found_non_solid)
+					{
+						if (is_solid_tile[get_write_tile_at(new_tile.x, new_tile.y)] == 0)
+						{
+							tile_queue.push(new_tile);
+							checked_tiles.insert(new_tile);
+						}
+					}
+					else
+					{
+						tile_queue.push(new_tile);
+						checked_tiles.insert(new_tile);
+					}
+				}
+			}
+		}
+		if (found_non_solid)
+		{
+			// printf("couldn't place tile, found non-solid tile\n");
+		}
+		else
+		{
+			// printf("couldn't place tile, no non-solid tile found\n");
+		}
+		return false;
+	}
+
+
+	bool world_tile_system::try_place_tile_flush_with_displacement_no_lock(int x, int y, tile_type tile_type, float temperature, uint16_t misc_data, int recursion_depth, int search_size)
+	{
+		uint8_t search_width = 3;
+		std::pair<int, int> best_tile = {-1, -1};
+		int8_t best_solid_neighbours = -1;
+		int dx[] = {0, 1, 0, -1};
+		int dy[] = {-1, 0, 1, 0};
+		
+
+		for(int i = -search_width; i <= search_width; i++)
+		{
+			for(int j = -search_width; j <= search_width; j++)
+			{
+				int check_x = x + i;
+				int check_y = y + j;
+
+				uint8_t current_tile_type = get_write_tile_at(check_x, check_y);
+
+				if (is_solid_tile[current_tile_type] == 0)
+				{
+					// count solid neighbours
+					uint8_t solid_neighbours = 0;
+					for (int k = 0; k < 4; k++)
+					{
+						int neighbour_x = check_x + dx[k];
+						int neighbour_y = check_y + dy[k];
+						uint8_t neighbour_tile_type = get_write_tile_at(neighbour_x, neighbour_y);
+						if (is_solid_tile[neighbour_tile_type])
+						{
+							solid_neighbours++;
+						}
+					}
+
+					if (solid_neighbours > best_solid_neighbours)
+					{
+						best_solid_neighbours = solid_neighbours;
+						best_tile = {check_x, check_y};
+					}
+				}
+			}
+		}
+		if (best_solid_neighbours >= 0)
+		{
+			return try_place_tile_with_displacement_no_lock(best_tile.first, best_tile.second, tile_type, temperature, misc_data, recursion_depth, search_size);
+		}
+		return false;
+	}
+
+
 	std::array<entity, NUM_CHUNKS> world_tile_system::get_chunk_entities()
 	{
 		return chunk_entities;
 	}
 
 
-	tile_simple_type world_tile_system::get_simple_tile_type(uint8_t tile)
-	{
-		if (tile < LIQUID_TILE_START_INDEX)
-		{
-			return GAS;
-		}
-		else if (tile < SOLID_TILE_START_INDEX)
-		{
-			return LIQUID;
-		}
-		else if (tile < BACKGROUND_TILE_START_INDEX)
-		{
-			return SOLID;
-		}
-		else
-		{
-			return BACKGROUND_TILE;
-		}
-	}
 
 	void world_tile_system::update(uint64_t tick_count)
 	{
+		increment_counter();
 
-		std::unique_lock<std::shared_mutex> lock_base(chunk_mutex_base);
+		for (int i = 0; i < NUM_CHUNKS; i++)
+		{
+			chunk * c = tile_data_base[i];
+
+			task_scheduler_pointer->add_task({&update_chunk_tiles_task_wrapper, new update_chunk_tiles_parameters{c, this, tick_count}});
+		}
+		
+		for (int i = 0; i < NUM_CHUNKS; i++)
+		{
+			chunk * c = tile_data_base[i];
+
+			task_scheduler_pointer->add_task({&recalculate_chunk_outlines_task, new recalculate_chunk_outlines_parameters{c, this, chunk_entities[i]}});
+		}
+		return;
+
 
 		uint8_t direction = tick_count % 2;
-		
+
 		int heat_dx[] = {0, -1};
 		int heat_dy[] = {-1, 0};
 		// int heat_dx[] = {0, 1, 0, -1};
 		// int heat_dy[] = {-1, 0, 1, 0};
-				
-		
+
 		// std::array<std::array<std::array<int16_t, CHUNK_SIZE>, CHUNK_SIZE>, NUM_CHUNKS> tile_temperature_changes;
 		// for (int i = 0; i < NUM_CHUNKS; i++)
 		// {
@@ -483,15 +784,83 @@ namespace game
 
 				uint8_t tile_t = get_write_tile_at(x, y);
 				float tile_temp = get_tile_temperature_at(x, y);
+				uint16_t tile_misc = get_tile_misc_data_at(x, y);
 
 				// check if tile is overheated
 				if (tile_temp > tile_max_temperature[tile_t] + 2)
 				{
-					if(max_temp_tile_change.count((tile_type)tile_t))
+					if (max_temp_tile_change.count((tile_type)tile_t))
 					{
-						set_tile_at_no_lock(x, y, max_temp_tile_change[(tile_type)tile_t]);
-					} 
-					else 
+						tile_type new_tile_type = max_temp_tile_change[(tile_type)tile_t];
+						if (tile_phase_change_count_multiplier[new_tile_type] > 0)
+						{
+							// need to place multiple tiles
+							int changes = tile_phase_change_count_multiplier[new_tile_type];
+							std::pair<int, int> original_pos = {x, y};
+							std::pair<int, int> current_pos = {x, y};
+							tile_type original_tile_type = (tile_type)tile_t;
+							float original_tile_temp = tile_temp;
+
+							set_tile_at_no_lock(x, y, AIR);
+
+							for (int i = 0; i < changes; i++)
+							{
+								bool success = try_place_tile_with_displacement_no_lock(current_pos.first, current_pos.second, max_temp_tile_change[(tile_type)tile_t], tile_temp, tile_misc, 0, 512);
+								if (!success)
+								{
+									// couldn't place the tile, try role back
+									if (i > 0)
+									{
+										for (int j = 0; j < i; j++)
+										{
+											bool rollback_success = try_consume_nearby_tile_no_lock(x, y, max_temp_tile_change[(tile_type)tile_t]);
+											if (!rollback_success)
+											{
+												// fucked it
+											}
+										}
+									}
+									set_tile_at_no_lock(x, y, original_tile_type);
+									break;
+								}
+							}
+						}
+						else if (tile_phase_change_count_multiplier[new_tile_type] < 0)
+						{
+							int changes = -tile_phase_change_count_multiplier[new_tile_type];
+							bool all_success = true;
+							for (int i = 0; i < changes; i++)
+							{
+								bool success = try_consume_nearby_tile_no_lock(x, y, max_temp_tile_change[(tile_type)tile_t]);
+								if (!success)
+								{
+									all_success = false;
+									// couldn't consume the tile, stop and rollback
+									if (i > 0)
+									{
+										for (int j = 0; j < i; j++)
+										{
+											bool rollback_success = try_place_tile_with_displacement_no_lock(x, y, max_temp_tile_change[(tile_type)tile_t], tile_temp, tile_misc, 0, 512);
+											if (!rollback_success)
+											{
+												// fucked it
+											}
+										}
+									}
+									break;
+								}
+							}
+							if (all_success)
+							{
+								set_tile_at_no_lock(x, y, new_tile_type);
+							}
+						}
+						else
+						{
+							set_tile_at_no_lock(x, y, max_temp_tile_change[(tile_type)tile_t]);
+						}
+					}
+					else
 					{
 						// printf(" overheated with temperaTile %d at (%d, %d) is overheated with temperature %d, but no max temp change defined.\n", tile_t, x, y, tile_temp);
 					}
@@ -499,24 +868,89 @@ namespace game
 				// check if tile is too cold
 				else if (tile_temp < tile_min_temperature[tile_t] - 2)
 				{
-					if(min_temp_tile_change.count((tile_type)tile_t))
+					if (min_temp_tile_change.count((tile_type)tile_t))
 					{
-						set_tile_at_no_lock(x, y, min_temp_tile_change[(tile_type)tile_t]);
-					} 
-					else 
-					{
-						// printf(" too cold with temperaTile %d at (%d, %d) is too cold with temperature %d, but no min temp change defined.\n", tile_t, x, y, tile_temp);
+						tile_type new_tile_type = min_temp_tile_change[(tile_type)tile_t];
+						if (tile_phase_change_count_multiplier[new_tile_type] > 0)
+						{
+							// need to place multiple tiles
+							int changes = tile_phase_change_count_multiplier[new_tile_type];
+							std::pair<int, int> original_pos = {x, y};
+							std::pair<int, int> current_pos = {x, y};
+							tile_type original_tile_type = (tile_type)tile_t;
+							float original_tile_temp = tile_temp;
+							set_tile_at_no_lock(x, y, AIR);
+
+							for (int i = 0; i < changes; i++)
+							{
+								bool success = try_place_tile_with_displacement_no_lock(current_pos.first, current_pos.second, min_temp_tile_change[(tile_type)tile_t], tile_temp, tile_misc, 0, 512);
+								if (!success)
+								{
+									// couldn't place the tile, try role back
+									if (i > 0)
+									{
+										for (int j = 0; j < i; j++)
+										{
+											bool rollback_success = try_consume_nearby_tile_no_lock(x, y, min_temp_tile_change[(tile_type)tile_t]);
+											if (!rollback_success)
+											{
+												// fucked it
+											}
+										}
+									}
+									set_tile_at_no_lock(x, y, original_tile_type);
+									break;
+								}
+							}
+						}
+						else if (tile_phase_change_count_multiplier[tile_t] < 0)
+						{
+							int changes = -tile_phase_change_count_multiplier[tile_t];
+							bool all_success = true;
+							for (int i = 0; i < changes; i++)
+							{
+								bool success = try_consume_nearby_tile_no_lock(x, y, min_temp_tile_change[(tile_type)tile_t]);
+								if (!success)
+								{
+									all_success = false;
+									// couldn't consume the tile, stop and rollback
+									if (i > 0)
+									{
+										for (int j = 0; j < i; j++)
+										{
+											bool rollback_success = try_place_tile_with_displacement_no_lock(x, y, min_temp_tile_change[(tile_type)tile_t], tile_temp, tile_misc, 0, 512);
+											if (!rollback_success)
+											{
+												// fucked it
+											}
+											// try place back the consumed tiles
+										}
+									}
+									break;
+								}
+							}
+							if (all_success)
+							{
+								set_tile_at_no_lock(x, y, new_tile_type);
+							}
+						}
+						else
+						{
+							set_tile_at_no_lock(x, y, min_temp_tile_change[(tile_type)tile_t]);
+						}
 					}
+				}
+				else
+				{
 				}
 
 				// transfer heat to adjacent tiles
-				// TODO: make the direction random order
-				for(int i = 0; i < 2; i++)
+				for (int i = 0; i < 2; i++)
 				{
 					int adjacent_x = x + heat_dx[i];
 					int adjacent_y = y + heat_dy[i];
 
-					if(adjacent_x < 0 || adjacent_x >= CHUNKS_WIDTH * CHUNK_SIZE || adjacent_y < 0 || adjacent_y >= CHUNKS_WIDTH * CHUNK_SIZE)
+					if (adjacent_x < 0 || adjacent_x >= CHUNKS_WIDTH * CHUNK_SIZE || adjacent_y < 0 || adjacent_y >= CHUNKS_WIDTH * CHUNK_SIZE)
 					{
 						continue;
 					}
@@ -528,17 +962,19 @@ namespace game
 					{
 						// TODO: Create tile temperature storage units + tile temperature transfer rates
 						float temp_difference = (adjacent_tile_temp - tile_temp) / 50;
-						
+						float tile_conductivity = tile_thermal_conductivity[tile_t];
+						float adjacent_tile_conductivity = tile_thermal_conductivity[adjacent_tile_t];
+
+						float effective_conductivity = tile_conductivity == adjacent_tile_conductivity
+														   ? tile_conductivity
+														   : 1.0f / (1.0f / tile_conductivity + 1.0f / adjacent_tile_conductivity);
+						temp_difference *= effective_conductivity;
+
 						float tile_new_temp = tile_temp + temp_difference / tile_heat_capacity[tile_t];
 						float adjacent_tile_new_temp = adjacent_tile_temp - temp_difference / tile_heat_capacity[adjacent_tile_t];
 
-						if(adjacent_tile_temp > 200 && adjacent_tile_t == LAVA && tile_t == SAND)
-						{
-							tile_t = tile_t;
-						}
-
-						if (tile_new_temp > tile_temp && tile_new_temp > adjacent_tile_temp // overheated tile
-							|| tile_new_temp < tile_temp && tile_new_temp < adjacent_tile_temp // overcooled tile
+						if (tile_new_temp > tile_temp && tile_new_temp > adjacent_tile_temp						 // overheated tile
+							|| tile_new_temp < tile_temp && tile_new_temp < adjacent_tile_temp					 // overcooled tile
 							|| adjacent_tile_new_temp > adjacent_tile_temp && adjacent_tile_new_temp > tile_temp // overheated adjacent tile
 							|| adjacent_tile_new_temp < adjacent_tile_temp && adjacent_tile_new_temp < tile_temp // overcooled adjacent tile
 						)
@@ -547,7 +983,7 @@ namespace game
 							tile_new_temp = tile_temp + temp_difference / tile_heat_capacity[tile_t];
 							adjacent_tile_new_temp = adjacent_tile_temp - temp_difference / tile_heat_capacity[adjacent_tile_t];
 						}
-						
+
 						// {
 						// 	temp_difference = (adjacent_tile_temp - tile_temp) / (1.0f / tile_heat_capacity[tile_t] + 1.0f / tile_heat_capacity[adjacent_tile_t]);
 						// 	tile_new_temp = tile_temp + temp_difference / tile_heat_capacity[tile_t];
@@ -573,15 +1009,12 @@ namespace game
 
 						// if (delta_tile_temp > 0)
 						// {
-							// set_tile_temperature_at(adjacent_x, adjacent_y, adjacent_tile_temp + temp_change);
-							// set_tile_temperature_at(x, y, tile_temp - temp_change);
+						// set_tile_temperature_at(adjacent_x, adjacent_y, adjacent_tile_temp + temp_change);
+						// set_tile_temperature_at(x, y, tile_temp - temp_change);
 
-							// tile_temperature_changes[chunk][adjacent_y % CHUNK_SIZE][adjacent_x % CHUNK_SIZE] += adjacent_delta_tile_temp;
-							// tile_temperature_changes[chunk][tile_y % CHUNK_SIZE][tile_x % CHUNK_SIZE] -= delta_tile_temp;
+						// tile_temperature_changes[chunk][adjacent_y % CHUNK_SIZE][adjacent_x % CHUNK_SIZE] += adjacent_delta_tile_temp;
+						// tile_temperature_changes[chunk][tile_y % CHUNK_SIZE][tile_x % CHUNK_SIZE] -= delta_tile_temp;
 						// }
-
-
-
 					}
 				}
 			}
@@ -621,12 +1054,12 @@ namespace game
 				int tile_x = x % CHUNK_SIZE;
 				int tile_y = y % CHUNK_SIZE;
 
-				uint8_t tile_type = get_write_tile_at(x, y);
+				uint8_t current_tile_type = get_write_tile_at(x, y);
 
-				switch (tile_type)
+				switch (current_tile_type)
 				{
 				case AIR:
-					if(((tick_count / 64) % 6 == 5 || (tick_count / 50) % 8 == 7) && rand() % 1200 == 0)
+					if ((tick_count < 1000 && 1 == 2 && ((tick_count / 64) % 6 == 5 || (tick_count / 50) % 8 == 7)) && rand() % 1200 == 0)
 					{
 						set_tile_at_no_lock(x, y, SNOW);
 						set_tile_temperature_at(x, y, -20.f);
@@ -634,61 +1067,61 @@ namespace game
 					}
 					break;
 
-				// case WATER:
-				// 	if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
-				// 	{
-				// 		// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
-				// 		// set_tile_at_no_lock(x, y + 1, WATER);
-				// 		switch_tiles_no_lock(x, y, x, y + 1);
-				// 		break;
-				// 	}
-				// 	if (game_engine::in_set(get_write_tile_at(x - 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
-				// 	{
-				// 		// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y + 1));
-				// 		// set_tile_at_no_lock(x - 1, y + 1, WATER);
-				// 		switch_tiles_no_lock(x, y, x - 1, y + 1);
-				// 		break;
-				// 	}
-				// 	if (game_engine::in_set(get_write_tile_at(x + 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
-				// 	{
-				// 		// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
-				// 		// set_tile_at_no_lock(x + 1, y + 1, WATER);
-				// 		switch_tiles_no_lock(x, y, x + 1, y + 1);
-				// 		break;
-				// 	}
-				// 	if (!(rand() % 4))
-				// 	{
-				// 		if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS && get_simple_tile_type(get_write_tile_at(x - 1, y)) == GAS)
-				// 		{
-				// 			if (rand() % 3)
-				// 			{
-				// 				// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y));
-				// 				// set_tile_at_no_lock(x - 1, y, WATER);
-				// 				switch_tiles_no_lock(x, y, x - 1, y);
-				// 			}
-				// 			else
-				// 			{
-				// 				// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y));
-				// 				// set_tile_at_no_lock(x + 1, y, WATER);
-				// 				switch_tiles_no_lock(x, y, x + 1, y);
-				// 			}
-				// 		}
-				// 		else if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS)
-				// 		{
-				// 			// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y));
-				// 			// set_tile_at_no_lock(x + 1, y, WATER);
-				// 			switch_tiles_no_lock(x, y, x + 1, y);
-				// 			break;
-				// 		}
-				// 		else if (get_simple_tile_type(get_write_tile_at(x - 1, y)) == GAS)
-				// 		{
-				// 			// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y));
-				// 			// set_tile_at_no_lock(x - 1, y, WATER);
-				// 			switch_tiles_no_lock(x, y, x - 1, y);
-				// 			break;
-				// 		}
-				// 	}
-				//	 break;
+					// case WATER:
+					// 	if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
+					// 	{
+					// 		// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
+					// 		// set_tile_at_no_lock(x, y + 1, WATER);
+					// 		switch_tiles_no_lock(x, y, x, y + 1);
+					// 		break;
+					// 	}
+					// 	if (game_engine::in_set(get_write_tile_at(x - 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
+					// 	{
+					// 		// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y + 1));
+					// 		// set_tile_at_no_lock(x - 1, y + 1, WATER);
+					// 		switch_tiles_no_lock(x, y, x - 1, y + 1);
+					// 		break;
+					// 	}
+					// 	if (game_engine::in_set(get_write_tile_at(x + 1, y + 1), AIR, SMOKE, TEMPORARY_SMOKE))
+					// 	{
+					// 		// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y + 1));
+					// 		// set_tile_at_no_lock(x + 1, y + 1, WATER);
+					// 		switch_tiles_no_lock(x, y, x + 1, y + 1);
+					// 		break;
+					// 	}
+					// 	if (!(rand() % 4))
+					// 	{
+					// 		if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS && get_simple_tile_type(get_write_tile_at(x - 1, y)) == GAS)
+					// 		{
+					// 			if (rand() % 3)
+					// 			{
+					// 				// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y));
+					// 				// set_tile_at_no_lock(x - 1, y, WATER);
+					// 				switch_tiles_no_lock(x, y, x - 1, y);
+					// 			}
+					// 			else
+					// 			{
+					// 				// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y));
+					// 				// set_tile_at_no_lock(x + 1, y, WATER);
+					// 				switch_tiles_no_lock(x, y, x + 1, y);
+					// 			}
+					// 		}
+					// 		else if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == GAS)
+					// 		{
+					// 			// set_tile_at_no_lock(x, y, get_write_tile_at(x + 1, y));
+					// 			// set_tile_at_no_lock(x + 1, y, WATER);
+					// 			switch_tiles_no_lock(x, y, x + 1, y);
+					// 			break;
+					// 		}
+					// 		else if (get_simple_tile_type(get_write_tile_at(x - 1, y)) == GAS)
+					// 		{
+					// 			// set_tile_at_no_lock(x, y, get_write_tile_at(x - 1, y));
+					// 			// set_tile_at_no_lock(x - 1, y, WATER);
+					// 			switch_tiles_no_lock(x, y, x - 1, y);
+					// 			break;
+					// 		}
+					// 	}
+					//	 break;
 
 					// if (game_engine::in_set(get_write_tile_at(x - 1, y), AIR, SMOKE, TEMPORARY_SMOKE))
 					// {
@@ -810,6 +1243,27 @@ namespace game
 
 				case EMBER:
 
+					if (tick_count % 40 == 0)
+					{
+						uint16_t tile_misc = get_tile_misc_data_at(x, y);
+						float tile_temp = get_tile_temperature_at(x, y);
+
+						if (tile_misc == 0)
+						{
+							set_tile_at_no_lock(x, y, TEMPORARY_SMOKE);
+							break;
+						}
+						else
+						{
+							bool success = try_place_tile_with_displacement_no_lock(x, y, POLLUTION, tile_temp, 0, 0, 16);
+							if (success)
+							{
+								add_tile_misc_data_at(x, y, -1);
+								add_tile_temperature(x, y, 100);
+							}
+						}
+					}
+
 					if (get_write_tile_at(x, y - 1) == AIR)
 					{
 						set_tile_at_no_lock(x, y - 1, TEMPORARY_SMOKE);
@@ -827,31 +1281,44 @@ namespace game
 						set_tile_at_no_lock(x + 1, y, TEMPORARY_SMOKE);
 					}
 
-					if (rand() % 25 == 0)
+					if (rand() % 2 == 0) // try spread
 					{
-						set_tile_at_no_lock(x, y, TEMPORARY_SMOKE);
+						tile_type adjacent_tile = (tile_type)get_write_tile_at(x, y - 1);
+						if (game_engine::in_set(adjacent_tile, WOOD, ROOT, LEAF))
+						{
+							set_tile_at_no_lock(x, y - 1, max_temp_tile_change[adjacent_tile]);
+							break;
+						}
+						adjacent_tile = (tile_type)get_write_tile_at(x, y + 1);
+						if (game_engine::in_set(adjacent_tile, WOOD, ROOT, LEAF))
+						{
+							set_tile_at_no_lock(x, y + 1, max_temp_tile_change[adjacent_tile]);
+							break;
+						}
+						adjacent_tile = (tile_type)get_write_tile_at(x - 1, y);
+						if (game_engine::in_set(adjacent_tile, WOOD, ROOT, LEAF))
+						{
+							set_tile_at_no_lock(x - 1, y, max_temp_tile_change[adjacent_tile]);
+							break;
+						}
+						adjacent_tile = (tile_type)get_write_tile_at(x + 1, y);
+						if (game_engine::in_set(adjacent_tile, WOOD, ROOT, LEAF))
+						{
+							set_tile_at_no_lock(x + 1, y, max_temp_tile_change[adjacent_tile]);
+							break;
+						}
+					}
+					break;
+
+				case INSULATION_FOAM:
+					if (get_tile_misc_data_at(x, y) == 0)
+					{
+						set_tile_temperature_at(x, y, tile_max_temperature[INSULATION_FOAM] + 3);
+						break;
 					}
 					else
 					{
-						if (rand() % 2 == 0) // try spread
-						{
-							if (game_engine::in_set(get_write_tile_at(x, y - 1), WOOD, ROOT, LEAF))
-							{
-								set_tile_at_no_lock(x, y - 1, EMBER);
-							}
-							else if (game_engine::in_set(get_write_tile_at(x, y + 1), WOOD, ROOT, LEAF))
-							{
-								set_tile_at_no_lock(x, y + 1, EMBER);
-							}
-							else if (game_engine::in_set(get_write_tile_at(x - 1, y), WOOD, ROOT, LEAF))
-							{
-								set_tile_at_no_lock(x - 1, y, EMBER);
-							}
-							else if (game_engine::in_set(get_write_tile_at(x + 1, y), WOOD, ROOT, LEAF))
-							{
-								set_tile_at_no_lock(x + 1, y, EMBER);
-							}
-						}
+						add_tile_misc_data_at(x, y, -1);
 					}
 					break;
 
@@ -863,9 +1330,9 @@ namespace game
 						switch_tiles_no_lock(x, y, x, y + 1);
 					}
 					break;
-				
+
 				case TEMPORARY_SNOW:
-				
+
 					if (game_engine::in_set(get_write_tile_at(x, y + 1), AIR, SMOKE, WATER, TEMPORARY_SMOKE))
 					{
 						// set_tile_at_no_lock(x, y, get_write_tile_at(x, y + 1));
@@ -880,7 +1347,7 @@ namespace game
 					break;
 
 				default:
-					game::tile_simple_type simple_type = get_simple_tile_type(tile_type);
+					game::tile_simple_type simple_type = get_simple_tile_type(current_tile_type);
 
 					switch (simple_type)
 					{
@@ -917,21 +1384,21 @@ namespace game
 						}
 						else if (get_simple_tile_type(get_write_tile_at(x - 1, y)) == LIQUID)
 						{
-							if (get_write_tile_at(x - 1, y) < tile_type)
+							if (get_write_tile_at(x - 1, y) < current_tile_type)
 							{
 								switch_tiles_no_lock(x, y, x - 1, y);
 							}
 						}
 						else if (get_simple_tile_type(get_write_tile_at(x + 1, y)) == LIQUID)
 						{
-							if (get_write_tile_at(x + 1, y) < tile_type)
+							if (get_write_tile_at(x + 1, y) < current_tile_type)
 							{
 								switch_tiles_no_lock(x, y, x + 1, y);
 							}
 						}
 						else if (get_simple_tile_type(get_write_tile_at(x, y + 1)) == LIQUID)
 						{
-							if (get_write_tile_at(x, y + 1) < tile_type)
+							if (get_write_tile_at(x, y + 1) < current_tile_type)
 							{
 								switch_tiles_no_lock(x, y, x, y + 1);
 							}
@@ -1020,14 +1487,13 @@ namespace game
 					}
 					break;
 
-					
 				default:
 					game::tile_simple_type simple_type = get_simple_tile_type(tile_type);
-					
+
 					switch (simple_type)
 					{
 					case GAS:
-						
+
 						if (get_simple_tile_type(get_write_tile_at(x, y - 1)) == GAS && get_write_tile_at(x, y - 1) < tile_type)
 						{
 							if (rand() % 3 && get_simple_tile_type(get_write_tile_at(x, y - 2)) == GAS && get_write_tile_at(x, y - 2) < tile_type)
@@ -1055,13 +1521,15 @@ namespace game
 						{
 							switch_tiles_no_lock(x, y, x - 1, y);
 						}
-						
+
 						break;
 					}
 				}
 			}
 		}
 
+		// game::b2d_mutex
+		game::b2d_mutex.lock();
 		// get character position
 		entity character_ent = game_engine::game_engine_pointer->player_entitiy;
 		game_engine::box_system *box_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
@@ -1078,21 +1546,30 @@ namespace game
 			{
 				tile_type tile = (tile_type)get_write_tile_at(i, j);
 				float tile_temp = get_tile_temperature_at(i, j);
+				uint16_t tile_misc = get_tile_misc_data_at(i, j);
 
+				bool displace_tile = false;
 				if (tile >= SOLID_TILE_START_INDEX && !is_solid_tile[tile])
 				{
-					set_tile_at_no_lock(i, j, AIR);
-					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -velocity.y, 0.5f, tile, AIR, tile, 250, tile_temp)});
-					// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
+					displace_tile = true;
 				}
-				else if (velocity.y * velocity.y + velocity.x * velocity.x > 3 && (tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX || !is_tile_fixed[tile] && tile >= SOLID_TILE_START_INDEX))
+				else if (velocity.y * velocity.y + velocity.x * velocity.x > 3 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
+				{
+					displace_tile = true;
+				}
+
+				if (displace_tile)
 				{
 					set_tile_at_no_lock(i, j, AIR);
-					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -velocity.y, 0.5f, tile, AIR, tile, 250, tile_temp)});
+					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j - 1, velocity.x, -velocity.y, 0.5f, tile, AIR, tile, 250, tile_temp, tile_misc)});
 					// game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(character_box.x + ((velocity.x > 0) ? character_box.w + 2 : -2), j, (velocity.x > 0) ? 50 : -50, -10, 0.5f, SNOW, TEMPORARY_SMOKE)});
+
+					// make the player_velocity * 0.9;
+					velocity *= 0.99f;
 				}
 			}
 		}
+		character_body->SetLinearVelocity(b2Vec2(velocity.x, velocity.y * 0.9f));
 		// do the same as ^, but for the bodies in the legged creature system
 		legged_creature_system *legged_creature_system_pointer = ((legged_creature_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<legged_creature_system>()));
 		std::vector<entity> legged_creatures = legged_creature_system_pointer->get_entities();
@@ -1141,72 +1618,122 @@ namespace game
 				{
 					tile_type tile = (tile_type)get_write_tile_at(i, j);
 					float temperature = get_tile_temperature_at(i, j);
+					uint16_t misc_data = get_tile_misc_data_at(i, j);
 
 					// Calculate the collision point on the circle
 					b2Vec2 collision_point = b2Vec2(i, j);
-					
+
 					// Calculate the normal of the collision point
 					b2Vec2 normal = collision_point - legged_creature_position;
 					normal.Normalize();
 
 					// Calculate the velocity of the collision point
-					b2Vec2 collision_velocity = legged_creature_velocity;// + b2Cross(legged_creature_body->GetAngularVelocity(), collision_point - legged_creature_position);
+					b2Vec2 collision_velocity = legged_creature_velocity; // + b2Cross(legged_creature_body->GetAngularVelocity(), collision_point - legged_creature_position);
 
-					
 					// Calculate the relative velocity in terms of the normal direction
 					float normal_velocity = b2Dot(collision_velocity, normal);
 
 					// Calculate the relative velocity in terms of the tangent direction
 					b2Vec2 tangent = b2Vec2(-normal.y, normal.x);
-					float tangent_velocity = b2Dot(collision_velocity, tangent);	
+					float tangent_velocity = b2Dot(collision_velocity, tangent);
 
 					// debris_velocity
 					b2Vec2 debris_velocity = normal_velocity * normal + tangent_velocity * tangent;
 
-
-
 					if (tile >= SOLID_TILE_START_INDEX && !is_solid_tile[tile])
 					{
 						set_tile_at_no_lock(i, j, AIR);
-						game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, debris_velocity.x, debris_velocity.y, 0.5f, tile, AIR, tile, 250, temperature)});
+						game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, debris_velocity.x, debris_velocity.y, 0.5f, tile, AIR, tile, 250, temperature, misc_data)});
 					}
 					else if (legged_creature_velocity.y * legged_creature_velocity.y + legged_creature_velocity.x * legged_creature_velocity.x > 3 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
 					{
 						set_tile_at_no_lock(i, j, AIR);
-						game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, debris_velocity.x, debris_velocity.y, 0.5f, tile, AIR, tile, 250, temperature)});
+						game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(legged_creature_box.x + ((legged_creature_velocity.x > 0) ? legged_creature_box.w + 2 : -2), j - 1, debris_velocity.x, debris_velocity.y, 0.5f, tile, AIR, tile, 250, temperature, misc_data)});
 					}
-
-
 				}
 			}
 		}
+		// this, but for the flying creature system
+		flying_creature_system *flying_creature_system_pointer = ((flying_creature_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<flying_creature_system>()));
+		std::vector<entity> flying_creatures = flying_creature_system_pointer->get_entities();
 
+		for (entity flying_creature : flying_creatures)
+		{
+			game_engine::box flying_creature_box = box_system_pointer->get(flying_creature).get_box();
+			b2Body *flying_creature_body = box2d_system_pointer->get_dynamic_body(flying_creature);
+
+			b2Vec2 flying_creature_velocity = flying_creature_body->GetLinearVelocity();
+
+			b2Vec2 flying_creature_position = flying_creature_body->GetPosition();
+
+			for (int i = (int)flying_creature_box.x; i < (int)flying_creature_box.x + flying_creature_box.w + 1; i++)
+			{
+				for (int j = (int)flying_creature_box.y; j < (int)flying_creature_box.y + flying_creature_box.h + 1; j++)
+				{
+					tile_type tile = (tile_type)get_write_tile_at(i, j);
+					float temperature = get_tile_temperature_at(i, j);
+					uint16_t misc_data = get_tile_misc_data_at(i, j);
+
+					// Calculate the collision point on the circle
+					b2Vec2 collision_point = b2Vec2(i, j);
+
+					// Calculate the normal of the collision point
+					b2Vec2 normal = collision_point - flying_creature_position;
+					normal.Normalize();
+
+					// Calculate the velocity of the collision point
+					b2Vec2 collision_velocity = flying_creature_velocity; // + b2Cross(legged_creature_body->GetAngularVelocity(), collision_point - legged_creature_position);
+
+					// Calculate the relative velocity in terms of the normal direction
+					float normal_velocity = b2Dot(collision_velocity, normal);
+
+					// Calculate the relative velocity in terms of the tangent direction
+					b2Vec2 tangent = b2Vec2(-normal.y, normal.x);
+					float tangent_velocity = b2Dot(collision_velocity, tangent);
+
+					// debris_velocity
+					b2Vec2 debris_velocity = normal_velocity * normal + tangent_velocity * tangent;
+
+					bool displace_tile = false;
+					if (tile >= SOLID_TILE_START_INDEX && !is_solid_tile[tile])
+					{
+						displace_tile = true;
+					}
+					else if (flying_creature_velocity.y * flying_creature_velocity.y + flying_creature_velocity.x * flying_creature_velocity.x > 3 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
+					{
+						displace_tile = true;
+					}
+					if (displace_tile)
+					{
+						set_tile_at_no_lock(i, j, AIR);
+						game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(flying_creature_box.x + ((flying_creature_velocity.x > 0) ? flying_creature_box.w + 2 : -2), j - 1, debris_velocity.x, debris_velocity.y, 0.5f, tile, AIR, tile, 250, temperature, misc_data)});
+
+						flying_creature_body->SetLinearVelocity(b2Vec2(flying_creature_velocity.x * 0.59f, flying_creature_velocity.y * 0.59f));
+					}
+				}
+			}
+		}
+		game::b2d_mutex.unlock();
 		
-
-		std::unique_lock<std::shared_mutex> lock_copy(chunk_mutex_copy);
 
 		// copy modified chunks
 		for (int i = 0; i < NUM_CHUNKS; i++)
 		{
-			memcpy(tile_data_copy[i]->get_data(), tile_data_base[i]->get_data(), CHUNK_SIZE * CHUNK_SIZE);
-			memcpy(tile_data_copy[i]->get_temperature_data(), tile_data_base[i]->get_temperature_data(), CHUNK_SIZE * CHUNK_SIZE * sizeof(float));
+			// memcpy(tile_data_copy[i]->get_data(), tile_data_base[i]->get_data(), CHUNK_SIZE * CHUNK_SIZE);
+			// memcpy(tile_data_copy[i]->get_temperature_data(), tile_data_base[i]->get_temperature_data(), CHUNK_SIZE * CHUNK_SIZE * sizeof(float));
+			// memcpy(tile_data_copy[i]->get_misc_data(), tile_data_base[i]->get_misc_data(), CHUNK_SIZE * CHUNK_SIZE * sizeof(uint16_t));
 		}
 
-		
 
-		lock_copy.unlock();
-		lock_base.unlock();
-
-		std::shared_lock<std::shared_mutex> tile_lock(chunk_mutex_copy);
 		// update textures
-		for (int chunk = 0; chunk < NUM_CHUNKS; chunk++)
-		{
-			entity chunk_ent = chunk_entities[chunk];
-			int chunk_x = chunk % CHUNKS_WIDTH;
-			int chunk_y = chunk / CHUNKS_WIDTH;
-			game_engine::render_system *render_system_pointer = ((game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
-			render_system_pointer->update_texture_section(all_chunk_ent, (uint8_t *)(tile_data_copy[chunk]->get_data()), chunk_x * CHUNK_SIZE, chunk_y * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
-		}
+		// for (int chunk = 0; chunk < NUM_CHUNKS; chunk++)
+		// {
+		// 	entity chunk_ent = chunk_entities[chunk];
+		// 	int chunk_x = chunk % CHUNKS_WIDTH;
+		// 	int chunk_y = chunk / CHUNKS_WIDTH;
+		// 	game_engine::render_system *render_system_pointer = ((game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
+		// 	render_system_pointer->update_texture_section(all_chunk_ent, (uint8_t *)(tile_data_copy[chunk]->get_data()), chunk_x * CHUNK_SIZE, chunk_y * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
+		// }
 	}
 
 	void world_tile_system::generate_world()
@@ -1240,10 +1767,10 @@ namespace game
 		return chunk_entities[chunk];
 	}
 
-	std::array<chunk *, NUM_CHUNKS> *world_tile_system::get_chunks_copy()
-	{
-		return &tile_data_copy;
-	}
+	// std::array<chunk *, NUM_CHUNKS> *world_tile_system::get_chunks_copy()
+	// {
+	// 	return &tile_data_copy;
+	// }
 
 	std::array<chunk *, NUM_CHUNKS> *world_tile_system::get_chunks_base()
 	{
@@ -1264,8 +1791,8 @@ namespace game
 	std::vector<std::vector<std::pair<float, float>>> *world_tile_system::create_outlines(int x, int y)
 	{
 		std::vector<std::vector<std::pair<float, float>>> *outlines = new std::vector<std::vector<std::pair<float, float>>>;
-		std::shared_lock<std::shared_mutex> lock(chunk_mutex_copy);
-		tile_data_copy[x + y * CHUNKS_WIDTH]->create_outlines(outlines);
+		// std::shared_lock<std::shared_mutex> lock(chunk_mutex_copy);
+		tile_data_base[x + y * CHUNKS_WIDTH]->create_outlines(outlines);
 
 		return outlines;
 	}
@@ -1287,7 +1814,7 @@ namespace game
 			}
 			// if (data[adjacent_y][adjacent_x] >= SOLID_TILE_START_INDEX)
 			// if (is_solid_tile[data[current_frame][adjacent_y][adjacent_x]])
-			if(tile_data_copy[chunk_x + chunk_y * CHUNKS_WIDTH]->get_tile(adjacent_x, adjacent_y) >= SOLID_TILE_START_INDEX)
+			if (tile_data_base[chunk_x + chunk_y * CHUNKS_WIDTH]->get_tile_copy(adjacent_x, adjacent_y) >= SOLID_TILE_START_INDEX)
 			{
 				edginess += offset[i];
 			}
@@ -1295,7 +1822,6 @@ namespace game
 
 		return edginess;
 	}
-
 
 	// std::vector<std::vector<std::pair<float, float>>> *world_tile_system::create_outlines_from_chunk(int chunk_x, int chunk_y)
 	// {
@@ -1344,14 +1870,12 @@ namespace game
 	// std::vector<std::vector<std::pair<float, float>>> *world_tile_system::create_outline_from_custom_shape(std::vector<std::vector<tile_type>> tiles)
 	// {
 	// 	std::vector<std::pair<float, float>> outline;
-		
 
-	// 	return 
+	// 	return
 	// }
 
 	uint32_t world_tile_system::delete_circle(int x, int y, int radius, std::unordered_set<uint8_t> tile_deny_list)
 	{
-		std::unique_lock<std::shared_mutex> lock(chunk_mutex_base);
 		uint32_t num_deleted = 0;
 		for (int i = 0; i < NUM_CHUNKS; i++)
 		{
@@ -1365,6 +1889,23 @@ namespace game
 			}
 		}
 		return num_deleted;
+	}
+
+	uint32_t world_tile_system::explode_circle(int x, int y, int radius, float max_temperature, std::unordered_set<uint8_t> tile_deny_list)
+	{
+		uint32_t num_exploded = 0;
+		for (int i = 0; i < NUM_CHUNKS; i++)
+		{
+			uint32_t modified;
+			modified = tile_data_base[i]->explode_circle(x, y, radius, max_temperature, tile_deny_list);
+			num_exploded += modified;
+
+			if (modified)
+			{
+				set_modified_chunk(i % CHUNKS_WIDTH, i / CHUNKS_WIDTH, 1);
+			}
+		}
+		return num_exploded;
 	}
 
 	std::array<uint8_t, game::NUM_CHUNKS> *world_tile_system::get_modified_chunks()
@@ -1398,14 +1939,569 @@ namespace game
 
 	bool world_tile_system::find_tile_in_rect(std::pair<int, int> &result, int x, int y, int w, int h, std::unordered_set<uint8_t> tile_types)
 	{
-		std::shared_lock<std::shared_mutex> lock(chunk_mutex_copy);
 		for (int i = 0; i < NUM_CHUNKS; i++)
 		{
-			if (tile_data_copy[i]->find_tile_in_rect(result, x, y, w, h, tile_types))
+			if (tile_data_base[i]->find_tile_in_rect(result, x, y, w, h, tile_types))
 			{
 				return true;
 			}
 		}
 		return false;
 	}
+
+	
+	bool update_chunk_tiles_task_wrapper(void* parameters)
+	{
+		update_chunk_tiles_parameters* params = (update_chunk_tiles_parameters*)parameters;
+		world_tile_system* wts = params->world_tile_system_pointer;
+		return wts -> update_chunk_tiles_task(params);
+	}
+
+	bool world_tile_system::update_chunk_tiles_task(void* parameters)
+	{
+		update_chunk_tiles_parameters* params = (update_chunk_tiles_parameters*)parameters;
+		chunk* c = params->chunk_pointer;
+		
+		uint8_t forwards_direction = params -> tick_count % 2;
+		int8_t heat_dx[] = {1, 0, -1, 0};
+		int8_t heat_dy[] = {0, 1, 0, -1};
+
+		// retrieve neighbour tile buffers
+		int n_chunk_x;
+		int n_chunk_y;
+		// up, right, down, left chunks
+		int8_t chunk_neighbour_dx[] = {0, 1, 0, -1};
+		int8_t chunk_neighbour_dy[] = {-1, 0, 1, 0};
+		std::array<chunk*, 4> neighbour_chunks;
+		for (int i = 0; i < 4; i++)
+		{
+			n_chunk_x = c->chunk_x + chunk_neighbour_dx[i];
+			n_chunk_y = c->chunk_y + chunk_neighbour_dy[i];
+			if (n_chunk_x < 0 || n_chunk_x >= CHUNKS_WIDTH || n_chunk_y < 0 || n_chunk_y >= CHUNKS_WIDTH)
+			{
+				neighbour_chunks[i] = nullptr;
+			}
+			else
+			{
+				neighbour_chunks[i] = tile_data_base[n_chunk_x + n_chunk_y * CHUNKS_WIDTH];
+			}
+		}
+		for (int i = 0; i < 4; i++)
+		{
+			if (neighbour_chunks[i] != nullptr)
+			{
+				neighbour_chunks[i]->get_neighbour_tile_buffer(c->get_neighbour_tile_buffer_pointer(), i);
+			}
+		}
+
+		chunk_neighbour_tile_buffer neighbour_tile_copy = *c->get_neighbour_tile_buffer_pointer();
+
+		bool chunk_terrain_modified = false;
+
+		c -> lock_chunk();
+		// update temperatures
+		for (int y = forwards_direction ? 0 : CHUNK_SIZE - 1; y < CHUNK_SIZE && y >= 0; y += forwards_direction ? 1 : -1)
+		{
+			for (int x = forwards_direction ? 0 : CHUNK_SIZE - 1; x < CHUNK_SIZE && x >= 0; x += forwards_direction ? 1 : -1)
+			{
+				tile_type tile = (tile_type)c->get_tile(x, y);
+				float temp = c->get_tile_temperature(x, y);
+				uint16_t misc = c->get_misc_data_at(x, y);
+
+				// check if tile has overheated
+				if (temp > tile_max_temperature[tile] + 2)
+				{
+					if (!max_temp_tile_change.count(tile))
+					{
+						// printf(" overheated tile %d at (%d, %d) is overheated with temperature %f, but no max temp change defined.\n", tile, x, y, temp);
+						continue;
+					}
+					
+					tile_type new_tile = max_temp_tile_change[tile];
+					int changes = tile_phase_change_count_multiplier[new_tile];
+
+					c -> set_tile(x, y, AIR);
+
+					if(changes > 0)
+					{
+						// need to place multiple tiles
+						for(int i = 0; i < changes; i++)
+						{
+							bool success = c -> try_place_tile_with_displacement_no_lock(x, y, new_tile, temp, misc, 0, 128);
+							if (!success)
+							{
+								// couldn't place the tile, try role back
+								if (i > 0)
+								{
+									bool rollback_success = c -> try_consume_nearby_tile_no_lock(x, y, new_tile, 128);
+									if (!rollback_success)
+									{
+										// fucked it
+										break;
+									}
+								}
+								c -> set_tile(x, y, tile);
+								break;
+							}
+						}
+					}
+					else
+					{
+						bool consumed_all = true;
+						// need to consume multiple tiles
+						for(int i = 0; i < -changes; i++)
+						{
+							bool success = c -> try_consume_nearby_tile_no_lock(x, y, tile, 128);
+							if (!success)
+							{
+								consumed_all = false;
+								// couldn't consume the tile, try role back
+								if (i > 0)
+								{
+									bool rollback_success = c -> try_place_tile_with_displacement_no_lock(x, y, tile, temp, misc, 0, 128);
+									if (!rollback_success)
+									{
+										// fucked it
+										break;
+									}
+								}
+								c -> set_tile(x, y, tile);
+								break;
+							}
+						}
+						if (consumed_all)
+						{
+							c -> set_tile(x, y, new_tile);
+						}
+					}
+					if (is_solid_tile[new_tile] != is_solid_tile[tile] || (is_solid_tile[new_tile] || is_solid_tile[tile]) && changes != 1)
+					{
+						chunk_terrain_modified = true;
+					}
+				}
+				else if (temp < tile_min_temperature[tile] - 2)
+				{
+					if (!min_temp_tile_change.count(tile))
+					{
+						// printf(" undercooled tile %d at (%d, %d) is undercooled with temperature %d, but no min temp change defined.\n", tile, x, y, temp);
+						continue;
+					}
+					tile_type new_tile = min_temp_tile_change[tile];
+					int changes = tile_phase_change_count_multiplier[new_tile];
+
+					c -> set_tile(x, y, AIR);
+
+					if(changes > 0)
+					{
+						// need to place multiple tiles
+						for(int i = 0; i < changes; i++)
+						{
+							bool success = c -> try_place_tile_with_displacement_no_lock(x, y, new_tile, temp, misc, 0, 128);
+							if (!success)
+							{
+								// couldn't place the tile, try role back
+								if (i > 0)
+								{
+									bool rollback_success = c -> try_consume_nearby_tile_no_lock(x, y, new_tile, 128);
+									if (!rollback_success)
+									{
+										// fucked it
+										break;
+									}
+								}
+								c -> set_tile(x, y, tile);
+								break;
+							}
+						}
+					}
+					else
+					{
+						bool consumed_all = true;
+						// need to consume multiple tiles
+						for(int i = 0; i < -changes; i++)
+						{
+							bool success = c -> try_consume_nearby_tile_no_lock(x, y, tile, 128);
+							if (!success)
+							{
+								consumed_all = false;
+								// couldn't consume the tile, try role back
+								if (i > 0)
+								{
+									bool rollback_success = c -> try_place_tile_with_displacement_no_lock(x, y, tile, temp, misc, 0, 128);
+									if (!rollback_success)
+									{
+										// fucked it
+										break;
+									}
+								}
+								c -> set_tile(x, y, tile);
+								break;
+							}
+						}
+						if (consumed_all)
+						{
+							c -> set_tile(x, y, new_tile);
+						}
+					}
+					if (is_solid_tile[new_tile] != is_solid_tile[tile] || (is_solid_tile[new_tile] || is_solid_tile[tile]) && changes != 1)
+					{
+						chunk_terrain_modified = true;
+					}
+				}
+				
+				// transfer heat to adjacent tiles
+
+				for (int i = 0; i < 2; i++)
+				{
+					int nx = x + heat_dx[i + 2 * forwards_direction];
+					int ny = y + heat_dy[i + 2 * forwards_direction];
+
+					if (nx < 0 || nx >= CHUNK_SIZE || ny < 0 || ny >= CHUNK_SIZE)
+					{
+						continue;
+					}
+					tile_type neighbor_tile = (tile_type)c->get_tile_using_buffer(nx, ny);
+					float neighbor_temp = c->get_tile_temperature_using_buffer(nx, ny);
+					
+					if (neighbor_temp > temp)
+					{
+						float temp_difference = (neighbor_temp - temp) / 20;
+						float tile_heat_conductivity = tile_thermal_conductivity[tile];
+						float neighbor_tile_heat_conductivity = tile_thermal_conductivity[neighbor_tile];
+
+						float effective_conductivity = tile_heat_conductivity == neighbor_tile_heat_conductivity ? tile_heat_conductivity 
+							: 1.0f / ((1.0f / tile_heat_conductivity) + (1.0f / neighbor_tile_heat_conductivity));
+						
+						temp_difference *= effective_conductivity;
+
+						float tile_new_temp = temp + temp_difference / tile_heat_capacity[tile];
+						float neighbor_tile_new_temp = neighbor_temp - temp_difference / tile_heat_capacity[neighbor_tile];
+
+						if (tile_new_temp > neighbor_tile_new_temp)
+						{
+							temp_difference = (neighbor_temp - temp) / (1.0f / tile_heat_capacity[tile] + 1.0f / tile_heat_capacity[neighbor_tile]);
+							tile_new_temp = temp + temp_difference / tile_heat_capacity[tile];
+							neighbor_tile_new_temp = neighbor_temp - temp_difference / tile_heat_capacity[neighbor_tile];
+						}
+						c->set_tile_temperature(x, y, tile_new_temp);
+						c->set_tile_temperature(nx, ny, neighbor_tile_new_temp);
+
+						temp = tile_new_temp;
+					}
+				}
+			}
+		}
+
+		for (int y = CHUNK_SIZE - 1; y >= 0; y--)
+		{
+			for (int x = forwards_direction ? CHUNK_SIZE - 1 : 0; x < CHUNK_SIZE && x >= 0; x += forwards_direction ? -1 : 1)
+			{
+				tile_type tile = (tile_type)c->get_tile(x, y);
+				float tile_temperature = c -> get_tile_temperature(x, y);
+				uint16_t tile_misc_data = c -> get_misc_data_at(x, y);
+
+				tile_type below_tile = (tile_type)(c -> get_tile_using_buffer(x, y + 1));
+				tile_type left_tile = (tile_type)(c -> get_tile_using_buffer(x - 1, y));
+				tile_type right_tile = (tile_type)(c -> get_tile_using_buffer(x + 1, y));
+				tile_type left_down_tile = (tile_type)(c -> get_tile_using_buffer(x - 1, y + 1));
+				tile_type right_down_tile = (tile_type)(c -> get_tile_using_buffer(x + 1, y + 1));
+
+				switch (tile)
+				{
+				case SAND:
+					if (below_tile < SOLID_TILE_START_INDEX)
+					{
+						chunk_terrain_modified = true;
+						c -> switch_tiles_no_lock(x, y, x, y + 1);
+					}
+					else if (left_down_tile < SOLID_TILE_START_INDEX)
+					{
+						chunk_terrain_modified = true;
+						c -> switch_tiles_no_lock(x, y, x - 1, y + 1);
+					}
+					else if (right_down_tile < SOLID_TILE_START_INDEX)
+					{
+						chunk_terrain_modified = true;
+						c -> switch_tiles_no_lock(x, y, x + 1, y + 1);
+					}
+					break;
+				case ASH:
+				case SNOW:
+					if (get_simple_tile_type(below_tile) < SOLID)
+					{
+						c -> switch_tiles_no_lock(x, y, x, y + 1);
+					}
+					break;
+				case EMBER:
+					if (tile_misc_data == 0)
+					{
+						if (tile_temperature < 200.0f)
+						{
+							c -> set_tile(x, y, ASH);//rand() % 2 == 0 ? ASH : TEMPORARY_SMOKE);
+						}
+						break;
+					}
+					if (tile_misc_data % 20 == 0)
+					{
+						bool success = c -> try_place_tile_with_displacement_no_lock(x, y - 1, POLLUTION, tile_temperature, 0, 0, 32);
+						if (success)
+						{
+							c -> add_tile_temperature(x, y, 100.0f);
+							c -> add_misc_data_at(x, y, -1);
+						}
+					}
+					else
+					{
+						c -> try_place_tile_with_displacement_no_lock(x, y - 1, TEMPORARY_SMOKE, tile_temperature, 0, 0, 32);
+						c -> add_misc_data_at(x, y, -1);
+					}
+					break;
+
+				case INSULATION_FOAM:
+					if (c -> get_misc_data_at(x, y) > 0)
+					{
+						c -> add_misc_data_at(x, y, -1);
+					}
+					else
+					{
+						set_tile_temperature_at(x, y, tile_max_temperature[INSULATION_FOAM] + 3);
+					}
+					break;
+
+				default:
+					tile_simple_type simple_tile = get_simple_tile_type(tile);
+
+					switch (simple_tile)
+					{
+					case LIQUID:
+						if (get_simple_tile_type(below_tile) < LIQUID)
+						{
+							c -> switch_tiles_no_lock(x, y, x, y + 1);
+						}
+						else if (get_simple_tile_type(right_down_tile) < LIQUID && get_simple_tile_type(right_tile) < LIQUID)
+						{
+							c -> switch_tiles_no_lock(x, y, x + 1, y + 1);
+						}
+						else if (get_simple_tile_type(left_down_tile) < LIQUID && get_simple_tile_type(left_tile) < LIQUID)
+						{
+							c -> switch_tiles_no_lock(x, y, x - 1, y + 1);
+						}
+						else if (get_simple_tile_type(right_tile) < LIQUID)
+						{
+							c -> switch_tiles_no_lock(x, y, x + 1, y);
+						}
+						else if (get_simple_tile_type(left_tile) < LIQUID)
+						{
+							c -> switch_tiles_no_lock(x, y, x - 1, y);
+						}
+						else
+						{
+							// tile_type below_tile = (tile_type)(c -> get_tile_using_buffer(x, y + 1));
+							if (get_simple_tile_type(below_tile) == LIQUID)
+							{
+								bool greater_tile = tile > below_tile;
+								float below_tile_temperature = c -> get_tile_temperature(x, y + 1);
+								if (greater_tile * 10 + below_tile_temperature - tile_temperature >= 5)
+								{
+									c -> switch_tiles_no_lock(x, y, x, y + 1);
+									break;
+								}
+							}
+							// tile_type left_down_tile = (tile_type)(c -> get_tile_using_buffer(x - 1, y + 1));
+							if (get_simple_tile_type(left_down_tile) == LIQUID)
+							{
+								bool greater_tile = tile > left_down_tile;
+								float left_down_tile_temperature = c -> get_tile_temperature(x - 1, y + 1);
+								if (greater_tile * 10 + left_down_tile_temperature - tile_temperature >= 5)
+								{
+									c -> switch_tiles_no_lock(x, y, x - 1, y + 1);
+									break;
+								}
+							}
+							// tile_type right_down_tile = (tile_type)(c -> get_tile_using_buffer(x + 1, y + 1));
+							if (get_simple_tile_type(right_down_tile) == LIQUID)
+							{
+								bool greater_tile = tile > right_down_tile;
+								float right_down_tile_temperature = c -> get_tile_temperature(x + 1, y + 1);
+								if (greater_tile * 10 + right_down_tile_temperature - tile_temperature >= 5)
+								{
+									c -> switch_tiles_no_lock(x, y, x + 1, y + 1);
+									break;
+								}
+							}
+						}
+						break;
+					}
+				}
+			}
+		}
+
+		for (int y = 0; y < CHUNK_SIZE; y++)
+		{
+			for (int x = forwards_direction ? 0 : CHUNK_SIZE - 1; x < CHUNK_SIZE && x >= 0; x += forwards_direction ? 1 : -1)
+			{
+				tile_type tile = (tile_type)c->get_tile_using_buffer(x, y);
+				float tile_temperature = c -> get_tile_temperature(x, y);
+
+				tile_type above_tile = (tile_type)(c -> get_tile_using_buffer(x, y - 1));
+				tile_type left_tile = (tile_type)(c -> get_tile_using_buffer(x - 1, y));
+				tile_type right_tile = (tile_type)(c -> get_tile_using_buffer(x + 1, y));
+				tile_type below_tile = (tile_type)(c -> get_tile_using_buffer(x, y + 1));
+				tile_type left_up_tile = (tile_type)(c -> get_tile_using_buffer(x - 1, y - 1));
+				tile_type right_up_tile = (tile_type)(c -> get_tile_using_buffer(x + 1, y - 1));
+
+				switch (tile)
+				{
+				case VACCUUM:
+					if (above_tile == AIR || left_tile == AIR || right_tile == AIR || below_tile == AIR)
+					{
+						c -> set_tile(x, y, AIR);
+					}
+					break;
+				case AIR:
+					break;
+
+				case TEMPORARY_SMOKE:
+					if (rand() % 15 == 0)
+					{
+						c -> set_tile(x, y, AIR);
+						break;
+					}
+				
+				default:
+					tile_simple_type simple_tile = get_simple_tile_type(tile);
+
+					switch (simple_tile)
+					{
+					case GAS:
+						if (get_simple_tile_type(above_tile) == GAS)
+						{
+							bool above_greater = tile < above_tile;
+							float above_tile_temperature = c -> get_tile_temperature(x, y - 1);
+							
+							if (above_greater * 50 + tile_temperature - above_tile_temperature >= .5)
+							{
+								c -> switch_tiles_no_lock(x, y, x, y - 1);
+								break;
+							}
+						}
+						if (get_simple_tile_type(left_up_tile) == GAS && get_simple_tile_type(left_tile) == GAS)
+						{
+							bool left_up_greater = tile < left_up_tile;
+							float left_up_tile_temperature = c -> get_tile_temperature(x - 1, y - 1);
+							
+							if (left_up_greater * 50 + tile_temperature - left_up_tile_temperature >= .5)
+							{
+								c -> switch_tiles_no_lock(x, y, x - 1, y - 1);
+								break;
+							}
+						}
+						if (get_simple_tile_type(right_up_tile) == GAS && get_simple_tile_type(right_tile) == GAS)
+						{
+							bool right_up_greater = tile < right_up_tile;
+							float right_up_tile_temperature = c -> get_tile_temperature(x + 1, y - 1);
+							
+							if (right_up_greater * 50 + tile_temperature - right_up_tile_temperature >= .5)
+							{
+								c -> switch_tiles_no_lock(x, y, x + 1, y - 1);
+								break;
+							}
+						}
+						if (get_simple_tile_type(left_tile) == GAS)
+						{
+							bool left_greater = tile < left_tile;
+							float left_tile_temperature = c -> get_tile_temperature(x - 1, y);
+							
+							if (left_greater * 50 + tile_temperature - left_tile_temperature >= .5)
+							{
+								c -> switch_tiles_no_lock(x, y, x - 1, y);
+								break;
+							}
+						}
+						if (get_simple_tile_type(right_tile) == GAS)
+						{
+							bool right_greater = tile < right_tile;
+							float right_tile_temperature = c -> get_tile_temperature(x + 1, y);
+							
+							if (right_greater * 50 + tile_temperature - right_tile_temperature >= .5)
+							{
+								c -> switch_tiles_no_lock(x, y, x + 1, y);
+								break;
+							}
+						}
+						break;
+					}
+				}
+			}
+		}
+		if (chunk_terrain_modified)
+		{
+			set_modified_chunk(c -> chunk_x, c -> chunk_y, 1);
+		}
+
+		c -> unlock_chunk();
+
+		c -> lock_chunk_copy();
+		c -> lock_chunk_shared();
+
+		c -> copy_to_data_copy();
+
+		c -> unlock_chunk_shared();
+		c -> unlock_chunk_copy();
+
+		for (int i = 0; i < 4; i++)
+		{
+			if (neighbour_chunks[i] != nullptr)
+			{
+				neighbour_chunks[i]->update_neighbour_tiles(c->get_neighbour_tile_buffer_pointer(), &neighbour_tile_copy, i);
+			}
+		}
+		
+		// game_engine::render_system *render_system_pointer = ((game_engine::render_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
+		// c -> lock_chunk_copy_shared();
+		// render_system_pointer->update_texture_section(all_chunk_ent, (uint8_t *)(c->get_data_copy()), c -> chunk_x * CHUNK_SIZE, c -> chunk_y * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
+		// c -> unlock_chunk_copy_shared();
+		// render_system_pointer->add_task_to_scheduler({&update_chunk_tiles_texture_task, new update_chunk_tiles_texture_parameters{c, this, render_system_pointer}});
+
+		return true;
+	}
+
+
+	bool update_chunk_tiles_texture_task(void* parameters)
+	{
+		update_chunk_tiles_texture_parameters* params = (update_chunk_tiles_texture_parameters*)parameters;
+		chunk* c = params->chunk_pointer;
+		world_tile_system* wts = params->world_tile_system_pointer;
+		game_engine::render_system* render_system_pointer = params->render_system_pointer;
+
+		c -> lock_chunk_copy_shared();
+		render_system_pointer->update_texture_section(wts -> all_chunk_ent, (uint8_t *)(c->get_data_copy()), c -> chunk_x * CHUNK_SIZE, c -> chunk_y * CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
+		c -> unlock_chunk_copy_shared();
+
+		return true;
+	}
+
+	bool recalculate_chunk_outlines_task(void *parameters)
+	{
+		recalculate_chunk_outlines_parameters* params = (recalculate_chunk_outlines_parameters*)parameters;
+		chunk* c = params->chunk_pointer;
+		world_tile_system* wts = params->world_tile_system_pointer;
+
+		std::vector<std::vector<std::pair<float, float>>>* outlines = new std::vector<std::vector<std::pair<float, float>>>();
+		c -> lock_chunk_shared();
+		if (wts -> get_modified_chunks() -> at(c -> chunk_x + c -> chunk_y * CHUNKS_WIDTH) == 0)
+		{
+			c -> unlock_chunk_shared();
+			return true;
+		}
+		c -> unlock_chunk_shared();
+
+		c -> create_outlines(outlines);
+		wts -> set_modified_chunk(c -> chunk_x, c -> chunk_y, 0);
+
+		game::box2d_system* box2d_system_pointer = (game::box2d_system*)game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>());
+		box2d_system_pointer -> update_static_outlines(params -> chunk_entity, outlines);
+		return true;
+	}
+	
 }

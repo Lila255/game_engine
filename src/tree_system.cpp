@@ -87,7 +87,14 @@ namespace game
 		} else {
 			tile_map = &t.branch_tiles;
 		}
-		tree_tracer tt = tile_map->at(current_tile);
+
+		tree_tracer tt;
+		if(tile_map -> count(current_tile))
+		{
+			tt = tile_map->at(current_tile);
+		} else {
+			tt = {0, 0, 0, 0};
+		}
 
 		// check if tile is still valid
 		if (!game_engine::in_set(world_tiles->get_tile_at(current_tile.x, current_tile.y), ROOT, TREE_SEED, WOOD))
@@ -200,8 +207,7 @@ namespace game
 					return true;
 				}
 			}
-			else
-			if (dirs[i] == 1 && tt.down == 1)
+			else if (dirs[i] == 1 && tt.down == 1)
 			{
 				tile_coord new_current_tile = tile_coord(current_tile.x, current_tile.y + 1);
 				if (find_tile_to_grow_to(t, new_current_tile, last_tile, tree_tile_type))
@@ -234,6 +240,7 @@ namespace game
 
 	void tree_system::update()
 	{
+		increment_counter();
 		tree_mutex.lock();
 		// Update all trees
 		for (auto &tree_entity : trees.get_entities())
@@ -248,6 +255,14 @@ namespace game
 			// 	game_engine::game_engine_pointer->remove_entity(tree_entity);
 			// 	continue;
 			// }
+
+			if (get_simple_tile_type(world_tiles->get_tile_at(t.seed_x, t.seed_y + 1)) == tile_simple_type::GAS)
+			{
+				// seed is floating, move down
+				world_tiles->switch_tiles_with_lock(t.seed_x, t.seed_y, t.seed_x, t.seed_y + 1);
+				t.seed_y += 1;
+				continue;
+			}
 
 			if (t.root_tiles.size() < 48 && rand() % 3 == 0)
 			{ // grow roots
@@ -266,37 +281,75 @@ namespace game
 					t.root_tiles[last_tile].up = 1;
 					t.root_tiles[current_tile] = tree_tracer{0, 2, 0, 0};
 					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
 				}
 				else if (last_tile.y < current_tile.y) // moved down
 				{
 					t.root_tiles[last_tile].down = 1;
 					t.root_tiles[current_tile] = tree_tracer{2, 0, 0, 0};
 					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+					
 				}
 				else if (last_tile.x > current_tile.x) // moved left
 				{
 					t.root_tiles[last_tile].left = 1;
 					t.root_tiles[current_tile] = tree_tracer{0, 0, 0, 2};
 					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
 				}
 				else if (last_tile.x < current_tile.x) // moved right
 				{
 					t.root_tiles[last_tile].right = 1;
 					t.root_tiles[current_tile] = tree_tracer{0, 0, 2, 0};
-					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, WOOD);
+					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
 				}
 			}
 
-			// if(t.branch_tiles.size() < t.root_tiles.size() && rand() % 3 == 0)
-			// {
-			// 	// grow branches
-			// 	tile_coord current_tile = tile_coord(t.seed_x, t.seed_y);
-			// 	tile_coord last_tile = tile_coord(t.seed_x, t.seed_y);
+			if(t.branch_tiles.size() < t.root_tiles.size() && rand() % 3 == 0)
+			{
+				// grow branches
+				tile_coord current_tile = tile_coord(t.seed_x, t.seed_y);
+				tile_coord last_tile = tile_coord(t.seed_x, t.seed_y);
 
-			// 	bool found_tile = find_tile_to_grow_to(t, current_tile, last_tile, ROOT);
+				bool found_tile = find_tile_to_grow_to(t, current_tile, last_tile, WOOD);
 
-			// }
+				if (!found_tile)
+				{
+					continue;
+				}
+				if (last_tile.y > current_tile.y) // moved up
+				{
+					t.branch_tiles[last_tile].up = 1;
+					t.branch_tiles[current_tile] = tree_tracer{0, 2, 0, 0};
+					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, WOOD);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+				}
+				else if (last_tile.y < current_tile.y) // moved down
+				{
+					t.branch_tiles[last_tile].down = 1;
+					t.branch_tiles[current_tile] = tree_tracer{2, 0, 0, 0};
+					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, WOOD);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+				}
+				else if (last_tile.x > current_tile.x) // moved left
+				{
+					t.branch_tiles[last_tile].left = 1;
+					t.branch_tiles[current_tile] = tree_tracer{0, 0, 0, 2};
+					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, WOOD);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+				}
+				else if (last_tile.x < current_tile.x) // moved right
+				{
+					t.branch_tiles[last_tile].right = 1;
+					t.branch_tiles[current_tile] = tree_tracer{0, 0, 2, 0};
+					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, WOOD);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+				}
+			}
 		}
+
 		tree_mutex.unlock();
 	}
 
@@ -310,6 +363,7 @@ namespace game
 			update();
 			auto end = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			add_time(duration.count());
 			// printf("Tree system loop time: %d\n", duration.count());
 			if (duration.count() < loop_time_millis)
 				std::this_thread::sleep_for(std::chrono::milliseconds(loop_time_millis - duration.count()));

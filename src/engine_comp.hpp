@@ -149,6 +149,7 @@ namespace game_engine
 
 		bool contains_ent(entity ent)
 		{
+			printf("box_system::contains_ent(%d)\n", ent);
 			return m_boxes.contains(ent);
 		}
 	};
@@ -160,20 +161,30 @@ namespace game_engine
 		sparse_component_set<GLuint> m_vaos;
 		// GLuint m_vao = 0;
 
+		box_system *box_system_pointer;
 	public:
-		texture_vbo_system() = default;
-		// {
-		// Create a VAO
-		// glGenVertexArrays(1, &m_vao);
-		// glBindVertexArray(m_vao);
-		// }
+		texture_vbo_system() = delete;
+		texture_vbo_system(box_system *box_sys_ptr) : box_system_pointer(box_sys_ptr) {}
 
 		/// @brief Create a new VBO for the given entity.
 		/// @param ent The entity to create a VBO for. Entity must contain a box component to pull values from
 		void add(uint32_t ent)
 		{
 			// Get the box component
-			box b = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()))->get(ent).get_box();
+			// printf("\tBox system pointer: %p\n", box_system_pointer);
+			if(box_system_pointer == nullptr || !box_system_pointer->contains_ent(ent))
+			{
+				throw std::runtime_error("texture_vbo_system::add() - Entity does not contain a box component");
+			}
+			// 	return;
+			// printf("\tGetting box for entity %d \n", ent);
+
+			// printf("\tBox system contains entity: %d\n", box_system_pointer->contains_ent(ent));
+			// return;
+			
+			
+			box b = box_system_pointer->get(ent).get_box();
+
 
 			// Create the vertex data
 			// float vertex_data[] = {
@@ -205,12 +216,10 @@ namespace game_engine
 			GLuint vbo;
 			glGenBuffers(1, &vbo);
 			glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
 			// Upload the vertex data to the GPU
 			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(texture_data), NULL, GL_DYNAMIC_DRAW);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 			glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(texture_data), texture_data);
-
 			// Enable the vertex attributes
 			// glEnableVertexAttribArray(0);
 			// glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
@@ -221,11 +230,9 @@ namespace game_engine
 
 			glEnableVertexAttribArray(0);
 			glEnableVertexAttribArray(1);
-
 			// Add the VBO to the sparse component set
 			m_vbos.add(ent, vbo);
 			m_vaos.add(ent, new_vao);
-
 			// Unbind the VB0
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			// Unbind the VAO
@@ -351,6 +358,8 @@ namespace game_engine
 		GLFWwindow *m_window;
 		uint32_t m_frame_count = 0;
 
+		game_engine::task_scheduler* task_scheduler_pointer;
+
 	public:
 		render_system(GLFWwindow *window) : m_window(window)
 		{
@@ -368,6 +377,8 @@ namespace game_engine
 			// glfwSetKeyCallback(window, (game_engine_pointer->*ptr));
 			glfwSetKeyCallback(window, game_engine::static_key_callback);
 			glfwSetMouseButtonCallback(window, game_engine::static_mouse_button_callback);
+
+			task_scheduler_pointer = new game_engine::task_scheduler();
 		}
 
 		void set_key_callback(void (*key_callback)(std::unordered_set<int> &keys_pressed))
@@ -384,6 +395,8 @@ namespace game_engine
 			// Do rendering stuff
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			update_keys();
+
+			task_scheduler_pointer -> run_all_tasks();
 
 			if (mouse_callback && game_engine_pointer->pressed_mouse_buttons.size() > 0)
 			{
@@ -498,6 +511,11 @@ namespace game_engine
 		void add(entity ent, sprite t)
 		{
 			m_sprite_textures.add(ent, t);
+		}
+
+		void add_task_to_scheduler(task t)
+		{
+			task_scheduler_pointer -> add_task(t);
 		}
 		
 

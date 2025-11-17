@@ -1,4 +1,5 @@
 #include "box2d_system.hpp"
+#include "tasks.hpp"
 
 namespace game
 {
@@ -265,9 +266,9 @@ namespace game
 
 	void box2d_system::remove_dynamic_body(entity ent)
 	{
-		b2d_mutex.lock();
+		// b2d_mutex.lock();
 		world->DestroyBody(dynamic_bodies.get(ent));
-		b2d_mutex.unlock();
+		// b2d_mutex.unlock();
 		dynamic_bodies.remove(ent);
 	}
 
@@ -275,15 +276,24 @@ namespace game
 	{
 		running = 1;
 
+		std::chrono::time_point<std::chrono::steady_clock> last_time = std::chrono::steady_clock::now();
 		while(running)
 		{	
 			std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
 			b2d_mutex.lock();
+			std::chrono::time_point<std::chrono::steady_clock> before_update = std::chrono::steady_clock::now();
 			update(time_step_ms);
 			b2d_mutex.unlock();
 			std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
 			std::chrono::microseconds elapsed_ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-			// printf("Elapsed time: %ld\n", elapsed_ms.count());
+			std::chrono::microseconds update_duration = std::chrono::duration_cast<std::chrono::microseconds>(end - before_update);
+			add_time(elapsed_ms.count());
+			// if(get_counter() % (1) == 0) printf("Elapsed time(microseconds): %ld\tUpdate duration: %ld\n", elapsed_ms.count(), update_duration.count());
+			elapsed_ms = std::chrono::duration_cast<std::chrono::microseconds>(end - last_time);
+			// if(get_counter() % (10) == 0)
+			// 	printf("Elapsed time(microseconds): %ld\tUpdate duration: %ld\n", elapsed_ms.count(), update_duration.count());
+
+			last_time = end;
 			if(elapsed_ms.count() < time_step_ms * 1000)
 			{
 				std::this_thread::sleep_for(std::chrono::microseconds((time_step_ms * 1000 - elapsed_ms.count())));
@@ -298,12 +308,78 @@ namespace game
 
 	void box2d_system::update(uint64_t time_to_step)
 	{
+		increment_counter();
 		game_engine::box_system *bo_system_pointer = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
 
 		game_engine::box_lerp player_box_0 = bo_system_pointer->get(game_engine::game_engine_pointer->player_entitiy);
 		
-		world->Step(time_to_step / 1000.0, 6, 2);
+		world->Step(time_to_step / 1000.f, 6, 2);
 		// world->Step(1.0f / 144.0f, 6, 2);
+
+		if(2 == 1 && get_counter() % 10 == 0)
+		{
+			// sum static body mesh vertices
+			uint64_t static_vertex_count = 0;
+			for (auto &ent : static_bodies.get_entities())
+			{
+				b2Body *body = static_bodies.get(ent);
+				b2Fixture *fixtures = body->GetFixtureList();
+				while (fixtures)
+				{
+					b2Shape::Type shapeType = fixtures->GetType();
+					if (shapeType == b2Shape::e_polygon)
+					{
+						b2PolygonShape* polygonShape = (b2PolygonShape*)fixtures->GetShape();
+						static_vertex_count += polygonShape->m_count;
+					}
+					// else if (shapeType == b2Shape::e_chain)
+					// {
+					// 	b2ChainShape* chainShape = (b2ChainShape*)fixtures->GetShape();
+					// 	static_vertex_count += chainShape->m_count;
+					// }
+					fixtures = fixtures->GetNext();
+				}
+			}
+			printf("Static body total vertex count: %llu\n", static_vertex_count);
+
+			printf("Dynamic body count: %llu\n", dynamic_bodies.get_entities().size());
+
+			// check all dynamic bodies to find if any have exceeded an amount of intersecionts/collisions
+			for (auto &ent : dynamic_bodies.get_entities())
+			{
+				b2Body *body = dynamic_bodies.get(ent);
+				int contact_count = 0;
+				for (b2ContactEdge* ce = body->GetContactList(); ce; ce = ce->next)
+				{
+					if (ce->contact->IsTouching())
+					{
+						contact_count++;
+					}
+				}
+				// if contact count > threshold, do something
+				// printf("Entity %llu has %d contacts\n", ent.get_id(), contact_count);
+				if (contact_count > 10)
+				{
+					printf("Entity %llu has exceeded contact threshold with %d contacts\n", ent, contact_count);
+					// take some action, e.g., remove body or reset position
+					// disable bodies collision for a while
+					body->SetEnabled(false);
+					// set position
+					body->SetTransform(b2Vec2(90.0f / box2d_scale, 20.0f / box2d_scale), 0.0f);
+					
+					// insert task
+					game_engine::task_scheduler_pointer -> add_backlog_task(game_engine::task{
+						.function_pointer = game::set_b2d_body_enabled_task,
+						.task_parameters = new game::set_b2d_body_enabled_params(ent, true),
+						.run_time = 0,
+						.retry_count = 0
+					}, 8000); // re-enable after 8 seconds
+
+
+				
+				}
+			}
+		}
 
 		b2Body *body = dynamic_bodies.get(game_engine::game_engine_pointer->player_entitiy);
 		b2Vec2 position = body->GetPosition();
@@ -334,5 +410,14 @@ namespace game
 	b2Body *box2d_system::get_dynamic_body(entity ent)
 	{
 		return dynamic_bodies.get(ent);
+	}
+
+	bool box2d_system::contains_static_body(entity ent)
+	{
+		return static_bodies.contains(ent);
+	}
+	bool box2d_system::contains_dynamic_body(entity ent)
+	{
+		return dynamic_bodies.contains(ent);
 	}
 }

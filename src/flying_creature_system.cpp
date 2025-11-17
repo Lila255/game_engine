@@ -26,6 +26,10 @@ namespace game
 			}
 		}
 	}
+	std::vector<entity> flying_creature_system::get_entities()
+	{
+		return flying_creatures.get_entities();
+	}
 
 	void flying_creature_system::update(uint64_t step_num)
 	{
@@ -55,31 +59,31 @@ namespace game
 					}
 					// find food
 					
-					creature.set_state(flying_creature_state::EATING);
+					creature.set_state(flying_creature_state::TRAVELING);
 					break;
 
 				case flying_creature_state::EATING:
 					// creature is eating
 					
 					
-					force = b2Vec2(10 * (noise_1 - 0.5), 10 * (noise_2 - 0.5));
-					body->ApplyForceToCenter(force, true);
+					// force = b2Vec2(10 * (noise_1 - 0.5), 10 * (noise_2 - 0.5));
+					// body->ApplyForceToCenter(force, true);
 
-					if(creature.get_collected_mass() > 10)
-					{
+					// if(creature.get_collected_mass() > 10)
+					// {
 						creature.set_state(flying_creature_state::TRAVELING);
-					}
+					// }
 					break;
 				
 				case flying_creature_state::TRAVELING:
 				
-					if(creature.get_collected_mass() == 0)
-					{
-						creature.set_state(flying_creature_state::TRAVELING);
-						break;						
-					}
+					// if(creature.get_collected_mass() == 0)
+					// {
+					// 	creature.set_state(flying_creature_state::TRAVELING);
+					// 	break;						
+					// }
 					// creature is retrieving
-					// if creature has collided with wax, deposit collected mass
+					
 					b2Vec2 position = body->GetPosition();
 					std::pair<int, int> tile_pos = {position.x * box2d_scale, position.y * box2d_scale};
 					std::pair<int, int> target_tile;
@@ -88,7 +92,7 @@ namespace game
 					tile_pathfinding &tp = tile_pathfinding_sys -> get(ent);
 					if (tp.path.size() > 1)
 					{
-						target_tile = tp.path.at(min((size_t)tp.path.size() - 1, 5));
+						target_tile = tp.path.at(min((size_t)tp.path.size() - 1, 2));
 						target_tile.first;
 						target_tile.second;
 					}

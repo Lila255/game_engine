@@ -7,11 +7,13 @@ namespace game
 
 	void building_component_system::update()
 	{
+		increment_counter();
 		
 	}
 
 	void building_component_system::update(uint64_t tick_count)
 	{
+		increment_counter();
 		
 	}
 

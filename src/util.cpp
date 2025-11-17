@@ -2,8 +2,7 @@
 
 namespace game_engine
 {
-	
-
+	std::mutex id_mutex;
 	static uint32_t current_max = 0;
 	static std::priority_queue<uint32_t> free_ids;
 
@@ -15,6 +14,7 @@ namespace game_engine
 		}
 		else
 		{
+			std::lock_guard<std::mutex> lock(id_mutex);
 			uint32_t id = free_ids.top();
 			free_ids.pop();
 			return id;
@@ -23,6 +23,7 @@ namespace game_engine
 
 	void id_generator::free_id(uint32_t id) noexcept
 	{
+		std::lock_guard<std::mutex> lock(id_mutex);
 		free_ids.push(id);
 	}
 }

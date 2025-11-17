@@ -86,14 +86,14 @@ namespace game
 						// delete circle shape around projectile
 						// world_tiles->delete_circle((int)(fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius, {});
 						game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
-						game_engine::task_scheduler_pointer->add_task({(&create_debris_task), new create_debris_params(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2.f, fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2.f, 4.f, 4.f, 0.5f, t, t, AIR, 500, temperature)});
+						// game_engine::task_scheduler_pointer->add_task({(&create_debris_task), new create_debris_params(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2.f, fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2.f, 4.f, 4.f, 0.5f, t, t, AIR, 500, temperature)});
 						// for (int i = 0; i < explosion_radius; i++)
 						// {
 						// 	entity e = game_engine::game_engine_pointer->create_entity();
 						// 	proj_system->create_projectile(e, (fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), (rand() % 360) / 360.0f, 250.f, 1.f, b2fixture_types::DEBRIS);
 						// }
 						
-
+						printf("soginds\n");
 
 						// create flying_creature_nest
 						// game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
@@ -108,7 +108,7 @@ namespace game
 						// delete circle shape around projectile
 						// world_tiles->delete_circle((int)(fixture_b->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), explosion_radius, {});
 						game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
-						game_engine::task_scheduler_pointer->add_task({&create_debris_task, new create_debris_params(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2.f, fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2.f, 4.f, 4.f, 0.5f, t, t, AIR, 500, temperature)});
+						// game_engine::task_scheduler_pointer->add_task({&create_debris_task, new create_debris_params(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2.f, fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2.f, 4.f, 4.f, 0.5f, t, t, AIR, 500, temperature)});
 	
 						// // create flying_creature_nest
 						// game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_b->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_b->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
@@ -129,6 +129,18 @@ namespace game
 				if (game_engine::in_set(ud_a->type, b2fixture_types::PLAYER) || game_engine::in_set(ud_b->type, b2fixture_types::PLAYER))
 					return;
 
+				// entity projectile_entity = (ud_a->type == b2fixture_types::DEBRIS) ? ud_a->ent : ud_b->ent;
+
+				// // if projectile system does not contain the projectile_entity, projectile has already been removed
+				// if(proj_system->contains(projectile_entity) == false)
+				// 	return;
+				
+				// projectile &proj = proj_system->get_projectile(projectile_entity);
+				// if (proj.last_collided_time + 100 > std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+				// 	return;
+
+				// proj.last_collided_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
 				if (game_engine::in_set(ud_a->type, b2fixture_types::TERRAIN) || game_engine::in_set(ud_b->type, b2fixture_types::TERRAIN))
 				{
 					if (ud_a->type == b2fixture_types::DEBRIS)
@@ -138,11 +150,14 @@ namespace game
 						if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - proj_ud->spawn_time).count() < proj_ud->lifetime)
 							return;
 
+						if (proj_system->contains(proj_ud->ent) == false)
+							return;
 						tile_type debri_tile_type = (proj_system->get_projectile(proj_ud->ent)).debri_tile_type;
 
 						if (debri_tile_type != 0)
 						{
-							game_engine::task_scheduler_pointer->add_task({update_tile_task, new update_tile_params(fixture_a->GetBody()->GetPosition().x * game::box2d_scale, fixture_a->GetBody()->GetPosition().y * game::box2d_scale, debri_tile_type)});
+							projectile &proj = proj_system->get_projectile(proj_ud->ent);
+							game_engine::task_scheduler_pointer->add_task({update_tile_flush_task, new update_tile_params(fixture_a->GetBody()->GetPosition().x * game::box2d_scale, fixture_a->GetBody()->GetPosition().y * game::box2d_scale, debri_tile_type, proj.tile_temperature, proj.tile_misc_data)});
 						}
 						ud_a->type = b2fixture_types::EMPTY;
 					}
@@ -153,11 +168,15 @@ namespace game
 						if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - proj_ud->spawn_time).count() < proj_ud->lifetime)
 							return;
 
+						if (proj_system->contains(proj_ud->ent) == false)
+							return;
+
 						tile_type debri_tile_type = (proj_system->get_projectile(proj_ud->ent)).debri_tile_type;
 
 						if (debri_tile_type != 0)
 						{
-							game_engine::task_scheduler_pointer->add_task({update_tile_task, new update_tile_params(fixture_b->GetBody()->GetPosition().x * game::box2d_scale, fixture_b->GetBody()->GetPosition().y * game::box2d_scale, debri_tile_type)});
+							projectile &proj = proj_system->get_projectile(proj_ud->ent);
+							game_engine::task_scheduler_pointer->add_task({update_tile_flush_task, new update_tile_params(fixture_b->GetBody()->GetPosition().x * game::box2d_scale, fixture_b->GetBody()->GetPosition().y * game::box2d_scale, debri_tile_type, proj.tile_temperature, proj.tile_misc_data)});
 						}
 						ud_b->type = b2fixture_types::EMPTY;
 					}
@@ -189,13 +208,13 @@ namespace game
 					switch(creature.get_state())
 					{
 						case flying_creature_state::TRAVELING:
-							// if creature has collided with wax, deposit collected mass
+							// // if creature has collided with wax, deposit collected mass
 							
-							if(world_tiles -> find_tile_in_rect(tile_pos, pos.x * game::box2d_scale - 2, pos.y * game::box2d_scale - 2, 8, 8, {WAX}))
-							{
-								game_engine::task_scheduler_pointer->add_task({&flying_creature_deposit_task, new flying_creature_deposit_params(tile_pos.first, tile_pos.second, ent)});
-							}
-							break;
+							// if(world_tiles -> find_tile_in_rect(tile_pos, pos.x * game::box2d_scale - 2, pos.y * game::box2d_scale - 2, 8, 8, {WAX}))
+							// {
+							// 	game_engine::task_scheduler_pointer->add_task({&flying_creature_deposit_task, new flying_creature_deposit_params(tile_pos.first, tile_pos.second, ent)});
+							// }
+							// break;
 						case flying_creature_state::EATING:
 							if(creature.last_eat_time + 1000 > std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
 								return;

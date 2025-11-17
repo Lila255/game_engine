@@ -10,6 +10,7 @@ namespace game
 
 	void tile_arcing_system::update()
 	{
+		increment_counter();
 	}
 
 	std::pair<int, int> tile_arcing_system::get_box_coordinate(entity ent)
@@ -32,6 +33,7 @@ namespace game
 
 	void tile_arcing_system::update(uint64_t tick_count)
 	{
+		increment_counter();
 		std::vector<entity> entities = tile_arcs.get_entities();
 		for (auto &ent : entities)
 		{

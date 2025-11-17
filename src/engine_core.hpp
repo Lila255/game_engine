@@ -78,6 +78,8 @@ namespace game_engine
 	struct system
 	{
 	private:
+		uint64_t _counter = 0;
+		uint64_t total_time_millis = 0;
 	public:
 		system() = default;
 		system(const system &) = delete;
@@ -87,6 +89,11 @@ namespace game_engine
 		virtual ~system() = default;
 
 		virtual void update() = 0;
+		uint64_t get_counter() const { return _counter; }
+		uint64_t get_total_time_millis() const { return total_time_millis; }
+		void reset_counter() { _counter = 0; total_time_millis = 0; }
+		void increment_counter() { _counter++; }
+		void add_time(uint64_t time) { total_time_millis += time; }
 	};
 
 	struct engine
@@ -95,6 +102,7 @@ namespace game_engine
 		// std::unordered_set<system *> m_systems;
 		std::unordered_map<uint32_t, system *> m_systems;
 		std::unordered_set<entity> m_entities;
+		std::mutex entity_mutex;
 
 	public:
 		engine()
@@ -149,18 +157,22 @@ namespace game_engine
 
 		entity create_entity()
 		{
+			
 			entity ent = entity(id_generator::generate());
+			std::lock_guard<std::mutex> lock(entity_mutex);
 			m_entities.insert(ent);
 			return ent;
 		}
 
 		void add_entity(entity ent)
 		{
+			std::lock_guard<std::mutex> lock(entity_mutex);
 			m_entities.insert(ent);
 		}
 
 		void remove_entity(entity ent)
 		{
+			std::lock_guard<std::mutex> lock(entity_mutex);
 			// Remove the entity from the vector if it contains it
 			if (m_entities.count(ent) > 0)
 			{
@@ -242,16 +254,34 @@ namespace game_engine
 			std::lock_guard<std::mutex> lock(mutex);
 			return queue.empty();
 		}
+		size_t size()
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			return queue.size();
+		}
 	};
 
 	struct task
 	{
-		void (* function_pointer)(void *);
+		bool (* function_pointer)(void *);
 		void * task_parameters;
+		uint64_t run_time = 0;
+		uint16_t retry_count = 10;
+
 		void run()
 		{
 			function_pointer(task_parameters);
 		}
+		// bool run(task_scheduler* scheduler)
+		// {
+		// 	bool result = function_pointer(task_parameters);
+			// if(!result && retry_count > 0)
+			// {
+			// 	retry_count--;
+			// 	scheduler->add_backlog_task(*this, 1000);
+			// }
+
+		// }
 	};
 
 	
@@ -259,19 +289,61 @@ namespace game_engine
 	{
 	private:
 		thread_safe_queue<task> task_queue;
+		std::function<bool(const task&, const task&)> cmp = [](const task& a, const task& b) {
+			return a.run_time > b.run_time;
+		};
+		std::mutex backlog_mutex;
+		std::priority_queue<task, std::vector<task>, decltype(cmp)> backlog_queue{cmp};
+		
+		// max threads
+		uint16_t thread_count = 1;
+		std::unordered_set<std::thread::id> worker_threads;
+		std::mutex worker_threads_mutex;
+
 		bool shutdown_flag = false;
 		static uint64_t task_counter;
 		static std::unordered_map<uint64_t, uint64_t> task_count_by_type;
 		static std::unordered_map<uint64_t, std::string> task_names;
-	public:
-		void start()
+
+		
+		void start_backlog_runner()
 		{
-			task_counter = 0;
-			task_count_by_type.clear();
+			uint64_t check_interval_ms = 100;
 			while(!shutdown_flag)
 			{
-				task t = task_queue.pop();
-				t.function_pointer(t.task_parameters);
+				auto start = std::chrono::steady_clock::now();
+				uint64_t current_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+				
+				backlog_mutex.lock();
+				while(!backlog_queue.empty() && backlog_queue.top().run_time <= current_time)
+				{
+					task t = backlog_queue.top();
+					backlog_queue.pop();
+					add_task(t);
+				}
+				backlog_mutex.unlock();
+				
+				auto end = std::chrono::steady_clock::now();
+				auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+				if(elapsed < check_interval_ms)
+				{
+					std::this_thread::sleep_for(std::chrono::milliseconds(check_interval_ms - elapsed));
+				}
+			}
+		}
+
+		void run_async_task(task t)
+		{
+			if(!t.function_pointer || !t.task_parameters || shutdown_flag)
+			{
+				std::lock_guard<std::mutex> lock(worker_threads_mutex);
+				worker_threads.erase(std::this_thread::get_id());
+				return;
+			}
+
+			bool success = t.function_pointer(t.task_parameters);
+			if(success)
+			{
 				task_counter++;
 				if(task_count_by_type.count((uint64_t)t.function_pointer) > 0)
 				{
@@ -283,11 +355,125 @@ namespace game_engine
 				}
 				delete t.task_parameters;
 			}
+			else
+			{
+				if(t.retry_count > 0)
+				{
+					t.retry_count--;
+					add_backlog_task(t, 1000);
+				}
+			}
+			std::lock_guard<std::mutex> lock(worker_threads_mutex);
+			worker_threads.erase(std::this_thread::get_id());
+		}
+
+	public:
+		void start()
+		{
+			task_counter = 0;
+			task_count_by_type.clear();
+			std::thread backlog_runner(&task_scheduler::start_backlog_runner, this);
+
+			while(!shutdown_flag)
+			{
+				if(thread_count == 1)
+				{
+					task t = task_queue.pop();
+					bool success = t.function_pointer(t.task_parameters);
+					if(success)
+					{
+						task_counter++;
+						if(task_count_by_type.count((uint64_t)t.function_pointer) > 0)
+						{
+							task_count_by_type[(uint64_t)t.function_pointer]++;
+						}
+						else
+						{
+							task_count_by_type[(uint64_t)t.function_pointer] = 1;
+						}
+						delete t.task_parameters;
+					}
+					else
+					{
+						if(t.retry_count > 0)
+						{
+							t.retry_count--;
+							add_backlog_task(t, 1000);
+						}
+					}
+				}
+				else
+				{
+					if(worker_threads.size() >= thread_count)
+					{
+						// sleep for a bit
+						std::this_thread::sleep_for(std::chrono::milliseconds(1));
+						continue;
+					}
+					task t = task_queue.pop();
+					worker_threads_mutex.lock();
+					std::thread worker(&task_scheduler::run_async_task, this, t);
+					worker_threads.insert(worker.get_id());
+					worker.detach();
+					worker_threads_mutex.unlock();
+				}
+			}
+			backlog_runner.join();
+		}
+
+		void run_all_tasks()
+		{
+			while(!task_queue.empty())
+			{
+				task t = task_queue.pop();
+				bool success = t.function_pointer(t.task_parameters);
+				if (!success)
+				{
+					printf("Task failed to run in run_all_tasks()\n");
+				}
+				else
+				{
+					task_counter++;
+					if (task_count_by_type.count((uint64_t)t.function_pointer) > 0)
+					{
+						task_count_by_type[(uint64_t)t.function_pointer]++;
+					}
+					else
+					{
+						task_count_by_type[(uint64_t)t.function_pointer] = 1;
+					}
+					delete t.task_parameters;
+				}
+			}
 		}
 
 		void add_task(task t)
 		{
 			task_queue.push(t);
+		}
+
+		uint64_t get_active_task_count()
+		{
+			return task_queue.size();
+		}
+
+		void add_backlog_task(task t, uint64_t delay_ms = 0)
+		{
+			if (delay_ms > 0)
+			{
+				t.run_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() + delay_ms;
+				std::lock_guard<std::mutex> lock(backlog_mutex);
+				backlog_queue.push(t);
+			}
+			else if(t.run_time != 0)
+			{
+				std::lock_guard<std::mutex> lock(backlog_mutex);
+				backlog_queue.push(t);
+			}
+			else
+			{
+				task_queue.push(t);
+			}
 		}
 
 		bool pop_task(task &t)
@@ -318,8 +504,9 @@ namespace game_engine
 
 			for(auto &task: task_count_by_type)
 			{
-				printf("  Function pointer: %d - %s: %d\n", task.first, task_names.count(task.first) ? task_names[task.first].c_str() : "task with no name", task.second);
+				printf("  Function pointer:  %llu - %s: %d\n", (uint64_t)task.first, task_names.count(task.first) ? task_names[task.first].c_str() : "task with no name", task.second);
 			}
+			
 			
 			// if(task_count_by_type.count((uint64_t)print_task_counter) > 0)
 			// {
@@ -333,6 +520,11 @@ namespace game_engine
 			// {
 			// 	// printf("print_task_counter: 0\n");
 			// }
+		}
+	
+		void set_max_threads(uint16_t count)
+		{
+			thread_count = count;
 		}
 	};
 }

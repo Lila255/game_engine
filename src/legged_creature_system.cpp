@@ -627,7 +627,7 @@ namespace game
 
 	void legged_creature_system::add_task(game_engine::task t)
 	{
-		printf("%d\n", (uint64_t)task_scheduler_pointer);
+		// printf("%d\n", (uint64_t)task_scheduler_pointer);
 		task_scheduler_pointer->add_task(t);
 	}
 

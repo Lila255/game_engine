@@ -23,6 +23,7 @@ namespace game
 			double noise = perlin_noise_chunk_frame.noise1D_01(step_count / 10.0);
 			uint64_t time_sleep_ms = 666 + (noise * 1000) - 500;
 			printf("Sleeping for %ldms\n", time_sleep_ms);
+			add_time(time_sleep_ms * 1000);
 			// if(elapsed_ms.count() < time_step_ms)
 			// {
 				std::this_thread::sleep_for(std::chrono::microseconds(time_sleep_ms * 1000));
@@ -35,6 +36,7 @@ namespace game
 
 	void chunk_frame_system::update()
 	{
+		increment_counter();
 		std::array<game::chunk *, 16Ui64> *chunks = world_tile_sys->get_chunks_base();
 		if(current_frame == 0)
 		{

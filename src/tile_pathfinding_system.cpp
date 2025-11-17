@@ -20,11 +20,12 @@ namespace game
 
 	void tile_pathfinding_system::update()
 	{
+		increment_counter();
 		if (!running)
 			return;
 
 		std::vector<entity> entities = pathfinding_components.get_entities();
-		printf("Pathfinding for %d entities", (int)entities.size());
+		// printf("Pathfinding for %d entities", (int)entities.size());
 		uint32_t active_count = 0;
 		for (entity ent : entities)
 		{
@@ -163,7 +164,7 @@ namespace game
 
 			if (path_found)
 			{
-				printf("Path found for entity \n");
+				// printf("Path found for entity \n");
 				node *current = end_node;
 				while (current != nullptr)
 				{
@@ -185,7 +186,7 @@ namespace game
 				delete n;
 			}
 		}
-		printf(", %d active pathfinding operations\n", (int)active_count);
+		// printf(", %d active pathfinding operations\n", (int)active_count);
 	}
 
 	void tile_pathfinding_system::start_thread()
@@ -202,7 +203,8 @@ namespace game
 			tick_count++;
 			auto end = std::chrono::steady_clock::now();
 			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-			printf("Pathfinding tick %d took %d ms out of %d ms\n", tick_count, (int)elapsed, tick_ms);
+			add_time(elapsed);
+			// printf("Pathfinding tick %d took %d ms out of %d ms\n", tick_count, (int)elapsed, tick_ms);
 			if (elapsed < tick_ms)
 			{
 				std::this_thread::sleep_for(std::chrono::milliseconds(tick_ms - elapsed));

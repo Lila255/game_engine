@@ -88,5 +88,8 @@ namespace game
 		b2Body *get_static_body(entity ent);
 
 		b2Body *get_dynamic_body(entity ent);
+
+		bool contains_static_body(entity ent);
+		bool contains_dynamic_body(entity ent);
 	};
 }

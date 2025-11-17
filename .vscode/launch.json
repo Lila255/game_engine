@@ -30,6 +30,18 @@
             "console": "integratedTerminal",
             "preLaunchTask": "Build Debug"
         },
+        {
+            "name": "(Windows) Build with cmake & Launch (RelWithDebInfo)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/RelWithDebInfo/game.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/RelWithDebInfo",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build Debug with RelWithDebInfo"
+        },
         // build game in release mode with cmake and run game.exe
         {
             "name": "(Windows) Build Release with cmake & Launch",

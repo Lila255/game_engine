@@ -15,6 +15,7 @@ namespace game
 			tick_count++;
 			std::chrono::time_point<std::chrono::steady_clock> end = std::chrono::steady_clock::now();
 			std::chrono::microseconds elapsed_ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+			add_time(elapsed_ms.count());
 			// printf("Elapsed time: %ld\n", elapsed_ms.count());
 			if(elapsed_ms.count() < tick_ms * 1000)
 			{
@@ -140,6 +141,7 @@ namespace game
 
 	void tile_conveyor_system::update(uint64_t tick_count)
 	{
+		increment_counter();
 		for(auto &ent : conveyors.get_entities())
 		{
 			tile_conveyor &conveyor = conveyors.get(ent);
@@ -271,8 +273,8 @@ namespace game
 				}
 			}
 			
-			auto tile_mutex = world_tile_sys->get_chunk_mutex_base();
-			std::unique_lock<std::shared_mutex> lock(*tile_mutex);
+			// auto tile_mutex = world_tile_sys->get_chunk_mutex_base();
+			// std::unique_lock<std::shared_mutex> lock(*tile_mutex);
 
 			// move the tiles in the tooth path along the tooth path
 			if(conveyor.tooth_path.size() > 0)
@@ -286,7 +288,7 @@ namespace game
 				{
 					std::pair<int, int> &tile_pos = conveyor.tooth_path[index];
 					tile_type tile = (tile_type)world_tile_sys->get_tile_at(tile_pos.first, tile_pos.second);
-					tile_simple_type st = world_tile_sys->get_simple_tile_type(tile);
+					tile_simple_type st = get_simple_tile_type(tile);
 
 					std::pair<int, int> next_tile_pos = conveyor.tooth_path[(index + direction + conveyor.tooth_path.size()) % conveyor.tooth_path.size()];
 					// tile_type next_tile = (tile_type)world_tile_sys->get_tile_at(next_tile_pos.first, next_tile_pos.second);
@@ -306,13 +308,13 @@ namespace game
 							// int above_x = above_tile.first;
 							// int above_y = above_tile.second;
 							tile_type above_tile_type = (tile_type)world_tile_sys->get_tile_at(above_tile.first, above_tile.second);
-							tile_simple_type st3 = world_tile_sys->get_simple_tile_type(above_tile_type);
+							tile_simple_type st3 = get_simple_tile_type(above_tile_type);
 							if(st3 == SOLID && is_tile_fixed[above_tile_type] == 0)
 							{
 								int above_right_x = above_tile.first + 1;
 								int above_right_y = above_tile.second;
 								tile_type above_right_tile = (tile_type)world_tile_sys->get_tile_at(above_right_x, above_right_y);
-								tile_simple_type st4 = world_tile_sys->get_simple_tile_type(above_right_tile);
+								tile_simple_type st4 = get_simple_tile_type(above_right_tile);
 								if(st4 < SOLID)
 								{
 									world_tile_sys->switch_tiles_no_lock(above_tile.first, above_tile.second, above_right_x, above_right_y);
@@ -334,7 +336,7 @@ namespace game
 							int between_index = (index + direction * i + conveyor.tooth_path.size()) % conveyor.tooth_path.size();
 							std::pair<int, int> &between_tile_pos = conveyor.tooth_path[between_index];
 							tile_type between_tile = (tile_type)world_tile_sys->get_tile_at(between_tile_pos.first, between_tile_pos.second);
-							tile_simple_type st2 = world_tile_sys->get_simple_tile_type(between_tile);
+							tile_simple_type st2 = get_simple_tile_type(between_tile);
 							if(between_tile == CONVEYOR_TOOTH)
 							{
 								reached_next_tooth = true;
@@ -364,11 +366,11 @@ namespace game
 									int above_right_x = above_tile.first + 1;
 									int above_right_y = above_tile.second;
 									tile_type above_tile_type = (tile_type)world_tile_sys->get_tile_at(above_tile.first, above_tile.second);
-									tile_simple_type st3 = world_tile_sys->get_simple_tile_type(above_tile_type);
+									tile_simple_type st3 = get_simple_tile_type(above_tile_type);
 									if(st3 == SOLID && is_tile_fixed[above_tile_type] == 0)
 									{
 										tile_type above_right_tile = (tile_type)world_tile_sys->get_tile_at(above_right_x, above_right_y);
-										tile_simple_type st4 = world_tile_sys->get_simple_tile_type(above_right_tile);
+										tile_simple_type st4 = get_simple_tile_type(above_right_tile);
 										if(st4 < SOLID)
 										{
 											world_tile_sys->switch_tiles_no_lock(above_tile.first, above_tile.second, above_right_x, above_right_y);

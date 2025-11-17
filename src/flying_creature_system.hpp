@@ -44,6 +44,7 @@ namespace game
 		
 		void add(entity ent, flying_creature &creature);
 		flying_creature& get(entity ent);
+		std::vector<entity> get_entities();
 		void create_flying_creature(entity ent, float x, float y, flying_creature_type type);
 
 		void start_thread();
