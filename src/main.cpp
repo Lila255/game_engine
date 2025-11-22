@@ -26,7 +26,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::b2d_mutex.lock();
 		b2Body *body = b2d_sys->get_dynamic_body(player);
 		// if body is touching something
-		if (body->GetContactList() != NULL)
+		if (1 == 1 || body->GetContactList() != NULL)
 		{
 			// for (b2ContactEdge *ce = body->GetContactList(); ce != NULL; ce = ce->next)
 			// {
@@ -167,7 +167,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		// // get mouse position
 		int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
 		int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
-		// printf("x: %d, y: %d\n", world_x, world_y);
+		printf("Delete circle at x: %d, y: %d\n", world_x, world_y);
 		// // get world tile system
 		game::world_tile_system *world_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
 		world_sys->delete_circle(world_x, world_y, 18, {});
@@ -296,7 +296,6 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		// 	tile_conveyor_sys->add_component(conveyor_entity, conveyor);
 		// }
 
-
 		game::world_tile_system *world_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
 		int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
 		int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
@@ -326,7 +325,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 				int ty = (int)(start_y + sin(ang) * d);
 				for (int i = 0; i < number_of_tiles; i++)
 				{
-					world_sys->try_place_tile_with_displacement_no_lock(tx, ty, selected_tile_type, 98, misc_data, 0, 16);
+					world_sys->try_place_tile_with_displacement_no_lock(tx, ty, selected_tile_type, 20, misc_data, 0, 16);
 				}
 				// world_sys->set_tile_at_with_lock(tx, ty, (uint8_t)selected_tile_type);
 				// if (selected_tile_type == game::tile_type::WOOD || selected_tile_type == game::tile_type::EMBER)
@@ -373,7 +372,6 @@ void start_physics_thread()
 	start_time = std::chrono::high_resolution_clock::now();
 	const int tick_rate = 20;
 	uint64_t tick_count = 0;
-	// std::array<std::array<uint8_t, game::CHUNKS_WIDTH>, game::CHUNKS_WIDTH> modified_chunks;
 
 	// record average time of physics loop every 100 ticks
 	uint64_t total_time = 0;
@@ -463,7 +461,9 @@ void run_game(GLFWwindow *window)
 	task_sc.add_task_name((uint64_t)&game::flying_creature_deposit_task, "flying_creature_deposit_task");
 
 	task_sc.add_task_name((uint64_t)&game::update_chunk_tiles_task_wrapper, "update_chunk_tiles_task_wrapper");
+	task_sc.add_task_name((uint64_t)&game::recalculate_chunk_outlines_task, "recalculate_chunk_outlines_task");
 	task_sc.add_task_name((uint64_t)&game::update_chunk_tiles_texture_task, "update_chunk_tiles_texture_task");
+	task_sc.add_task_name((uint64_t)&game::generate_chunk_task_wrapper, "generate_chunk_task_wrapper");
 
 	std::thread task_runner(&game_engine::task_scheduler::start, &task_sc);
 
@@ -551,9 +551,6 @@ void run_game(GLFWwindow *window)
 
 	world_sys->generate_world();
 	printf("here: %d\n", glGetError());
-	// printf("tiles:\n%s\n", world_sys->to_csv_string().c_str());
-	// std::array<GLuint, game::NUM_CHUNKS> chunk_textures = world_sys->create_chunk_textures();
-	// std::array<std::array<std::array<uint8_t, game::CHUNK_SIZE>, game::CHUNK_SIZE> *, game::NUM_CHUNKS> chunks_data = world_sys->get_chunks_data();
 
 	GLuint background_texture;
 	glGenTextures(1, &background_texture);
@@ -561,23 +558,38 @@ void run_game(GLFWwindow *window)
 	// set data and size
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	std::array<uint8_t, game::CHUNK_SIZE * game::CHUNKS_WIDTH * game::CHUNK_SIZE * game::CHUNKS_WIDTH> *background_data = new std::array<uint8_t, game::CHUNK_SIZE * game::CHUNKS_WIDTH * game::CHUNK_SIZE * game::CHUNKS_WIDTH>();
-	for (int y = 0; y < game::CHUNK_SIZE * game::CHUNKS_WIDTH; y++)
+	std::array<uint8_t, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH * game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH> *background_data = new std::array<uint8_t, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH * game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH>();
+	for (int y = 0; y < game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH; y++)
 	{
-		for (int x = 0; x < game::CHUNK_SIZE * game::CHUNKS_WIDTH; x++)
+		for (int x = 0; x < game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH; x++)
 		{
 			// if((x % 12) == 0 || (y % 5) == 0) {
+			/*
 			if (((x + 8 * abs(((y / 6) % 6) - 3)) % 16) == 0 || (y % 6) == 0)
 			{
-				(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::MORTAR;
+				(*background_data)[y * game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH + x] = game::MORTAR;
 			}
 			else
 			{
 				if (((x + 8 * abs(((y / 6) % 6) - 3)) / 16) % 2 == 0)
-					(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::BRICK_3;
+					(*background_data)[y * game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH + x] = game::BRICK_3;
 				else
-					(*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = game::BRICK_4;
+					(*background_data)[y * game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH + x] = game::BRICK_4;
 			}
+			*/
+			
+			if (((x + 12 * abs(((y / 10) % 10) - 4)) % 25) == 0 || (y % 10) == 0)
+			{
+				(*background_data)[y * game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH + x] = game::MORTAR;
+			}
+			else
+			{
+				if (((x + 12 * abs(((y / 10) % 10) - 4)) / 25) % 2 == 0)
+					(*background_data)[y * game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH + x] = game::BRICK_3;
+				else
+					(*background_data)[y * game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH + x] = game::BRICK_4;
+			}
+
 			// (*background_data)[y * game::CHUNK_SIZE * game::CHUNKS_WIDTH + x] = 55;
 
 			// if(((x + 8 * ((y / 6) % 16) + 16 * ((y / 6) % 6 - 3)) % 16) == 0 || (y % 6) == 0) {
@@ -598,12 +610,12 @@ void run_game(GLFWwindow *window)
 			// }
 		}
 	}
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED, GL_UNSIGNED_BYTE, background_data->data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 0, GL_RED, GL_UNSIGNED_BYTE, background_data->data());
 	delete background_data;
 
 	entity background_entity = eng.create_entity();
 	printf("here1: %d\n", glGetError());
-	box_sys->add(background_entity, {0.f, 0.f, -6.0, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	box_sys->add(background_entity, {0.f, 0.f, -6.0, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	// sleep thread for 100 ms
 
 	printf("here2. texture_vbo_sys pointer: %llu\n", (texture_vbo_sys));
@@ -631,7 +643,7 @@ void run_game(GLFWwindow *window)
 	fflush(stdout);
 	game_engine::sprite sprt(game_engine::shader_programs[0]);
 	printf("here4: %d\n", glGetError());
-	sprt.add_texture({background_texture, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	sprt.add_texture({background_texture, 0, GL_R8, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	printf("here5: %d\n", glGetError());
 	render_sys->add(background_entity, sprt);
 	// (GLuint id, GLuint binding, GLuint format, uint32_t width, uint32_t height)
@@ -663,7 +675,7 @@ void run_game(GLFWwindow *window)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	printf("before settingh chunk textures: %d\n", glGetError());
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
 	printf("before settingh chunk textures: %d\n", glGetError());
 
 	// for (int i = 0; i < game::NUM_CHUNKS; i++)
@@ -679,18 +691,18 @@ void run_game(GLFWwindow *window)
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	entity all_chunks_entity = eng.create_entity();
-	box_sys->add(all_chunks_entity, {0.f, 0.f, -5.0, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	box_sys->add(all_chunks_entity, {0.f, 0.f, -5.0, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	texture_vbo_sys->add(all_chunks_entity);
 	sprt = game_engine::sprite(game_engine::shader_programs[0]);
-	sprt.add_texture({chunk_texture, 0, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	sprt.add_texture({chunk_texture, 0, GL_R8, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	render_sys->add(all_chunks_entity, sprt);
 
 	world_sys->set_all_chunk_ent(all_chunks_entity);
 
 	// for(int i = 0; i < game::NUM_CHUNKS; i++) {
-	for (int y = 0; y < game::CHUNKS_WIDTH; y++)
+	for (int y = 0; y < game::RENDERED_CHUNKS_WIDTH; y++)
 	{
-		for (int x = 0; x < game::CHUNKS_WIDTH; x++)
+		for (int x = 0; x < game::RENDERED_CHUNKS_WIDTH; x++)
 		{
 			// if (x != 0 || y != 0)
 			// {
@@ -773,7 +785,7 @@ void run_game(GLFWwindow *window)
 	std::vector<GLuint> light_textures;
 	// std::vector<GLuint> colour_textures;
 
-	std::vector<uint32_t> light_data(game::CHUNK_SIZE * game::CHUNKS_WIDTH * game::CHUNK_SIZE * game::CHUNKS_WIDTH * 2, 0);
+	std::vector<uint32_t> light_data(game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH * game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH * 2, 0);
 
 	for (int i = 0; i < light_texture_count + 1; i++)
 	{
@@ -784,7 +796,7 @@ void run_game(GLFWwindow *window)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, light_data.data());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, light_data.data());
 		glBindTexture(GL_TEXTURE_2D, 0);
 		light_textures.push_back(light_texture);
 
@@ -807,7 +819,17 @@ void run_game(GLFWwindow *window)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	GLuint master_light_texture_backup;
+	glGenTextures(1, &master_light_texture_backup);
+	glBindTexture(GL_TEXTURE_2D, master_light_texture_backup);
+	// set data and size
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// GLuint colour_light_texture;
@@ -826,7 +848,7 @@ void run_game(GLFWwindow *window)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	GLuint blurred_light_texture_second;
@@ -836,17 +858,17 @@ void run_game(GLFWwindow *window)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	entity mater_light_entity = eng.create_entity();
 
-	box_sys->add(mater_light_entity, {0.f, 0.f, -4.5f, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	box_sys->add(mater_light_entity, {0.f, 0.f, -4.5f, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	texture_vbo_sys->add(mater_light_entity);
 	sprt = game_engine::sprite(game_engine::shader_programs[2]);
-	sprt.add_texture({master_light_texture, 0, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
-	sprt.add_texture({blurred_light_texture, 1, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
-	sprt.add_texture({chunk_texture, 2, GL_R8, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
+	sprt.add_texture({master_light_texture, 0, GL_R32UI, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
+	sprt.add_texture({blurred_light_texture, 1, GL_R32UI, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
+	sprt.add_texture({chunk_texture, 2, GL_R8, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	// glBindImageTexture(1, chunk_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
 
 	// sprt.add_texture({colour_light_texture, 2, GL_R32UI, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
@@ -934,6 +956,8 @@ void run_game(GLFWwindow *window)
 
 	// printf("here: %d\n", glGetError());
 
+	std::pair<int32_t, int32_t> last_player_chunk = {-1, -1};
+
 	// Run the game loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -956,17 +980,148 @@ void run_game(GLFWwindow *window)
 		// 	render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(chunk->get_data_copy()), (c % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (c / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
 		// 	// render_sys->update_texture_section_16(temperature_overlay_entity, (int16_t *)((world_sys->get_chunks_copy())->at(c)->get_temperature_data()->data()), (c % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (c / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
 		// }
-		for (int i = 0; i < game::NUM_CHUNKS; i++)
-		{
-			game::chunk *chunk = world_sys->get_chunks_base()->at(i);
-			chunk->lock_chunk_copy_shared();
-			render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(chunk->get_data_copy()), (i % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (i / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
-			chunk->unlock_chunk_copy_shared();
-		}
-
-		// printf("b2d_time: %lums\n", duration_b2d.count() / 1000);
 
 		game_engine::box b = box_sys->get(player_entity).get_box_lerped(start_rendering_loop_micro);
+		int player_x = (int)(b.x + b.w / 2);
+		int player_y = (int)(b.y + b.h / 2);
+		int32_t player_chunk_x = (int32_t)(player_x) / (game::CHUNK_SIZE);
+		int32_t player_chunk_y = (int32_t)(player_y) / (game::CHUNK_SIZE);
+
+		// game::chunk * player_chunk = world_sys->get_chunk(player_chunk_x, player_chunk_y);
+		// player_chunk->lock_chunk_copy_shared();
+		// render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(player_chunk->get_data_copy()), (player_chunk_x) * game::CHUNK_SIZE, (player_chunk_y) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
+		// player_chunk->unlock_chunk_copy_shared();
+
+		// int chunk_x = player_x / game::CHUNK_SIZE;
+		// int chunk_y = player_y / game::CHUNK_SIZE;
+		// uint16_t intra_chunk_x = player_x % game::CHUNK_SIZE;
+		// uint16_t intra_chunk_y = player_y % game::CHUNK_SIZE;
+
+		if (player_x < 0)
+		{
+			player_chunk_x -= 1;
+		}
+		if (player_y < 0)
+		{
+			player_chunk_y -= 1;
+		}
+
+		int32_t start_chunk_x = player_chunk_x - game::RENDERED_CHUNKS_WIDTH / 2;
+		int32_t start_chunk_y = player_chunk_y - game::RENDERED_CHUNKS_WIDTH / 2;
+
+		if (last_player_chunk.first != player_chunk_x || last_player_chunk.second != player_chunk_y)
+		{
+			// printf("Player chunk changed to: %d, %d\n", player_chunk_x, player_chunk_y);
+			// need to redraw the master_light_texture so that the old lighting from previous frames lines up with the new lighting
+			// copy to backup texture
+			glCopyImageSubData(master_light_texture, GL_TEXTURE_2D, 0, 0, 0, 0,
+							   master_light_texture_backup, GL_TEXTURE_2D, 0, 0, 0, 0,
+							   game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 1);
+
+			// now clear master_light_texture
+			glClearTexImage(master_light_texture, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+
+			int source_x = max((player_chunk_x - last_player_chunk.first) * game::CHUNK_SIZE, 0);
+			int source_y = max((player_chunk_y - last_player_chunk.second) * game::CHUNK_SIZE, 0);
+			int dest_x = max((player_chunk_x - last_player_chunk.first) * -game::CHUNK_SIZE, 0);
+			int dest_y = max((player_chunk_y - last_player_chunk.second) * -game::CHUNK_SIZE, 0);
+
+			int copy_width = game::CHUNK_SIZE * (game::RENDERED_CHUNKS_WIDTH - abs(player_chunk_x - last_player_chunk.first));
+			int copy_height = game::CHUNK_SIZE * (game::RENDERED_CHUNKS_WIDTH - abs(player_chunk_y - last_player_chunk.second));
+
+			// printf("Copying light texture from backup to master with source (%d, %d), dest (%d, %d), size (%d, %d)\n", source_x, source_y, dest_x, dest_y, copy_width, copy_height);
+
+			// now copy from backup to master_light_texture with offset
+ 			glCopyImageSubData(master_light_texture_backup, GL_TEXTURE_2D, 0,
+							   source_x,
+							   source_y,
+							   0,
+							   master_light_texture, GL_TEXTURE_2D, 0,
+							   dest_x,
+							   dest_y,
+							   0,
+							   copy_width,
+							   copy_height,
+							   1);
+
+			// do the same for all the textures in light_textures
+			for (uint16_t i = 0; i < light_texture_count; i++)
+			{
+				glCopyImageSubData(light_textures[i], GL_TEXTURE_2D, 0,
+								   0,
+								   0,
+								   0,
+								   master_light_texture_backup, GL_TEXTURE_2D, 0, 0, 0, 0,
+								   game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 1);
+
+				glClearTexImage(light_textures[i], 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+				glCopyImageSubData(master_light_texture_backup, GL_TEXTURE_2D, 0,
+								   source_x,
+								   source_y,
+								   0,
+								   light_textures[i], GL_TEXTURE_2D, 0, 
+								   dest_x,
+								   dest_y, 
+								   0,
+								   copy_width,
+								   copy_height,
+								   1);
+			}
+
+			last_player_chunk.first = player_chunk_x;
+			last_player_chunk.second = player_chunk_y;
+
+			// move all_chunks_entity
+			game_engine::box_lerp all_chunks_box = box_sys->get(world_sys->all_chunk_ent);
+			all_chunks_box.x = start_chunk_x * game::CHUNK_SIZE;
+			all_chunks_box.y = start_chunk_y * game::CHUNK_SIZE;
+			all_chunks_box.x2 = start_chunk_x * game::CHUNK_SIZE;
+			all_chunks_box.y2 = start_chunk_y * game::CHUNK_SIZE;
+			box_sys->update_box(world_sys->all_chunk_ent, all_chunks_box);
+			texture_vbo_sys->update(world_sys->all_chunk_ent, all_chunks_box.get_box());
+			all_chunks_box.z = -4.5f;
+			box_sys->update_box(mater_light_entity, all_chunks_box);
+			texture_vbo_sys->update(mater_light_entity, all_chunks_box.get_box());
+
+			all_chunks_box.z = -6.0f;
+			box_sys->update_box(background_entity, all_chunks_box);
+			texture_vbo_sys->update(background_entity, all_chunks_box.get_box());
+		}
+
+		for (int32_t y = 0; y < game::RENDERED_CHUNKS_WIDTH; y++)
+		{
+			for (int32_t x = 0; x < game::RENDERED_CHUNKS_WIDTH; x++)
+			{
+				int32_t current_chunk_x = start_chunk_x + x;
+				int32_t current_chunk_y = start_chunk_y + y;
+				if (world_sys->get_chunk(current_chunk_x, current_chunk_y) == nullptr)
+					continue;
+				game::chunk *chunk = world_sys->get_chunk(current_chunk_x, current_chunk_y);
+				chunk->lock_chunk_copy_shared();
+				render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(chunk->get_data_copy()), (x)*game::CHUNK_SIZE, (y)*game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
+				chunk->unlock_chunk_copy_shared();
+			}
+		}
+
+		// game::chunk *player_chunk = world_sys->get_chunk(player_chunk_x, player_chunk_y);
+		// player_chunk->lock_chunk_copy_shared();
+		// render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(player_chunk->get_data_copy()), 2 * game::CHUNK_SIZE, 2 * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
+		// player_chunk->unlock_chunk_copy_shared();
+
+		if (counter % 40 == 0)
+		{
+			printf("\t\tPlayer chunk: %d, %d\n", player_chunk_x, player_chunk_y);
+		}
+
+		// for (int i = 0; i < game::NUM_CHUNKS; i++)
+		// {
+		// 	game::chunk *chunk = world_sys->get_chunks_base()->at(i);
+		// 	chunk->lock_chunk_copy_shared();
+		// 	render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(chunk->get_data_copy()), (i % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (i / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
+		// 	chunk->unlock_chunk_copy_shared();
+		// }
+
+		// printf("b2d_time: %lums\n", duration_b2d.count() / 1000);
 
 		game_engine::view_matrix[12] = float(-b.x - 0.5 * glsl_helper::character_width + game_engine::window_width * (1.0 / (2 * PIXEL_SCALE)));
 		game_engine::view_matrix[13] = float(-b.y - 0.5 * glsl_helper::character_height + game_engine::window_height * (1.0 / (2 * PIXEL_SCALE)));
@@ -988,14 +1143,15 @@ void run_game(GLFWwindow *window)
 		glBindImageTexture(0, light_textures[light_texture_index], 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		glBindImageTexture(1, chunk_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
 		GLuint texture_size = glGetUniformLocation(compute_shader, "texture_size");
-		glUniform2i(texture_size, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH);
+		glUniform2i(texture_size, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH);
 		GLuint frame_count = glGetUniformLocation(compute_shader, "frame_count");
 
 		glUniform1ui(frame_count, (uint32_t)counter);
 
 		GLint player_pos = glGetUniformLocation(compute_shader, "player_pos");
 		// glUniform2f(player_pos, (float)(b.x + glsl_helper::character_width / 2.0), (float)(b.y + glsl_helper::character_width / 2.0));
-		glUniform2f(player_pos, (float)(b.x + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 50.0), (float)(b.y + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 50.0));
+
+		glUniform2f(player_pos, (float)((b.x - start_chunk_x * game::CHUNK_SIZE) + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 50.0), (float)((b.y - start_chunk_y * game::CHUNK_SIZE) + glsl_helper::character_width / 2.0 + (rand() % 100 - 50) / 50.0));
 
 		// GLint vector_location = glGetUniformLocation(compute_shader, "normal_vectors");
 		// glUniform2fv(vector_location, 256, (GLfloat*)game::noramal_vectors.data());
@@ -1013,7 +1169,7 @@ void run_game(GLFWwindow *window)
 		glBindImageTexture(1, light_textures[light_texture_index], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
 		glBindImageTexture(2, light_textures[(light_texture_index + 1) % light_texture_count], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
 
-		glDispatchCompute(game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 1);
+		glDispatchCompute(game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 1);
 
 		glFinish();
 
@@ -1030,17 +1186,17 @@ void run_game(GLFWwindow *window)
 		glUseProgram(light_blurring_compute_shader);
 		glBindImageTexture(0, blurred_light_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		glBindImageTexture(1, master_light_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
-		glDispatchCompute(game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 1);
+		glDispatchCompute(game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 1);
 		glFinish();
 
 		glBindImageTexture(0, blurred_light_texture_second, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		glBindImageTexture(1, blurred_light_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
-		glDispatchCompute(game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 1);
+		glDispatchCompute(game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 1);
 		glFinish();
 
 		glBindImageTexture(0, blurred_light_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 		glBindImageTexture(1, blurred_light_texture_second, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
-		glDispatchCompute(game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH, 1);
+		glDispatchCompute(game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 1);
 		glFinish();
 
 		// glBindImageTexture(0, blurred_light_texture_second, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);

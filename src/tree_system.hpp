@@ -15,9 +15,9 @@ namespace game
 
 	struct tree : public game_engine::component
 	{
-		uint32_t seed_x, seed_y;
-		std::unordered_map<tile_coord, tree_tracer, tile_coord_hash> branch_tiles;
-		std::unordered_map<tile_coord, tree_tracer, tile_coord_hash> root_tiles;
+		int32_t seed_x, seed_y;
+		std::unordered_map<tile_coord, tree_tracer, global_tile_coord_hash> branch_tiles;
+		std::unordered_map<tile_coord, tree_tracer, global_tile_coord_hash> root_tiles;
 	};
 
 	struct tree_system : public game_engine::system

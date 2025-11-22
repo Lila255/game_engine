@@ -25,9 +25,6 @@ namespace game
 
 	bool tree_system::can_place_tree_tile_at(int x, int y, tile_type tile_type)
 	{
-		if (x < 0 || x >= CHUNKS_WIDTH * CHUNK_SIZE || y < 0 || y >= CHUNKS_WIDTH * CHUNK_SIZE)
-			return false;
-
 		if (game_engine::in_set(world_tiles->get_tile_at(x, y), BEDROCK, WOOD, ROOT, TREE_SEED))
 			return false;
 
@@ -80,7 +77,7 @@ namespace game
 
 	bool tree_system::find_tile_to_grow_to(tree &t, tile_coord &current_tile, tile_coord &last_tile, tile_type tree_tile_type)
 	{
-		std::unordered_map<tile_coord, tree_tracer, tile_coord_hash> *tile_map;
+		std::unordered_map<tile_coord, tree_tracer, global_tile_coord_hash> *tile_map;
 		if(tree_tile_type == ROOT)
 		{
 			tile_map = &t.root_tiles;

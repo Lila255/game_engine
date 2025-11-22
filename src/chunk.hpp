@@ -19,8 +19,8 @@ namespace game
 	const uint16_t CHUNK_SIZE = 100; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 	const uint8_t CHUNK_FRAMES = 16; // Number of frames the current chunk has
 	
-	const uint16_t NUM_CHUNKS = 16; 
-	const uint16_t CHUNKS_WIDTH = 4;
+	const uint16_t RENDERED_NUM_CHUNKS = 16; 
+	const uint16_t RENDERED_CHUNKS_WIDTH = 4;
 	
 	// enum for tile types
 	enum tile_type
@@ -332,6 +332,12 @@ namespace game
 		}
 	};
 
+	struct chunk_coord_hash {
+		std::size_t operator() (const std::pair<int32_t, int32_t> &p) const {
+			return std::hash<int32_t>()(p.first) ^ std::hash<int32_t>()(p.second * 73856093);
+		}
+	};
+
 	struct chunk_neighbour_tile_buffer
 	{
 		std::array<uint8_t, CHUNK_SIZE> top_tiles;
@@ -364,8 +370,8 @@ namespace game
 		chunk_neighbour_tile_buffer neighbour_tile_buffer;
 
 	public:
-		uint16_t chunk_x;
-		uint16_t chunk_y;
+		int32_t chunk_x;
+		int32_t chunk_y;
 		entity *background_entity;
 		entity *foreground_entity;
 		entity *light_entity;
@@ -380,7 +386,7 @@ namespace game
         chunk& operator=(chunk&&) = delete;
 
 		chunk() = default;
-		chunk(uint16_t x, uint16_t y) : chunk_x(x), chunk_y(y)
+		chunk(int32_t x, int32_t y) : chunk_x(x), chunk_y(y)
 		{
 			data = std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
 			data_copy = std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
@@ -390,7 +396,7 @@ namespace game
 			chunk_mutex.unlock();
 		}
 
-		void create_chunk(uint32_t x, uint32_t y);
+		void create_chunk(int32_t x, int32_t y);
 
 		void to_string();
 

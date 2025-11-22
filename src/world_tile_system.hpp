@@ -16,29 +16,57 @@ namespace game
 	// coordinate pair with hash
 	struct tile_coord
 	{
-		uint32_t x, y;
-		tile_coord(uint32_t x, uint32_t y) : x(x), y(y) {}
+		int32_t x, y;
+		tile_coord(int32_t x, int32_t y) : x(x), y(y) {}
 		tile_coord() : x(0), y(0) {}
 		bool operator==(const tile_coord &other) const
 		{
 			return x == other.x && y == other.y;
 		}
 	};
-	// hash function for tile_coord
-	struct tile_coord_hash
+
+	struct intra_chunk_tile_coord_hash
 	{
-		std::size_t operator()(const tile_coord &tc) const
+		std::size_t operator()(const tile_coord &p) const
 		{
-			return std::hash<uint32_t>()(tc.x) + std::hash<uint32_t>()(tc.y * CHUNK_SIZE * CHUNKS_WIDTH);
+			return std::hash<uint16_t>()(p.x + p.y * CHUNK_SIZE);
+		}
+	};
+	struct intra_chunk_pair_coord_hash
+	{
+		std::size_t operator()(const std::pair<uint16_t, uint16_t> &p) const
+		{
+			return std::hash<uint16_t>()(p.first + p.second * CHUNK_SIZE);
+		}
+	};
+
+	struct global_tile_coord_hash
+	{
+		std::size_t operator()(const tile_coord &p) const
+		{
+			return std::hash<int32_t>()(p.x) ^ std::hash<int32_t>()(p.y * 73856093);
+		}
+	};
+	struct global_tile_pair_hash
+	{
+		std::size_t operator()(const std::pair<int32_t, int32_t> &p) const
+		{
+			return std::hash<int32_t>()(p.first) ^ std::hash<int32_t>()(p.second * 73856093);
 		}
 	};
 
 	struct world_tile_system : public game_engine::system
 	{
 	private:
-		std::array<entity, NUM_CHUNKS> chunk_entities;
-		std::array<chunk *, NUM_CHUNKS> tile_data_base;
-		std::array<uint8_t, game::NUM_CHUNKS> modified_chunks;
+		// std::array<entity, NUM_CHUNKS> chunk_entities;
+		// std::array<chunk *, NUM_CHUNKS> tile_data_base;
+		// std::array<uint8_t, game::NUM_CHUNKS> modified_chunks;
+
+		std::unordered_map<std::pair<int32_t, int32_t>, entity, chunk_coord_hash> chunk_entities_map;
+		std::unordered_map<std::pair<int32_t, int32_t>, chunk *, chunk_coord_hash> tile_data_map;
+		std::unordered_map<std::pair<int32_t, int32_t>, uint8_t, chunk_coord_hash> modified_chunks_map;
+		
+
 		// std::array<chunk *, NUM_CHUNKS> tile_data_copy;
 		// std::array<uint8_t, game::NUM_CHUNKS>  modified_chunks_1;
 
@@ -79,32 +107,31 @@ namespace game
 		bool try_place_tile_with_displacement_no_lock(int x, int y, tile_type tile_type, float temperature, uint16_t misc_data, int recursion_depth, int search_size);
 		bool try_place_tile_flush_with_displacement_no_lock(int x, int y, tile_type tile_type, float temperature, uint16_t misc_data, int recursion_depth, int search_size);
 
-		std::array<entity, NUM_CHUNKS> get_chunk_entities();
 		void update() {};
 		void update(uint64_t tick_count);
 		void generate_world();
 		entity get_chunk_entity(int x, int y);
 		entity get_chunk_entity(int chunk);
-		// std::array<chunk *, NUM_CHUNKS> *get_chunks_copy();
-		std::array<chunk *, NUM_CHUNKS> *get_chunks_base();
-		std::array<std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> *, NUM_CHUNKS> get_chunks_data();
+		chunk *get_chunk(int chunk_x, int chunk_y);
 		uint16_t get_tile_edginess(int chunk_x, int chunk_y, int x, int y);
 		std::vector<std::vector<std::pair<float, float>>> *create_outlines(int x, int y);
 		std::vector<std::vector<std::pair<float, float>>> *create_outlines_from_chunk(int x, int y);
 		std::vector<std::vector<std::pair<float, float>>> *create_outline_from_custom_shape(std::vector<std::vector<tile_type>> tiles);
 		uint32_t delete_circle(int x, int y, int radius, std::unordered_set<uint8_t> tyle_deny_list);
 		uint32_t explode_circle(int x, int y, int radius, float max_temperature, std::unordered_set<uint8_t> tile_deny_list);
-		std::array<uint8_t, game::NUM_CHUNKS> *get_modified_chunks();
 		void set_modified_chunk(int x, int y, uint8_t value);
+		uint8_t get_modified_chunk(int x, int y);
 		bool find_tile_in_rect(std::pair<int, int> &result, int x, int y, int w, int h, std::unordered_set<uint8_t> tile_types);
 		// std::pair<int, int> get_tile_in_rect(int x, int y, int w, int h, std::unordered_set<uint8_t> tile_types);
 		std::string to_csv_string();
+		
 
 		// // get chunk mutex for writing
 		// std::shared_mutex *get_chunk_mutex_base() { return &chunk_mutex_base; }
 
 		game_engine::task_scheduler *task_scheduler_pointer;
 		bool update_chunk_tiles_task(void *parameters);
+		bool generate_chunk_task(void *parameters);
 	};
 
 	struct update_chunk_tiles_parameters
@@ -137,4 +164,14 @@ namespace game
 	};
 
 	bool recalculate_chunk_outlines_task(void *parameters);
+
+	struct generate_chunk_parameters
+	{
+		int32_t chunk_x;
+		int32_t chunk_y;
+		world_tile_system *world_tile_system_pointer;
+		generate_chunk_parameters(int32_t x, int32_t y, world_tile_system *wts)
+			: chunk_x(x), chunk_y(y), world_tile_system_pointer(wts) {}
+	};
+	bool generate_chunk_task_wrapper(void *parameters);
 }

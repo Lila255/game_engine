@@ -57,8 +57,8 @@ namespace game
 		float vel = sqrt(params->v_x * params->v_x + params->v_y * params->v_y);
 
 		std::queue<tile_coord> tiles_to_check;
-		std::unordered_set<tile_coord, tile_coord_hash> checked_tiles;
-		tiles_to_check.push(tile_coord{(uint32_t)(params->x), (uint32_t)(params->y)});
+		std::unordered_set<tile_coord, global_tile_coord_hash> checked_tiles;
+		tiles_to_check.push(tile_coord{(int32_t)(params->x), (int32_t)(params->y)});
 
 		bool found_non_solid = false;
 		bool found_tile_spot = false;
@@ -76,11 +76,6 @@ namespace game
 				continue;
 
 			checked_tiles.insert(current_tile);
-
-			if (current_tile.x < 0 || current_tile.x >= CHUNKS_WIDTH * CHUNK_SIZE || current_tile.y < 0 || current_tile.y >= CHUNKS_WIDTH * CHUNK_SIZE)
-			{
-				continue;
-			}
 
 			uint8_t current_tile_type = world_tiles->get_tile_at(current_tile.x, current_tile.y);
 

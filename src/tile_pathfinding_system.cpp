@@ -61,7 +61,7 @@ namespace game
 
 			// A* pathfinding algorithm
 			std::priority_queue<node *, std::vector<node *>, node_comparator> open_set;
-			std::unordered_set<tile_coord, tile_coord_hash> closed_set;
+			std::unordered_set<tile_coord, global_tile_coord_hash> closed_set;
 			// keep track of all created nodes
 			std::vector<node *> all_nodes;
 
@@ -85,16 +85,14 @@ namespace game
 					break;
 				}
 
-				closed_set.insert({(uint32_t)current_node->x, (uint32_t)current_node->y});
+				closed_set.insert({current_node->x, current_node->y});
 
 				for (int i = 0; i < 8; i+=8/tp.directions)
 				{
 					int new_x = current_node->x + tp.step_distance * pathfinding_dx[i];
 					int new_y = current_node->y + tp.step_distance * pathfinding_dy[i];
 
-					if (new_x < 0 || new_x >= CHUNKS_WIDTH * CHUNK_SIZE || new_y < 0 || new_y >= CHUNKS_WIDTH * CHUNK_SIZE)
-						continue;
-					if (closed_set.count({(uint32_t)new_x, (uint32_t)new_y}))
+					if (closed_set.count({new_x, new_y}))
 						continue;
 					bool walkable = true;
 
@@ -153,7 +151,7 @@ namespace game
 						int h_cost = abs(new_x - end_x) + abs(new_y - end_y);
 						node *neighbor_node = new node{new_x, new_y, g_cost, h_cost, current_node};
 						open_set.push(neighbor_node);
-						closed_set.insert({(uint32_t)new_x, (uint32_t)new_y});
+						closed_set.insert({new_x, new_y});
 						all_nodes.push_back(neighbor_node);
 						// world_tiles->set_tile_at_with_lock(new_x, new_y, TEMPORARY_SMOKE); // mark the pathfinding search area with TEMPORARY_SMOKE
 					}

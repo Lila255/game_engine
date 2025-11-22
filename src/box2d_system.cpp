@@ -122,7 +122,10 @@ namespace game
 	void box2d_system::update_static_outlines(entity ent, std::vector<std::vector<std::pair<float, float>>> *meshes)
 	{
 		if (!static_bodies.contains(ent))
+		{
+			create_static_bodies(ent, meshes);
 			return;
+		}
 
 		// printf("Here, locking now\n");
 		game::b2d_mutex.lock();
@@ -141,7 +144,10 @@ namespace game
 		for (int i = 0; i < meshes->size(); i++)
 		{
 			if (meshes->at(i).size() == 0 || meshes->at(i).size() % 3 != 0)
+			{
+				printf("Skipping mesh %d with size %zu\n", i, meshes->at(i).size());
 				continue;
+			}
 			// if (meshes[i].size() < 3)
 			//     continue;
 			for (int j = 0; j < meshes->at(i).size(); j += 3)

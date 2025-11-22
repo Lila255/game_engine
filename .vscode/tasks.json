@@ -86,7 +86,7 @@
             "command": "cmake",
             "args": [
                 "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
-                "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=/Ob2",
+                // "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=/Ob2",
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=yes",
                 ".."
             ],

@@ -18,7 +18,7 @@ namespace game
 	std::array<float, 256> tile_debris_fall_speed_multiplier;	   // multiplier for how fast debris of this tile type falls
 	std::array<int8_t, 256> tile_phase_change_count_multiplier;	   // multiplier for how many items are created when a tile changes phase into the target tile
 
-	void chunk::create_chunk(uint32_t x, uint32_t y)
+	void chunk::create_chunk(int32_t x, int32_t y)
 	{
 		chunk_x = x;
 		chunk_y = y;
@@ -171,50 +171,50 @@ namespace game
 		// }
 
 		// create solid border around world
-		if (chunk_x == 0 || chunk_x == CHUNKS_WIDTH - 1 || chunk_y == 0 || chunk_y == CHUNKS_WIDTH - 1)
-		{
-			if (chunk_x == 0)
-			{
-				for (int i = 0; i < CHUNK_SIZE; i++)
-				{
-					data[i][0] = game::BEDROCK;
-					temperature_data[i][0] = -100;
-					data[i][1] = game::BEDROCK;
-					temperature_data[i][1] = -100;
-				}
-			}
-			else if (chunk_x == CHUNKS_WIDTH - 1)
-			{
-				for (int i = 0; i < CHUNK_SIZE; i++)
-				{
-					data[i][CHUNK_SIZE - 1] = game::BEDROCK;
-					temperature_data[i][CHUNK_SIZE - 1] = -100;
-					data[i][CHUNK_SIZE - 2] = game::BEDROCK;
-					temperature_data[i][CHUNK_SIZE - 2] = -100;
-				}
-			}
+		// if (chunk_x == 0 || chunk_x == CHUNKS_WIDTH - 1 || chunk_y == 0 || chunk_y == CHUNKS_WIDTH - 1)
+		// {
+		// 	if (chunk_x == 0)
+		// 	{
+		// 		for (int i = 0; i < CHUNK_SIZE; i++)
+		// 		{
+		// 			data[i][0] = game::BEDROCK;
+		// 			temperature_data[i][0] = -100;
+		// 			data[i][1] = game::BEDROCK;
+		// 			temperature_data[i][1] = -100;
+		// 		}
+		// 	}
+		// 	else if (chunk_x == CHUNKS_WIDTH - 1)
+		// 	{
+		// 		for (int i = 0; i < CHUNK_SIZE; i++)
+		// 		{
+		// 			data[i][CHUNK_SIZE - 1] = game::BEDROCK;
+		// 			temperature_data[i][CHUNK_SIZE - 1] = -100;
+		// 			data[i][CHUNK_SIZE - 2] = game::BEDROCK;
+		// 			temperature_data[i][CHUNK_SIZE - 2] = -100;
+		// 		}
+		// 	}
 
-			if (chunk_y == 0)
-			{
-				for (int i = 0; i < CHUNK_SIZE; i++)
-				{
-					data[0][i] = game::BEDROCK;
-					temperature_data[i][0] = -100;
-					data[1][i] = game::BEDROCK;
-					temperature_data[i][1] = -100;
-				}
-			}
-			else if (chunk_y == CHUNKS_WIDTH - 1)
-			{
-				for (int i = 0; i < CHUNK_SIZE; i++)
-				{
-					data[CHUNK_SIZE - 1][i] = game::BEDROCK;
-					temperature_data[i][CHUNK_SIZE - 1] = -100;
-					data[CHUNK_SIZE - 2][i] = game::BEDROCK;
-					temperature_data[i][CHUNK_SIZE - 2] = -100;
-				}
-			}
-		}
+		// 	if (chunk_y == 0)
+		// 	{
+		// 		for (int i = 0; i < CHUNK_SIZE; i++)
+		// 		{
+		// 			data[0][i] = game::BEDROCK;
+		// 			temperature_data[i][0] = -100;
+		// 			data[1][i] = game::BEDROCK;
+		// 			temperature_data[i][1] = -100;
+		// 		}
+		// 	}
+		// 	else if (chunk_y == CHUNKS_WIDTH - 1)
+		// 	{
+		// 		for (int i = 0; i < CHUNK_SIZE; i++)
+		// 		{
+		// 			data[CHUNK_SIZE - 1][i] = game::BEDROCK;
+		// 			temperature_data[i][CHUNK_SIZE - 1] = -100;
+		// 			data[CHUNK_SIZE - 2][i] = game::BEDROCK;
+		// 			temperature_data[i][CHUNK_SIZE - 2] = -100;
+		// 		}
+		// 	}
+		// }
 	}
 
 	void chunk::to_string()
@@ -1107,7 +1107,7 @@ namespace game
 
 	bool chunk::try_place_tile_with_displacement_no_lock(int x, int y, tile_type tile_t, float temperature, uint16_t misc_data, int recursion_depth, int search_size)
 	{
-		std::unordered_set<tile_coord, tile_coord_hash> checked_tiles;
+		std::unordered_set<tile_coord, intra_chunk_tile_coord_hash> checked_tiles;
 
 		std::queue<tile_coord> tile_queue;
 		tile_queue.push(tile_coord(x, y));
@@ -1191,7 +1191,7 @@ namespace game
 
 	bool chunk::try_consume_nearby_tile_no_lock(int x, int y, tile_type tile_t, int search_size)
 	{
-		std::unordered_set<tile_coord, tile_coord_hash> checked_tiles;
+		std::unordered_set<tile_coord, intra_chunk_tile_coord_hash> checked_tiles;
 		std::queue<tile_coord> tile_queue;
 		tile_queue.push(tile_coord(x, y));
 		int dx[] = {0, 1, 0, -1};
