@@ -3,10 +3,7 @@
 I have created this engine/game as a learning experience to teach myself OpenGL as well as gain more experience with C++. I also wanted to create a game.
 
 ### Gifs
-<!-- https://www.dropbox.com/scl/fi/syd2q7zfvjwyr1ww2t1v8/game_eAJlFu3yGZ.gif?rlkey=2ksrzc3sorxhi128ndxsv4r97&st=e94z1uf9&dl=0 -->
-
-![game_eAJlFu3yGZ](https://www.dropbox.com/scl/fi/syd2q7zfvjwyr1ww2t1v8/game_eAJlFu3yGZ.gif?rlkey=2ksrzc3sorxhi128ndxsv4r97&st=e94z1uf9&dl=0)
-
+https://github.com/user-attachments/assets/f4b30d4f-84f9-4ff1-b6db-df04b9da78fe
 
 ### External libraries used
 - Box2D [https://github.com/erincatto/box2d] - This is a fantastic open source library that provides 2d physics simulation.
