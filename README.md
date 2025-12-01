@@ -1,9 +1,11 @@
 ## Game Engine
 
-I have created this engine/game as a learning experience to teach myself OpenGL as well as gain more experience with C++. I also wanted to create a game.
+I have created this engine and game as a learning experience to teach myself OpenGL as well as gain more experience with C++. <br>
+I wanted to create a game.
 
 ### Gifs
-https://github.com/user-attachments/assets/88e0f2d5-abef-4f78-b6da-890a247df23f
+https://github.com/user-attachments/assets/580635cc-e4bf-42a1-9ac8-97a31d6aa7ca
+
 
 https://github.com/user-attachments/assets/f4b30d4f-84f9-4ff1-b6db-df04b9da78fe
 
@@ -15,4 +17,4 @@ https://github.com/user-attachments/assets/f4b30d4f-84f9-4ff1-b6db-df04b9da78fe
 - Poly2Tri [https://github.com/jhasse/poly2tri] - A library for polygon triangulation.
 
 ### License
-This project is source-available and free to use for any non-commercial purpose.
+This project is source-available and free to use for any non-commercial purpose. You may use this code for learning and personal projects, but do not use it for commercial purposes without obtaining permission from the author.
