@@ -3,6 +3,8 @@
 I have created this engine/game as a learning experience to teach myself OpenGL as well as gain more experience with C++. I also wanted to create a game.
 
 ### Gifs
+https://github.com/user-attachments/assets/88e0f2d5-abef-4f78-b6da-890a247df23f
+
 https://github.com/user-attachments/assets/f4b30d4f-84f9-4ff1-b6db-df04b9da78fe
 
 ### External libraries used
