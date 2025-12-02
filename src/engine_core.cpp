@@ -23,4 +23,17 @@ namespace game_engine
 		0.0f, 1.0f, 0.0f, 0.0f,
 		0.0f, 0.0f, 1.0f, 0.0f,
 		0.0f, 0.0f, 0.0f, 1.0f};
+
+	// orthographic projection matrix
+	float projection_matrix_ortho[16] = {
+		2.0f / window_width, 0.0f, 0.0f, 0.0f,
+		0.0f, 2.0f / window_height, 0.0f, 0.0f,
+		0.0f, 0.0f, -1.0f, 0.0f,
+		-1.0f, -1.0f, 0.0f, 1.0f};
+	
+	float view_matrix_ortho[16]{
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f};
 } 

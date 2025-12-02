@@ -9,6 +9,11 @@ namespace game
 	void tree_system::add_tree(entity ent, tree t)
 	{
 		std::lock_guard<std::mutex> lock(tree_mutex);
+		if (t.type == NODE_TREE)
+		{
+			t.child_nodes[tile_coord(t.seed_x, t.seed_y)] = std::vector<tile_coord>();
+			t.child_node_counts[tile_coord(t.seed_x, t.seed_y)] = 0;
+		}
 		trees.add(ent, t);
 	}
 
@@ -78,24 +83,29 @@ namespace game
 	bool tree_system::find_tile_to_grow_to(tree &t, tile_coord &current_tile, tile_coord &last_tile, tile_type tree_tile_type)
 	{
 		std::unordered_map<tile_coord, tree_tracer, global_tile_coord_hash> *tile_map;
-		if(tree_tile_type == ROOT)
+		if (tree_tile_type == ROOT)
 		{
 			tile_map = &t.root_tiles;
-		} else {
+		}
+		else
+		{
 			tile_map = &t.branch_tiles;
 		}
 
 		tree_tracer tt;
-		if(tile_map -> count(current_tile))
+		if (tile_map->count(current_tile))
 		{
 			tt = tile_map->at(current_tile);
-		} else {
+		}
+		else
+		{
 			tt = {0, 0, 0, 0};
 		}
 
 		// check if tile is still valid
 		if (!game_engine::in_set(world_tiles->get_tile_at(current_tile.x, current_tile.y), ROOT, TREE_SEED, WOOD))
 		{
+			tile_type tile_t = (tile_type)world_tiles->get_tile_at(current_tile.x, current_tile.y);
 			if (tt.up == 2)
 			{
 				last_tile = tile_coord(current_tile.x, current_tile.y - 1);
@@ -235,6 +245,149 @@ namespace game
 		return false;
 	}
 
+	bool tree_system::try_grow_node_tree_recursive(tree &t, tile_coord &current_tile)
+	{
+		if (!t.child_nodes.count(current_tile))
+		{
+			// reached a node that doesnt exist
+			return false;
+		}
+		if (t.child_nodes[current_tile].size() == 0)
+		{
+			// reached an end node, try to grow a new branch 2 times
+			for(int i = 0; i < 2; i++)
+			{
+				float angle = ((float)(rand() % 360) / 180.0f) * 3.14159f;
+				int branch_length = 4 + (rand() % 8);
+				int32_t target_x = current_tile.x + (int32_t)(cos(angle) * (float)branch_length);
+				int32_t target_y = current_tile.y - (branch_length);
+
+				bool can_grow_branch = world_tiles -> has_line_of_sight(current_tile.x, current_tile.y, target_x, target_y, {WOOD, ROOT, TREE_SEED, LEAF});
+				if (can_grow_branch)
+				{
+					tile_coord new_node_tile = tile_coord(target_x, target_y);
+					t.child_nodes[current_tile].push_back(new_node_tile);
+					t.child_nodes[new_node_tile] = {};
+					t.child_node_counts[new_node_tile] = 0;
+
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		std::vector<tile_coord> &children = t.child_nodes[current_tile];
+		
+		std::vector<int> weights;
+		for (auto &child : children)
+		{
+			weights.push_back(1 + t.child_node_counts[child]);
+		}
+		// sort children by weights
+		std::vector<size_t> indices(children.size());
+		std::iota(indices.begin(), indices.end(), 0);
+		std::sort(indices.begin(), indices.end(), [&weights](size_t a, size_t b) { return weights[a] < weights[b]; });
+		for (auto &index : indices)
+		{
+			tile_coord child = children[index];
+			if (try_grow_node_tree_recursive(t, child))
+			{
+				t.child_node_counts[current_tile]++;
+				current_tile = child;
+				return true;
+			}
+		}
+		return false;
+
+	}
+
+	void tree_system::place_tiles_for_node_tree(tree &t, tile_coord from_tile, tile_coord to_tile, tile_type tree_tile_type, uint32_t &tiles_to_place)
+	{
+		if (tiles_to_place == 0)
+			return;
+
+ 		float angle = atan2((float)(to_tile.y - from_tile.y), (float)(to_tile.x - from_tile.x));
+		int32_t current_x = from_tile.x;
+		int32_t current_y = from_tile.y;
+
+		uint32_t distance = sqrt((to_tile.x - from_tile.x) * (to_tile.x - from_tile.x) + (to_tile.y - from_tile.y) * (to_tile.y - from_tile.y));
+
+		if(distance == 0)
+		{
+			bool success = world_tiles -> try_place_tile_with_displacement_no_lock(current_x, current_y, tree_tile_type, 20.0f, 200, 0, 64);
+			
+			if (success) {
+				t.placed_tiles++;
+				tiles_to_place--;
+			}
+		}
+		else
+		{
+			float current_x_f = (float)current_x;
+			float current_y_f = (float)current_y;
+			for (uint32_t i = 0; i < distance && tiles_to_place > 0; i++)
+			{
+				current_x_f += cos(angle);
+				current_y_f += sin(angle);
+				current_x = (int32_t)current_x_f;
+				current_y = (int32_t)current_y_f;
+				tile_type existing_tile = (tile_type)world_tiles -> get_tile_at(current_x, current_y);
+				if (existing_tile != tree_tile_type && existing_tile != TREE_SEED)
+				{
+					bool success = world_tiles -> try_place_tile_with_displacement_no_lock(current_x, current_y, tree_tile_type, 20.0f, 200, 0, 128);
+					if (success) {
+						t.placed_tiles++;
+						tiles_to_place--;
+						// if (rand() % 10 == 0)
+						// {
+						// 	return;
+						// }
+					}
+					else
+					{
+						// return;
+					}
+				}
+				else
+				{
+					if (rand() % 5 == 0)
+					{
+						// already a tree tile here, try place anyway
+						bool success = world_tiles -> try_place_tile_with_displacement_no_lock(current_x, current_y, tree_tile_type, 20.0f, 200, 0, 128);
+						if (success) {
+							t.placed_tiles++;
+							tiles_to_place--;
+							// if (rand() % 10 == 0)
+							// {
+							// 	return;
+							// }
+						}
+					}
+				}
+			}
+		}
+		if (tiles_to_place > 0)
+		{
+			std::vector<tile_coord> &children = t.child_nodes[to_tile];
+		
+			std::vector<int> weights;
+			for (auto &child : children)
+			{
+				weights.push_back(1 + t.child_node_counts[child]);
+			}
+			// sort children by weights
+			std::vector<size_t> indices(children.size());
+			std::iota(indices.begin(), indices.end(), 0);
+			std::sort(indices.begin(), indices.end(), [&weights](size_t a, size_t b) { return weights[a] < weights[b]; });
+			for (auto &index : indices)
+			{
+				place_tiles_for_node_tree(t, to_tile, children[index], tree_tile_type, tiles_to_place);
+				if (tiles_to_place == 0)
+					return;
+			}
+		}
+	}
+
 	void tree_system::update()
 	{
 		increment_counter();
@@ -253,13 +406,22 @@ namespace game
 			// 	continue;
 			// }
 
+			auto start_time = std::chrono::high_resolution_clock::now();
+
 			if (get_simple_tile_type(world_tiles->get_tile_at(t.seed_x, t.seed_y + 1)) == tile_simple_type::GAS)
 			{
 				// seed is floating, move down
 				world_tiles->switch_tiles_with_lock(t.seed_x, t.seed_y, t.seed_x, t.seed_y + 1);
+				t.child_nodes.clear();
+				t.child_node_counts.clear();
+				t.child_nodes[tile_coord(t.seed_x, t.seed_y + 1)] = std::vector<tile_coord>();
+				t.child_node_counts[tile_coord(t.seed_x, t.seed_y + 1)] = 0;
 				t.seed_y += 1;
 				continue;
 			}
+			auto end_time = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+			start_time = std::chrono::high_resolution_clock::now();
 
 			if (t.root_tiles.size() < 48 && rand() % 3 == 0)
 			{ // grow roots
@@ -273,38 +435,49 @@ namespace game
 					continue;
 				}
 
+				bool add_tile = false;
+
 				if (last_tile.y > current_tile.y) // moved up
 				{
 					t.root_tiles[last_tile].up = 1;
 					t.root_tiles[current_tile] = tree_tracer{0, 2, 0, 0};
-					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
-					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+					add_tile = true;
 				}
 				else if (last_tile.y < current_tile.y) // moved down
 				{
 					t.root_tiles[last_tile].down = 1;
 					t.root_tiles[current_tile] = tree_tracer{2, 0, 0, 0};
-					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
-					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
-					
+					add_tile = true;
 				}
 				else if (last_tile.x > current_tile.x) // moved left
 				{
 					t.root_tiles[last_tile].left = 1;
 					t.root_tiles[current_tile] = tree_tracer{0, 0, 0, 2};
-					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
-					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+					add_tile = true;
 				}
 				else if (last_tile.x < current_tile.x) // moved right
 				{
 					t.root_tiles[last_tile].right = 1;
 					t.root_tiles[current_tile] = tree_tracer{0, 0, 2, 0};
+					add_tile = true;
+				}
+				if (add_tile)
+				{
+					tile_type current_tile_type = (tile_type)world_tiles->get_write_tile_at(current_tile.x, current_tile.y);
+					float current_tile_temp = world_tiles->get_tile_temperature_at(current_tile.x, current_tile.y);
+					uint16_t current_tile_misc = world_tiles->get_tile_misc_data_at(current_tile.x, current_tile.y);
 					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, ROOT);
-					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 200);
+
+					// world_tiles->try_place_tile_with_displacement_no_lock(last_tile.x, last_tile.y, current_tile_type, current_tile_temp, current_tile_misc, 0, 128);
 				}
 			}
 
-			if(t.branch_tiles.size() < t.root_tiles.size() && rand() % 3 == 0)
+			end_time = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+			start_time = std::chrono::high_resolution_clock::now();
+
+			if (t.type == TILE_TREE && t.branch_tiles.size() < t.root_tiles.size() && rand() % 3 == 0)
 			{
 				// grow branches
 				tile_coord current_tile = tile_coord(t.seed_x, t.seed_y);
@@ -321,30 +494,104 @@ namespace game
 					t.branch_tiles[last_tile].up = 1;
 					t.branch_tiles[current_tile] = tree_tracer{0, 2, 0, 0};
 					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, WOOD);
-					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 200);
 				}
 				else if (last_tile.y < current_tile.y) // moved down
 				{
 					t.branch_tiles[last_tile].down = 1;
 					t.branch_tiles[current_tile] = tree_tracer{2, 0, 0, 0};
 					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, WOOD);
-					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 200);
 				}
 				else if (last_tile.x > current_tile.x) // moved left
 				{
 					t.branch_tiles[last_tile].left = 1;
 					t.branch_tiles[current_tile] = tree_tracer{0, 0, 0, 2};
 					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, WOOD);
-					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 200);
 				}
 				else if (last_tile.x < current_tile.x) // moved right
 				{
 					t.branch_tiles[last_tile].right = 1;
 					t.branch_tiles[current_tile] = tree_tracer{0, 0, 2, 0};
 					world_tiles->set_tile_at_with_lock(current_tile.x, current_tile.y, WOOD);
-					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 20);
+					world_tiles->set_tile_misc_data_at(current_tile.x, current_tile.y, 200);
 				}
 			}
+
+			end_time = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+			start_time = std::chrono::high_resolution_clock::now();
+
+			if (t.type == NODE_TREE && t.child_node_counts.size() < t.root_tiles.size() / 12)
+			{
+				
+				// for (int i = 0; i < 20; i++)
+				// {
+					tile_coord random_node_tile = tile_coord(t.seed_x, t.seed_y);
+					while(t.child_nodes.count(random_node_tile) > 0)
+					{
+						std::vector<tile_coord> &children = t.child_nodes[random_node_tile];
+						if (children.size() == 0)
+							break;
+						random_node_tile = children[rand() % children.size()];
+					}
+					bool consumed = world_tiles -> try_consume_nearby_tile_no_lock(random_node_tile.x, random_node_tile.y, POLLUTION);
+					if (consumed)
+					{
+						t.stored_pollution += 1;
+					}
+				// }
+			}
+			end_time = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+			start_time = std::chrono::high_resolution_clock::now();
+
+
+			if (t.type == NODE_TREE && t.child_node_counts.size() < t.root_tiles.size() / 12 && t.stored_pollution >= 20)
+			{
+				// add a child node
+				tile_coord current_tile = tile_coord(t.seed_x, t.seed_y);
+				if (t.child_nodes.count(current_tile) == 0)
+				{
+					printf("Error: seed tile not in child nodes\n");
+					continue;
+				}
+				// printf("Current tile: (%d, %d) has %d child nodes\n", current_tile.x, current_tile.y, t.child_nodes[current_tile].size());
+				bool grew = try_grow_node_tree_recursive(t, current_tile);
+				// printf("Current tile: (%d, %d) has %d child nodes\n", current_tile.x, current_tile.y, t.child_nodes[current_tile].size());
+
+				if (grew)
+				{
+					// place wood tiles into the tree network
+					uint32_t tiles_to_place = 20;
+					uint16_t attempt_count = 0;
+					while (tiles_to_place > 0 && attempt_count < 3)
+					{
+						place_tiles_for_node_tree(t, current_tile, current_tile, WOOD, tiles_to_place);
+						attempt_count++;
+					}
+					t.stored_pollution -= (20 - tiles_to_place);
+					for(int i = 0; i < 20; i++)
+					{
+						world_tiles -> try_place_tile_with_displacement_no_lock(t.child_nodes[current_tile][0].x, t.child_nodes[current_tile][0].y, LEAF, 20.0f, 20, 0, 128);
+					}
+				}
+				
+			}
+			end_time = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+			// else if (t.type == NODE_TREE && t.child_nodes.size() > 10 && t.placed_tiles < t.child_nodes.size() * 3)
+			// {
+			// 	// grow existing branches a bit more
+			// 	uint32_t tiles_to_place = 3 + (rand() % 6);
+			// 	uint16_t attempt_count = 0;
+			// 	while (tiles_to_place > 0 && attempt_count < 3)
+			// 	{
+			// 		place_tiles_for_node_tree(t, tile_coord(t.seed_x, t.seed_y), tile_coord(t.seed_x, t.seed_y), WOOD, tiles_to_place);
+			// 		attempt_count++;
+			// 	}
+			// }
 		}
 
 		tree_mutex.unlock();
@@ -359,11 +606,11 @@ namespace game
 			auto start = std::chrono::high_resolution_clock::now();
 			update();
 			auto end = std::chrono::high_resolution_clock::now();
-			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 			add_time(duration.count());
 			// printf("Tree system loop time: %d\n", duration.count());
-			if (duration.count() < loop_time_millis)
-				std::this_thread::sleep_for(std::chrono::milliseconds(loop_time_millis - duration.count()));
+			if (duration.count() < loop_time_millis * 1000)
+				std::this_thread::sleep_for(std::chrono::microseconds(loop_time_millis * 1000 - duration.count()));
 		}
 		printf("Tree system stopped\n");
 	}

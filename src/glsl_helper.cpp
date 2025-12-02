@@ -5,11 +5,11 @@ namespace glsl_helper
 {
 	std::array<float, 256 * 4> colours{
 		0.7000f, 0.0000f, 0.0000f, 0.1000f, // 0: VACCUUM
-		0.0300f, 0.0003f, 0.0003f, 0.6000f, // 1: POLLUTION
-		0.0000f, 0.0000f, 0.1000f, 0.0000f, // 2: AIR
-		0.1500f, 0.1500f, 0.1500f, 0.6500f, // 3: SMOKE
-		0.4000f, 1.0000f, 1.0000f, 0.6500f, // 4: STEAM
-		0.1500f, 0.1500f, 0.1500f, 0.5500f, // 5: TEMPORARY_SMOKE
+		0.1500f, 0.1500f, 0.1500f, 0.6500f, // 1: SMOKE
+		0.4000f, 1.0000f, 1.0000f, 0.6500f, // 2: STEAM
+		0.1500f, 0.1500f, 0.1500f, 0.5500f, // 3: TEMPORARY_SMOKE
+		0.0000f, 0.0000f, 0.1000f, 0.0000f, // 4: AIR
+		0.0300f, 0.0003f, 0.0003f, 0.6000f, // 5: POLLUTION
 		0.0196f, 1.0000f, 1.0000f, 1.0000f, // 6
 		0.0235f, 1.0000f, 1.0000f, 1.0000f, // 7
 		0.0275f, 1.0000f, 1.0000f, 1.0000f, // 8
@@ -445,36 +445,35 @@ namespace glsl_helper
 	{
 		return R"(
 			#version 430
-			layout(binding = 0, r16i) uniform readonly iimage2D tile_temps;
-			uniform ivec2 texture_size; // size of the displayed texture
+
+			layout(binding = 0, r32f) uniform readonly image2D tile_temps;
+			uniform ivec2 texture_size;
 			in vec2 v_TexCoord;
 			out vec4 out_Color;
 			
-			int sampleWorld(vec2 texCoord) {
+			float sampleWorld(vec2 texCoord) {
 				if (texCoord.x < 0.0 || texCoord.x >= texture_size.x || texCoord.y < 0.0 || texCoord.y >= texture_size.y) {
-					return -1;	// -1 is out of bounds, uint max value so doing value > 0 will work
+					return 0;	// out of bounds
 				}
-				int value = imageLoad(tile_temps, ivec2(texCoord.xy)).r;
+				float value = imageLoad(tile_temps, ivec2(texCoord.xy)).r;
 				return value;
 			}
 
 			void main()
 			{
-				int world_value = sampleWorld(v_TexCoord * texture_size);
-				float temp_decimal = float(world_value) / 1.0;
-				// if(temp_decimal < -1.0) {
-				// 	temp_decimal = -1.0;
-				// } else if(temp_decimal > 1.0) {
-				// 	temp_decimal = 1.0;
-				// }
-				if(world_value >= 0)
+				float temperature_value = sampleWorld(v_TexCoord * texture_size);
+
+				if (temperature_value < 0)
 				{
-					out_Color = vec4(world_value, 0, 0, .75);
+					temperature_value = 0;
 				}
-				else
+				else if (temperature_value > 200)
 				{
-					out_Color = vec4(1, 1, -world_value, .25);
+					temperature_value = 200;
 				}
+				float normalized_temp = temperature_value / 200.0;
+
+				out_Color = vec4(normalized_temp, 1.0, 1.0 - normalized_temp, 0.0);
 			}
 		)";
 	}

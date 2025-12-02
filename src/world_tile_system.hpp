@@ -106,12 +106,15 @@ namespace game
 		bool try_consume_nearby_tile_no_lock(int x, int y, tile_type tile_type);
 		bool try_place_tile_with_displacement_no_lock(int x, int y, tile_type tile_type, float temperature, uint16_t misc_data, int recursion_depth, int search_size);
 		bool try_place_tile_flush_with_displacement_no_lock(int x, int y, tile_type tile_type, float temperature, uint16_t misc_data, int recursion_depth, int search_size);
+		bool has_line_of_sight(int32_t x1, int32_t y1, int32_t x2, int32_t y2, std::unordered_set<tile_type> tile_deny_list);
 
 		void update() {};
 		void update(uint64_t tick_count);
 		void generate_world();
 		entity get_chunk_entity(int x, int y);
 		entity get_chunk_entity(int chunk);
+		std::pair<int32_t, int32_t> get_chunk_coords_from_world_coords(int x, int y);
+		std::pair<uint16_t, uint16_t> get_intra_chunk_coords_from_world_coords(int x, int y);
 		chunk *get_chunk(int chunk_x, int chunk_y);
 		uint16_t get_tile_edginess(int chunk_x, int chunk_y, int x, int y);
 		std::vector<std::vector<std::pair<float, float>>> *create_outlines(int x, int y);
@@ -139,6 +142,7 @@ namespace game
 		chunk *chunk_pointer;
 		world_tile_system *world_tile_system_pointer;
 		uint64_t tick_count;
+		bool is_player_chunk;
 	};
 
 	bool update_chunk_tiles_task_wrapper(void *parameters);

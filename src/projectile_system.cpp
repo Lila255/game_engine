@@ -93,7 +93,7 @@ namespace game
 				{
 					ud.type = b2fixture_types::EMPTY;
 				}
-				else if (projectile.temporary_trail_tile_type != 0 && world_tiles->get_tile_at(position.x, position.y) == 0)
+				else if (projectile.temporary_trail_tile_type != 0)//&& world_tiles->get_tile_at(position.x, position.y) <= AIR)
 				{
 					world_tiles->set_tile_copy_at(position.x, position.y, projectile.temporary_trail_tile_type);
 					int16_t tile_temperature = world_tiles->get_tile_temperature_at(position.x, position.y);
@@ -117,7 +117,8 @@ namespace game
 				{
 					b2Vec2 vel = projectile.body->GetLinearVelocity();
 					float target_y_vel = projectile.fall_speed_multiplier * projectile.fall_speed_multiplier;
-					vel.y = vel.y + (target_y_vel - vel.y) / 200.0f; 
+					vel.y = vel.y + (target_y_vel - vel.y) / 32.0f;
+					vel.x = vel.x * 0.98f;
 					projectile.body->SetLinearVelocity(vel);
 				}
 			}

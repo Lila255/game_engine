@@ -91,5 +91,7 @@ namespace game
 
 		bool contains_static_body(entity ent);
 		bool contains_dynamic_body(entity ent);
+
+		std::vector<entity> get_static_body_entities();
 	};
 }

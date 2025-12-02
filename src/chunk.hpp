@@ -19,19 +19,19 @@ namespace game
 	const uint16_t CHUNK_SIZE = 100; // There are CHUNK_SIZE*CHUNK_SIZE tiles in chunk
 	const uint8_t CHUNK_FRAMES = 16; // Number of frames the current chunk has
 	
-	const uint16_t RENDERED_NUM_CHUNKS = 16; 
-	const uint16_t RENDERED_CHUNKS_WIDTH = 4;
+	const uint16_t RENDERED_NUM_CHUNKS = 25; 
+	const uint16_t RENDERED_CHUNKS_WIDTH = 5;
 	
 	// enum for tile types
 	enum tile_type
 	{
 		// gas tiles
 		VACCUUM, // 0
-		POLLUTION,	// 1
-		AIR,	// 2
-		SMOKE,	// 3
-		STEAM,	// 4
-		TEMPORARY_SMOKE,	// 5
+		SMOKE,	// 1
+		STEAM,	// 2
+		TEMPORARY_SMOKE,	// 3
+		AIR,	// 4
+		POLLUTION,	// 5
 		GAS_05,	// 6
 		GAS_06,	// 7
 		GAS_07,	// 8
@@ -340,6 +340,8 @@ namespace game
 
 	struct chunk_neighbour_tile_buffer
 	{
+		bool side_filled[4] = {false, false, false, false};
+
 		std::array<uint8_t, CHUNK_SIZE> top_tiles;
 		std::array<uint8_t, CHUNK_SIZE> bottom_tiles;
 		std::array<uint8_t, CHUNK_SIZE> left_tiles;
@@ -362,12 +364,14 @@ namespace game
 	private:
 		uint16_t get_tile_edginess(int x, int y);
 		std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> data;
+		std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> tile_moved_this_frame;
 		std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE> data_copy;
 		std::array<std::array<float, CHUNK_SIZE>, CHUNK_SIZE> temperature_data;
 		std::array<std::array<uint16_t, CHUNK_SIZE>, CHUNK_SIZE> misc_data;
 		std::shared_mutex chunk_mutex;
 		std::shared_mutex chunk_mutex_copy;
 		chunk_neighbour_tile_buffer neighbour_tile_buffer;
+
 
 	public:
 		int32_t chunk_x;
@@ -390,7 +394,7 @@ namespace game
 		{
 			data = std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
 			data_copy = std::array<std::array<uint8_t, CHUNK_SIZE>, CHUNK_SIZE>{};
-			temperature_data = std::array<std::array<float, CHUNK_SIZE>, CHUNK_SIZE>{};
+			temperature_data = std::array<std::array<float, CHUNK_SIZE>, CHUNK_SIZE>{0.f};
 			misc_data = std::array<std::array<uint16_t, CHUNK_SIZE>, CHUNK_SIZE>{};
 			chunk_mutex.lock();
 			chunk_mutex.unlock();
@@ -449,8 +453,13 @@ namespace game
 		void switch_tiles_no_lock(int x1, int y1, int x2, int y2);
 
 		chunk_neighbour_tile_buffer * get_neighbour_tile_buffer_pointer();
+		void clear_neighbour_tile_buffer();
 		void get_neighbour_tile_buffer(chunk_neighbour_tile_buffer *buffer, uint8_t side);
 		void update_neighbour_tiles(chunk_neighbour_tile_buffer *buffer, chunk_neighbour_tile_buffer *buffer_original, uint8_t side);
+
+		void reset_tile_moved_this_frame();
+		void set_tile_moved_this_frame(int x, int y);
+		uint8_t get_tile_moved_this_frame(int x, int y);
 
 		void lock_chunk()
 		{

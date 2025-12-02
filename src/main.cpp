@@ -60,7 +60,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(body->GetContactList() != NULL ? -.041f : -.01f, 0.0f);
+		b2Vec2 impulse = b2Vec2(body->GetContactList() != NULL ? -.121f : -.03f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
@@ -87,7 +87,7 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
 		entity player = game_engine::game_engine_pointer->player_entitiy;
 		b2Body *body = b2d_sys->get_dynamic_body(player);
-		b2Vec2 impulse = b2Vec2(body->GetContactList() != NULL ? .041f : .01f, 0.0f);
+		b2Vec2 impulse = b2Vec2(body->GetContactList() != NULL ? .121f : .03f, 0.0f);
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
@@ -144,6 +144,19 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		selected_tile_type = game::tile_type::EMBER;
 		keys.erase(GLFW_KEY_4);
 	}
+
+	if (keys.count(GLFW_KEY_5) > 0)
+	{
+		selected_tile_type = game::tile_type::BEE_BLACK;
+		keys.erase(GLFW_KEY_5);
+	}
+	
+	if (keys.count(GLFW_KEY_6) > 0)
+	{
+		selected_tile_type = game::tile_type::INSULATION_FOAM;
+		keys.erase(GLFW_KEY_6);
+	}
+
 }
 
 static uint64_t mouse_click_counter = 0;
@@ -167,10 +180,16 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		// // get mouse position
 		int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
 		int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
-		printf("Delete circle at x: %d, y: %d\n", world_x, world_y);
+		// printf("Delete circle at x: %d, y: %d\n", world_x, world_y);
 		// // get world tile system
 		game::world_tile_system *world_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
-		world_sys->delete_circle(world_x, world_y, 18, {});
+		// world_sys->delete_circle(world_x, world_y, 18, {});
+		world_sys->task_scheduler_pointer->add_task({&game::delete_circle_task,
+			new game::delete_circle_params{
+				world_x,
+				world_y,
+				18,
+			}});
 		// world_sys->explode_circle(world_x, world_y, 8, 2000, {});
 
 		buttons.erase(GLFW_MOUSE_BUTTON_LEFT);
@@ -190,59 +209,62 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		b2Body *player_body = b2d_sys->get_dynamic_body(player);
 		b2Vec2 player_pos = player_body->GetPosition();
 
-		/*
-		// create projectile
-		game::projectile_system *projectile_sys = (game::projectile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::projectile_system>()));
-		// projectile_sys->create_projectile(player_pos.x, player_pos.y, angle);
-
-		// create entity for projectile
-		int x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
-		int y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
-
-		entity projectile_entity = game_engine::game_engine_pointer->create_entity();
-		projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x * game::box2d_scale + cos(angle) * 5.0f), (float)(player_pos.y * game::box2d_scale + sin(angle) * 5.0f), float(angle), 15.f, glsl_helper::projectile_width / 2.0f, 500, game::b2fixture_types::PROJECTILE);
-
-		game_engine::render_system *render_sys = (game_engine::render_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
-		game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
-		game_engine::box_system *box_sys = (game_engine::box_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
-		game_engine::sprite sprt(game_engine::shader_programs[0]);
-		GLuint projectile_texture;
-		glsl_helper::create_projectile_texture(projectile_texture);
-
-		sprt.add_texture({projectile_texture, 0, GL_R8, glsl_helper::projectile_width, glsl_helper::projectile_height});
-		render_sys->add(projectile_entity, sprt);
-		box_sys->add(projectile_entity, {0.f, 0.f, -4.6f, glsl_helper::projectile_width, glsl_helper::projectile_height});
-		texture_vbo_sys->add(projectile_entity);
-
-		// projectile_sys -> add_entity(projectile)
-		// buttons.erase(GLFW_MOUSE_BUTTON_RIGHT);
-		*/
-
-		/*
-		int debris_x = (float)(player_pos.x * game::box2d_scale + cos(angle) * 5.0f);
-		int debris_y = (float)(player_pos.y * game::box2d_scale + sin(angle) * 5.0f);
-
-		for(int i = 0; i < 10; i++)
+		if (selected_tile_type == game::tile_type::BEE_BLACK)
 		{
-			game_engine::task_scheduler_pointer->add_task({&game::create_single_debris_task,
-				new game::create_debris_params{
-					(float)(debris_x + cos(angle) * 2.0f),
-					(float)(debris_y + sin(angle) * 2.0f),
-					(float)(cos(angle + (rand() % 5) / 10.0) * 12.0f),
-					(float)(sin(angle + (rand() % 5) / 10.0) * 12.0f),
-					0.5f,
-					82,
-					0,
-					82,
-					5,
-					0.0f,
-					(uint16_t)(rand() % 30 + 20)
-				}}
-				// , i * 50
-			);
-			angle += 0.025f;
+			// create projectile
+			game::projectile_system *projectile_sys = (game::projectile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::projectile_system>()));
+			// projectile_sys->create_projectile(player_pos.x, player_pos.y, angle);
+
+			// create entity for projectile
+			int x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
+			int y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
+
+			entity projectile_entity = game_engine::game_engine_pointer->create_entity();
+			projectile_sys->create_projectile(projectile_entity, (float)(player_pos.x * game::box2d_scale + cos(angle) * 5.0f), (float)(player_pos.y * game::box2d_scale + sin(angle) * 5.0f), float(angle), 15.f, glsl_helper::projectile_width / 2.0f, 500, game::b2fixture_types::PROJECTILE);
+
+			game_engine::render_system *render_sys = (game_engine::render_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
+			game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
+			game_engine::box_system *box_sys = (game_engine::box_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
+			game_engine::sprite sprt(game_engine::shader_programs[0]);
+			GLuint projectile_texture;
+			glsl_helper::create_projectile_texture(projectile_texture);
+
+			sprt.add_texture({projectile_texture, 0, GL_R8, glsl_helper::projectile_width, glsl_helper::projectile_height});
+			render_sys->add(projectile_entity, sprt);
+			box_sys->add(projectile_entity, {0.f, 0.f, -4.6f, glsl_helper::projectile_width, glsl_helper::projectile_height});
+			texture_vbo_sys->add(projectile_entity);
+
+			// projectile_sys -> add_entity(projectile)
+			// buttons.erase(GLFW_MOUSE_BUTTON_RIGHT);
+
 		}
-		*/
+
+		else if (selected_tile_type == game::tile_type::INSULATION_FOAM)
+		{
+			int debris_x = (float)(player_pos.x * game::box2d_scale + cos(angle) * 5.0f);
+			int debris_y = (float)(player_pos.y * game::box2d_scale + sin(angle) * 5.0f);
+
+			for(int i = 0; i < 10; i++)
+			{
+				game_engine::task_scheduler_pointer->add_task({&game::create_single_debris_task,
+					new game::create_debris_params{
+						(float)(debris_x + cos(angle) * 2.0f),
+						(float)(debris_y + sin(angle) * 2.0f),
+						(float)(cos(angle + (rand() % 5) / 10.0) * 12.0f),
+						(float)(sin(angle + (rand() % 5) / 10.0) * 12.0f),
+						0.5f,
+						game::tile_type::INSULATION_FOAM,
+						0,
+						game::tile_type::INSULATION_FOAM,
+						5,
+						0.0f,
+						(uint16_t)(rand() % 30 + 20)
+					}}
+					// , i * 50
+				);
+				angle += 0.025f;
+			}
+		}
 
 		// if (mouse_click_counter % 50 == 0)
 		// {
@@ -296,49 +318,52 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		// 	tile_conveyor_sys->add_component(conveyor_entity, conveyor);
 		// }
 
-		game::world_tile_system *world_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
-		int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
-		int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
-		if (mouse_click_counter % 2 == 1)
-		{
-			int start_x = (int)last_mouse_click.first;
-			int start_y = (int)last_mouse_click.second;
-			int end_x = world_x;
-			int end_y = world_y;
-
-			float ang = atan2(end_y - start_y, end_x - start_x);
-			float dist = sqrt((end_x - start_x) * (end_x - start_x) + (end_y - start_y) * (end_y - start_y));
-			uint16_t misc_data = 0;
-			int number_of_tiles = 1;
-			if (selected_tile_type == game::tile_type::WOOD || selected_tile_type == game::tile_type::EMBER)
-			{
-				misc_data = 200;
-			}
-			if (selected_tile_type == game::tile_type::WOOD || selected_tile_type == game::tile_type::EMBER || selected_tile_type == game::tile_type::WATER)
-			{
-				number_of_tiles = 3;
-			}
-
-			for (float d = 0; d < dist; d += 1.0f)
-			{
-				int tx = (int)(start_x + cos(ang) * d);
-				int ty = (int)(start_y + sin(ang) * d);
-				for (int i = 0; i < number_of_tiles; i++)
-				{
-					world_sys->try_place_tile_with_displacement_no_lock(tx, ty, selected_tile_type, 20, misc_data, 0, 16);
-				}
-				// world_sys->set_tile_at_with_lock(tx, ty, (uint8_t)selected_tile_type);
-				// if (selected_tile_type == game::tile_type::WOOD || selected_tile_type == game::tile_type::EMBER)
-				// {
-				// 	world_sys->add_tile_misc_data_at(tx, ty, 1000);
-				// }
-			}
-		}
 		else
 		{
-			last_mouse_click = {world_x, world_y};
+			game::world_tile_system *world_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
+			int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
+			int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
+			if (mouse_click_counter % 2 == 1)
+			{
+				int start_x = (int)last_mouse_click.first;
+				int start_y = (int)last_mouse_click.second;
+				int end_x = world_x;
+				int end_y = world_y;
+
+				float ang = atan2(end_y - start_y, end_x - start_x);
+				float dist = sqrt((end_x - start_x) * (end_x - start_x) + (end_y - start_y) * (end_y - start_y));
+				uint16_t misc_data = 0;
+				int number_of_tiles = 1;
+				if (selected_tile_type == game::tile_type::WOOD || selected_tile_type == game::tile_type::EMBER)
+				{
+					misc_data = 200;
+				}
+				if (selected_tile_type == game::tile_type::WOOD || selected_tile_type == game::tile_type::EMBER || selected_tile_type == game::tile_type::WATER)
+				{
+					number_of_tiles = 3;
+				}
+
+				for (float d = 0; d < dist; d += 1.0f)
+				{
+					int tx = (int)(start_x + cos(ang) * d);
+					int ty = (int)(start_y + sin(ang) * d);
+					for (int i = 0; i < number_of_tiles; i++)
+					{
+						world_sys->try_place_tile_with_displacement_no_lock(tx, ty, selected_tile_type, 20, misc_data, 0, 128);
+					}
+					// world_sys->set_tile_at_with_lock(tx, ty, (uint8_t)selected_tile_type);
+					// if (selected_tile_type == game::tile_type::WOOD || selected_tile_type == game::tile_type::EMBER)
+					// {
+					// 	world_sys->add_tile_misc_data_at(tx, ty, 1000);
+					// }
+				}
+			}
+			else
+			{
+				last_mouse_click = {world_x, world_y};
+			}
+			mouse_click_counter++;
 		}
-		mouse_click_counter++;
 
 		buttons.erase(GLFW_MOUSE_BUTTON_RIGHT);
 	}
@@ -516,7 +541,7 @@ void run_game(GLFWwindow *window)
 
 	game::tree_system *tree_sys = new game::tree_system(world_sys);
 	eng.add_system(game_engine::family::type<game::tree_system>(), tree_sys);
-	// system_names[game_engine::family::type<game::tree_system>()] = "tree_system";
+	system_names[game_engine::family::type<game::tree_system>()] = "tree_system";
 
 	game::chunk_frame_system *chunk_frame_sys = new game::chunk_frame_system(box2d_sys, render_sys, world_sys);
 	eng.add_system(game_engine::family::type<game::chunk_frame_system>(), chunk_frame_sys);
@@ -548,6 +573,9 @@ void run_game(GLFWwindow *window)
 	eng.add_system(game_engine::family::type<game::tile_conveyor_system>(), tile_conveyor_sys);
 	// system_names[game_engine::family::type<game::tile_conveyor_system>()] = "tile_conveyor_system";
 	box2d_sys->world->SetContactListener(new game::b2_contact_listener());
+
+	// game::inventory_system *inventory_sys = new game::inventory_system();
+	// eng.add_system(game_engine::family::type<game::inventory_system>(), inventory_sys);
 
 	world_sys->generate_world();
 	printf("here: %d\n", glGetError());
@@ -642,6 +670,7 @@ void run_game(GLFWwindow *window)
 	printf("here3: %d\n", glGetError());
 	fflush(stdout);
 	game_engine::sprite sprt(game_engine::shader_programs[0]);
+	printf("Texture is_ui: %d\n", sprt.is_ui);
 	printf("here4: %d\n", glGetError());
 	sprt.add_texture({background_texture, 0, GL_R8, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	printf("here5: %d\n", glGetError());
@@ -649,21 +678,23 @@ void run_game(GLFWwindow *window)
 	// (GLuint id, GLuint binding, GLuint format, uint32_t width, uint32_t height)
 
 	printf("here: %d\n", glGetError());
-	// GLuint temperature_overlay_texture;
-	// glGenTextures(1, &temperature_overlay_texture);
-	// glBindTexture(GL_TEXTURE_2D, temperature_overlay_texture);
-	// // set data and size
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	GLuint temperature_overlay_texture;
+	glGenTextures(1, &temperature_overlay_texture);
+	glBindTexture(GL_TEXTURE_2D, temperature_overlay_texture);
+	// set data and size
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	// printf("Error_1.15: x%d\n", glGetError());
-	// entity temperature_overlay_entity = eng.create_entity();
-	// box_sys->add(temperature_overlay_entity, {0.f, 0.f, -4.7, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
-	// texture_vbo_sys->add(temperature_overlay_entity);
-	// game_engine::sprite temp_sprt(game_engine::shader_programs[2]);
-	// temp_sprt.add_texture({temperature_overlay_texture, 0, GL_R16, game::CHUNK_SIZE * game::CHUNKS_WIDTH, game::CHUNK_SIZE * game::CHUNKS_WIDTH});
-	// render_sys->add(temperature_overlay_entity, temp_sprt);
-	// printf("Error_1.5: x%d\n", glGetError());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, 0, GL_RED, GL_FLOAT, 0);
+
+	printf("Error_1.15: x%d\n", glGetError());
+	entity temperature_overlay_entity = eng.create_entity();
+	box_sys->add(temperature_overlay_entity, {0.f, 0.f, -4.7, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
+	texture_vbo_sys->add(temperature_overlay_entity);
+	game_engine::sprite temp_sprt(game_engine::shader_programs[3]);
+	temp_sprt.add_texture({temperature_overlay_texture, 0, GL_R32F, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
+	render_sys->add(temperature_overlay_entity, temp_sprt);
+	printf("Error_1.5: x%d\n", glGetError());
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -958,6 +989,33 @@ void run_game(GLFWwindow *window)
 
 	std::pair<int32_t, int32_t> last_player_chunk = {-1, -1};
 
+	// inventory_sys
+	// entity hotbar_entity = eng.create_entity();
+	
+	// {
+	// 	std::array<uint8_t, 9> hotbar_texture_data = {game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD};
+	// 	glsl_helper::create_texture_from_data("hotbar_texture", hotbar_texture_data.data(), 9, 1);
+		
+	// 	box_sys->add(hotbar_entity, {0.f, 0.f, -2.f, 400.f, 40.f});
+	// 	texture_vbo_sys->add(hotbar_entity);
+	// 	game_engine::sprite hotbar_sprt(game_engine::shader_programs[0]);
+	// 	hotbar_sprt.is_ui = true;
+
+	// 	// std::array<uint8_t, 4> bee_texture = {game::BEE_YELLOW, game::BEE_YELLOW, game::BEE_BLACK, game::BEE_BLACK};
+	// 	// glsl_helper::create_texture_from_data("bee", bee_texture.data(), 2, 2);
+
+	// 	hotbar_sprt.add_texture({glsl_helper::texture_map["hotbar_texture"], 0, GL_R8, 9, 1});
+
+	// 	render_sys->add(hotbar_entity, hotbar_sprt);
+
+	// 	game::inventory inventory(9, 1);
+		
+	// 	inventory.add_item(0, 0, game::inventory_item(1, game::tile_type::WATER));
+	// 	inventory_sys->add_inventory(hotbar_entity, inventory);
+
+	// }
+
+
 	// Run the game loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -973,13 +1031,6 @@ void run_game(GLFWwindow *window)
 		flying_creature_sys->update_rendering(last_time_taken_micro);
 		// legged_creature_sys->update_rendering(last_time_taken_micro);
 
-		// for (int c = 0; c < game::NUM_CHUNKS; c++)
-		// {
-		// 	game::chunk *chunk = world_sys->get_chunks_copy()->at(c);
-		// 	chunk -> lock_chunk_copy_shared();
-		// 	render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(chunk->get_data_copy()), (c % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (c / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
-		// 	// render_sys->update_texture_section_16(temperature_overlay_entity, (int16_t *)((world_sys->get_chunks_copy())->at(c)->get_temperature_data()->data()), (c % game::CHUNKS_WIDTH) * game::CHUNK_SIZE, (c / game::CHUNKS_WIDTH) * game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
-		// }
 
 		game_engine::box b = box_sys->get(player_entity).get_box_lerped(start_rendering_loop_micro);
 		int player_x = (int)(b.x + b.w / 2);
@@ -1086,6 +1137,11 @@ void run_game(GLFWwindow *window)
 			all_chunks_box.z = -6.0f;
 			box_sys->update_box(background_entity, all_chunks_box);
 			texture_vbo_sys->update(background_entity, all_chunks_box.get_box());
+
+			// temperature overlay
+			all_chunks_box.z = -4.7f;
+			box_sys->update_box(temperature_overlay_entity, all_chunks_box);
+			texture_vbo_sys->update(temperature_overlay_entity, all_chunks_box.get_box());
 		}
 
 		for (int32_t y = 0; y < game::RENDERED_CHUNKS_WIDTH; y++)
@@ -1099,6 +1155,7 @@ void run_game(GLFWwindow *window)
 				game::chunk *chunk = world_sys->get_chunk(current_chunk_x, current_chunk_y);
 				chunk->lock_chunk_copy_shared();
 				render_sys->update_texture_section(world_sys->all_chunk_ent, (uint8_t *)(chunk->get_data_copy()), (x)*game::CHUNK_SIZE, (y)*game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
+				render_sys->update_texture_section_float(temperature_overlay_entity, (float *)((chunk->get_temperature_data()->data())), (x)*game::CHUNK_SIZE, (y)*game::CHUNK_SIZE, game::CHUNK_SIZE, game::CHUNK_SIZE);
 				chunk->unlock_chunk_copy_shared();
 			}
 		}

@@ -226,7 +226,7 @@ namespace game
 		flying_creature & c = flying_creature_sys->get(params->ent);
 
 		// b2d_mutex.lock();
-		// uint32_t eaten = world_tiles->explode_circle(params->x + 2, params->y + 2, 8, 0, {WAX, HONEY});
+		uint32_t eaten = world_tiles->explode_circle(params->x + 2, params->y + 2, 8, 0, {WAX, HONEY});
 		// c.add_collected_mass(eaten);
 
 		// b2d_mutex.unlock();

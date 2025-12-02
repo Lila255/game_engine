@@ -8,7 +8,7 @@ namespace game
 
 	box2d_system::box2d_system()
 	{
-		gravity = b2Vec2(0.0f, 9.81f);
+		gravity = b2Vec2(0.0f, 19.81f);
 		world = new b2World(gravity);
 		// contact_listener = new b2_contact_listener();
 	}
@@ -77,7 +77,9 @@ namespace game
 	{
 		b2BodyDef bodyDef;
 		bodyDef.type = b2_staticBody;
+		game::b2d_mutex.lock();
 		b2Body *body = world->CreateBody(&bodyDef);
+		game::b2d_mutex.unlock();
 		// add mesh
 		for (int i = 0; i < meshes->size(); i++)
 		{
@@ -112,7 +114,9 @@ namespace game
 				// fixtureUserData.pointer = b2fixture_types::TERRAIN;
 				fixtureUserData.pointer = (uintptr_t) new b2_user_data(ent, b2fixture_types::TERRAIN);
 				fixtureDef.userData = fixtureUserData;
+				game::b2d_mutex.lock();
 				body->CreateFixture(&fixtureDef);
+				game::b2d_mutex.unlock();
 				delete[] vertices;
 			}
 		}
@@ -145,7 +149,6 @@ namespace game
 		{
 			if (meshes->at(i).size() == 0 || meshes->at(i).size() % 3 != 0)
 			{
-				printf("Skipping mesh %d with size %zu\n", i, meshes->at(i).size());
 				continue;
 			}
 			// if (meshes[i].size() < 3)
@@ -185,8 +188,10 @@ namespace game
 
 	void box2d_system::remove_static_body(entity ent)
 	{
+		game::b2d_mutex.lock();
 		world->DestroyBody(static_bodies.get(ent));
 		static_bodies.remove(ent);
+		game::b2d_mutex.unlock();
 	}
 
 	/// @brief Creates a dynamic body with the provided entity and mesh.
@@ -295,14 +300,14 @@ namespace game
 			std::chrono::microseconds update_duration = std::chrono::duration_cast<std::chrono::microseconds>(end - before_update);
 			add_time(elapsed_ms.count());
 			// if(get_counter() % (1) == 0) printf("Elapsed time(microseconds): %ld\tUpdate duration: %ld\n", elapsed_ms.count(), update_duration.count());
-			elapsed_ms = std::chrono::duration_cast<std::chrono::microseconds>(end - last_time);
+			// elapsed_ms = std::chrono::duration_cast<std::chrono::microseconds>(end - last_time);
 			// if(get_counter() % (10) == 0)
 			// 	printf("Elapsed time(microseconds): %ld\tUpdate duration: %ld\n", elapsed_ms.count(), update_duration.count());
 
-			last_time = end;
-			if(elapsed_ms.count() < time_step_ms * 1000)
+			// last_time = end;
+			if(elapsed_ms.count() < time_step_ms * 1000 * .8)
 			{
-				std::this_thread::sleep_for(std::chrono::microseconds((time_step_ms * 1000 - elapsed_ms.count())));
+				std::this_thread::sleep_for(std::chrono::microseconds((uint64_t)(time_step_ms * 1000 * .8 - elapsed_ms.count())));
 			}
 		}
 	}
@@ -425,5 +430,10 @@ namespace game
 	bool box2d_system::contains_dynamic_body(entity ent)
 	{
 		return dynamic_bodies.contains(ent);
+	}
+
+	std::vector<entity> box2d_system::get_static_body_entities()
+	{
+		return static_bodies.get_entities();
 	}
 }

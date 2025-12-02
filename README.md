@@ -24,8 +24,12 @@ https://github.com/user-attachments/assets/f4b30d4f-84f9-4ff1-b6db-df04b9da78fe
 
 ### Current Issues
 - The lighting system needs work, something is wrong with the way the normals are calculated when the light rays bounce of the tiles.
-- Something is wrong with tiles along the edge/moving between chunks, they sometimes have visual artifacts.
+- Something is wrong with tiles along the edge/moving between chunks, they sometimes have visual artifacts. Sometimes the tiles get deleted.
+- The game is not thread safe. There are a bunch of mutexes to prevent concurrency issues, but a lot of stuff is not properly synchronized and will occasionally lead to a crash.
 - Performance. I have not needed to do any performance optimizations yet. I should probably do some in the future.
+  - The tiles that make up the chunks are moved by a task that can be run with a seperate thread for each chunk(or at least as many threads as allowed). On my machine, this task takes somewhere between 300us and 1,500us per chunk update, depending on how much is happening in the chunk. Considering the chunk updates happen at only 20 times a second, there is up to 50,000us for processing all the chunks. Of course, this would begin impacting the other systems that depend on the chunk system before hitting that limit.
+  - The collision mesh generation is also multithreaded. This one is taking between 500us and 1500us per chunk as well. This is only run if the solid tiles in the chunk have been modified, and is also only run against the 3x3 chunks surrounding the player. This task is more important to optimise, as it locks the box2d thread while the mesh is being updated(although this isn't the entire run time of the task). This would cause stuttering and make the game never feel smooth if it takes too long.
+  - The ray-tracing is done via a compute shader on the GPU. I had no idea what I was doing when I wrote this, so it is certainly not optimal. It runs fine for now, and I want to fix the appearance of the lighting before worrying about performance.
 - There is no character controller yet. Key inputs merely apply forces/set velocities to the player's box2d body. This means the player can get stuck on corners and edges, and the movement feels very sluggish.
 - Chunks are not saved to disk or unloaded from memory. Travelling far from spawn will fill up more and more memory.
 - No audio system yet.
@@ -39,7 +43,9 @@ https://github.com/user-attachments/assets/f4b30d4f-84f9-4ff1-b6db-df04b9da78fe
 - Poly2Tri [https://github.com/jhasse/poly2tri] - A library for polygon triangulation.
 
 ### Use of AI/LLMs
-I have used ChatGPT and Github Copilot to assist with writing some of the code in this project. Although entirely my fault, I attribute most of the mess that is this codebase to the use of these tools.
+I have used ChatGPT and Github Copilot to assist with writing some of the code in this project. 
+Although entirely my fault, I attribute most of the mess that is this codebase to the use of these tools.
 
 ### License
-This project is source-available and free to use for any non-commercial purpose. You may use this code for learning and personal projects, but do not use it for commercial purposes without obtaining permission from the author.
+This project is source-available and free to use for any non-commercial purpose. 
+You may use this code for learning and personal projects, but do not use it for commercial purposes without obtaining permission from the author.

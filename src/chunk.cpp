@@ -27,7 +27,7 @@ namespace game
 		{
 			for (int x = 0; x < CHUNK_SIZE; x++)
 			{
-				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 61.0;
+				double n_x = (x + chunk_x * game::CHUNK_SIZE) / 101.0;
 				double n_y = (y + chunk_y * game::CHUNK_SIZE) / 61.0;
 				double n_z = ((x + 10000) + chunk_x * game::CHUNK_SIZE) / 84.0;
 				double noise_1 = perlin_noise_1.noise3D_01(n_x, n_y, n_z);
@@ -85,6 +85,7 @@ namespace game
 					else
 					{
 						data[y][x] = game::AIR;
+						// data[y][x] = rand() % 10 == 0 ? game::AIR : game::POLLUTION;
 					}
 				}
 				// else
@@ -138,7 +139,7 @@ namespace game
 
 				// }
 
-				temperature_data[y][x] = 30;
+				temperature_data[y][x] = -10.0f;
 			}
 		}
 
@@ -155,20 +156,24 @@ namespace game
 			}
 		}
 
-		// for (int i = 0; i < 2; i++)
-		// {
-		// 	uint16_t rx = rand() % CHUNK_SIZE;
-		// 	uint16_t ry = rand() % CHUNK_SIZE;
-		// 	if (data[ry][rx] == game::AIR)
-		// 	{
-		// 		// create a task to set the tile
-		// 		game_engine::task_scheduler_pointer->add_task({&update_tile_task, new update_tile_params(chunk_x * CHUNK_SIZE + rx, chunk_y * CHUNK_SIZE + ry, game::TREE_SEED, 20.f, 0)});
-		// 	}
-		// 	else
-		// 	{
-		// 		i--;
-		// 	}
-		// }
+		if (1 == 2 && chunk_x == 0 && chunk_y == 0)
+		{
+			// create a patch of grass and dirt
+			for (int i = 0; i < 2; i++)
+			{
+				uint16_t rx = rand() % CHUNK_SIZE;
+				uint16_t ry = rand() % CHUNK_SIZE;
+				if (data[ry][rx] == game::AIR || data[ry][rx] == game::POLLUTION)
+				{
+					// create a task to set the tile
+					game_engine::task_scheduler_pointer->add_backlog_task({&update_tile_task, new update_tile_params(chunk_x * CHUNK_SIZE + rx, chunk_y * CHUNK_SIZE + ry, game::TREE_SEED, 20.f, 0)}, 1000);
+				}
+				else
+				{
+					i--;
+				}
+			}
+		}
 
 		// create solid border around world
 		// if (chunk_x == 0 || chunk_x == CHUNKS_WIDTH - 1 || chunk_y == 0 || chunk_y == CHUNKS_WIDTH - 1)
@@ -282,7 +287,28 @@ namespace game
 	void chunk::set_tile(int x, int y, uint8_t value)
 	{
 		if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE)
+		{
 			data[y][x] = value;
+		}
+		else if ((y == -1 || y == CHUNK_SIZE) != (x == -1 || x == CHUNK_SIZE))
+		{
+			if (y == -1 && neighbour_tile_buffer.side_filled[0])
+			{
+				neighbour_tile_buffer.top_tiles[x] = value;
+			}
+			else if (y == CHUNK_SIZE && neighbour_tile_buffer.side_filled[2])
+			{
+				neighbour_tile_buffer.bottom_tiles[x] = value;
+			}
+			else if (x == -1 && neighbour_tile_buffer.side_filled[3])
+			{
+				neighbour_tile_buffer.left_tiles[y] = value;
+			}
+			else if (x == CHUNK_SIZE && neighbour_tile_buffer.side_filled[1])
+			{
+				neighbour_tile_buffer.right_tiles[y] = value;
+			}
+		}
 	}
 	/// @brief Set the tile copy at the given x and y coordinates
 	void chunk::set_tile_copy(int x, int y, uint8_t value)
@@ -309,28 +335,28 @@ namespace game
 			return data[y][x];
 		else if ((y == -1 || y == CHUNK_SIZE) != (x == -1 || x == CHUNK_SIZE))
 		{
-			if (y == -1)
+			if (y == -1 && neighbour_tile_buffer.side_filled[0])
 			{
 				return neighbour_tile_buffer.top_tiles[x];
 			}
-			else if (y == CHUNK_SIZE)
+			else if (y == CHUNK_SIZE && neighbour_tile_buffer.side_filled[2])
 			{
 				return neighbour_tile_buffer.bottom_tiles[x];
 			}
-			else if (x == -1)
+			else if (x == -1 && neighbour_tile_buffer.side_filled[3])
 			{
 				return neighbour_tile_buffer.left_tiles[y];
 			}
-			else if (x == CHUNK_SIZE)
+			else if (x == CHUNK_SIZE && neighbour_tile_buffer.side_filled[1])
 			{
 				return neighbour_tile_buffer.right_tiles[y];
 			}
 			else
-				return 0;
+				return BEDROCK;
 		}
 		else
 		{
-			return 0;
+			return BEDROCK;
 		}
 	}
 
@@ -354,28 +380,28 @@ namespace game
 			return temperature_data[y][x];
 		else if ((y == -1 || y == CHUNK_SIZE) != (x == -1 || x == CHUNK_SIZE))
 		{
-			if (y == -1)
+			if (y == -1 && neighbour_tile_buffer.side_filled[0])
 			{
 				return neighbour_tile_buffer.top_temps[x];
 			}
-			else if (y == CHUNK_SIZE)
+			else if (y == CHUNK_SIZE && neighbour_tile_buffer.side_filled[2])
 			{
 				return neighbour_tile_buffer.bottom_temps[x];
 			}
-			else if (x == -1)
+			else if (x == -1 && neighbour_tile_buffer.side_filled[3])
 			{
 				return neighbour_tile_buffer.left_temps[y];
 			}
-			else if (x == CHUNK_SIZE)
+			else if (x == CHUNK_SIZE && neighbour_tile_buffer.side_filled[1])
 			{
 				return neighbour_tile_buffer.right_temps[y];
 			}
 			else
-				return 0;
+				return -280.0f;
 		}
 		else
 		{
-			return 0;
+			return -280.0f;
 		}
 	}
 
@@ -385,19 +411,19 @@ namespace game
 			temperature_data[y][x] = temperature;
 		else if ((y == -1 || y == CHUNK_SIZE) != (x == -1 || x == CHUNK_SIZE))
 		{
-			if (y == -1)
+			if (y == -1 && neighbour_tile_buffer.side_filled[0])
 			{
 				neighbour_tile_buffer.top_temps[x] = temperature;
 			}
-			else if (y == CHUNK_SIZE)
+			else if (y == CHUNK_SIZE && neighbour_tile_buffer.side_filled[2])
 			{
 				neighbour_tile_buffer.bottom_temps[x] = temperature;
 			}
-			else if (x == -1)
+			else if (x == -1 && neighbour_tile_buffer.side_filled[3])
 			{
 				neighbour_tile_buffer.left_temps[y] = temperature;
 			}
-			else if (x == CHUNK_SIZE)
+			else if (x == CHUNK_SIZE && neighbour_tile_buffer.side_filled[1])
 			{
 				neighbour_tile_buffer.right_temps[y] = temperature;
 			}
@@ -418,19 +444,19 @@ namespace game
 		}
 		else if ((y == -1 || y == CHUNK_SIZE) != (x == -1 || x == CHUNK_SIZE))
 		{
-			if (y == -1)
+			if (y == -1 && neighbour_tile_buffer.side_filled[0])
 			{
 				neighbour_tile_buffer.top_temps[x] += temperature;
 			}
-			else if (y == CHUNK_SIZE)
+			else if (y == CHUNK_SIZE && neighbour_tile_buffer.side_filled[2])
 			{
 				neighbour_tile_buffer.bottom_temps[x] += temperature;
 			}
-			else if (x == -1)
+			else if (x == -1 && neighbour_tile_buffer.side_filled[3])
 			{
 				neighbour_tile_buffer.left_temps[y] += temperature;
 			}
-			else if (x == CHUNK_SIZE)
+			else if (x == CHUNK_SIZE && neighbour_tile_buffer.side_filled[1])
 			{
 				neighbour_tile_buffer.right_temps[y] += temperature;
 			}
@@ -1025,47 +1051,43 @@ namespace game
 		int circle_center_x = x;
 		int circle_center_y = y;
 
-		int local_x = x - chunk_x * CHUNK_SIZE;
-		int local_y = y - chunk_y * CHUNK_SIZE;
-
-		int x0 = local_x - radius;
-		int x1 = local_x + radius;
-		int y0 = local_y - radius;
-		int y1 = local_y + radius;
-		if (x0 > CHUNK_SIZE || y0 > CHUNK_SIZE || x1 < 0 || y1 < 0)
+		int x0 = circle_center_x - radius;
+		int x1 = circle_center_x + radius;
+		int y0 = circle_center_y - radius;
+		int y1 = circle_center_y + radius;
+		if (x0 >= CHUNK_SIZE && y0 >= CHUNK_SIZE && x1 < 0 && y1 < 0)
 			return false;
 
 		lock_chunk();
 
 		uint32_t tiles_affected = 0;
 
-		for (int y = y0; y <= y1; y++)
+		for (int yi = y0; yi <= y1; yi++)
 		{
-			for (int x = x0; x <= x1; x++)
+			for (int xi = x0; xi <= x1; xi++)
 			{
-				if (x < 0 || y < 0 || x >= CHUNK_SIZE || y >= CHUNK_SIZE)
+				if (xi < 0 || yi < 0 || xi >= CHUNK_SIZE || yi >= CHUNK_SIZE)
 					continue;
-				if (data[y][x] == tile_type::BEDROCK || data[y][x] < SOLID_TILE_START_INDEX)
+				if (data[yi][xi] == tile_type::BEDROCK || data[yi][xi] < SOLID_TILE_START_INDEX)
 					continue;
-				if (tile_deny_list.count(data[y][x]))
+				if (tile_deny_list.count(data[yi][xi]))
 					continue;
-				if ((x - local_x) * (x - local_x) + (y - local_y) * (y - local_y) <= radius * radius)
+				if ((xi - circle_center_x) * (xi - circle_center_x) + (yi - circle_center_y) * (yi - circle_center_y) <= radius * radius)
 				{
-					tile_type t = (tile_type)data[y][x];
-					float temperature = temperature_data[y][x];
-					uint16_t misc = misc_data[y][x];
-
-					data[y][x] = rand() % 2 == 0 ? TEMPORARY_SMOKE : AIR;
+					tile_type t = (tile_type)data[yi][xi];
+					float temperature = temperature_data[yi][xi];
+					uint16_t misc = misc_data[yi][xi];
+					data[yi][xi] = rand() % 2 == 0 ? TEMPORARY_SMOKE : AIR;
 
 					// velocity away from center
-					float dx = (x + chunk_x * CHUNK_SIZE - circle_center_x);
-					float dy = (y + chunk_y * CHUNK_SIZE - circle_center_y);
+					float dx = 0.1 * (xi + chunk_x * CHUNK_SIZE - circle_center_x);
+					float dy = 0.1 * (yi + chunk_y * CHUNK_SIZE - circle_center_y);
 					float distance = sqrt(dx * dx + dy * dy);
 					float normalized_dx = distance / radius;
 					// float vel_x = dx / distance;
 					// float vel_y = dy / distance;
-
-					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(x + chunk_x * CHUNK_SIZE, y + chunk_y * CHUNK_SIZE, dx + (rand() % 100 - 50) / 50.0, -dy + (rand() % 100 - 50) / 50.0, 0.15, t, AIR, t, 250, temperature + max_temperature * (1 - normalized_dx), misc)});
+					tiles_affected++;
+					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(xi + chunk_x * CHUNK_SIZE, yi + chunk_y * CHUNK_SIZE, dx + (rand() % 100 - 50) / 50.0, -dy + (rand() % 100 - 50) / 50.0, 0.15, t, AIR, t, 250, temperature + max_temperature * (1 - normalized_dx), misc)});
 				}
 			}
 		}
@@ -1246,7 +1268,7 @@ namespace game
 			uint16_t misc1;
 			uint16_t misc2;
 
-			if (x1 == -1)
+			if (x1 == -1 && neighbour_tile_buffer.side_filled[3])
 			{
 				t1 = neighbour_tile_buffer.left_tiles[y1];
 				temp1 = neighbour_tile_buffer.left_temps[y1];
@@ -1260,8 +1282,9 @@ namespace game
 				set_tile(x2, y2, t1);
 				set_tile_temperature(x2, y2, temp1);
 				set_misc_data_at(x2, y2, misc1);
+				set_tile_moved_this_frame(x2, y2);
 			}
-			else if (x1 == CHUNK_SIZE)
+			else if (x1 == CHUNK_SIZE && neighbour_tile_buffer.side_filled[1])
 			{
 				t1 = neighbour_tile_buffer.right_tiles[y1];
 				temp1 = neighbour_tile_buffer.right_temps[y1];
@@ -1275,8 +1298,9 @@ namespace game
 				set_tile(x2, y2, t1);
 				set_tile_temperature(x2, y2, temp1);
 				set_misc_data_at(x2, y2, misc1);
+				set_tile_moved_this_frame(x2, y2);
 			}
-			else if (y1 == -1)
+			else if (y1 == -1 && neighbour_tile_buffer.side_filled[0])
 			{
 				t1 = neighbour_tile_buffer.top_tiles[x1];
 				temp1 = neighbour_tile_buffer.top_temps[x1];
@@ -1290,8 +1314,9 @@ namespace game
 				set_tile(x2, y2, t1);
 				set_tile_temperature(x2, y2, temp1);
 				set_misc_data_at(x2, y2, misc1);
+				set_tile_moved_this_frame(x2, y2);
 			}
-			else if (y1 == CHUNK_SIZE)
+			else if (y1 == CHUNK_SIZE && neighbour_tile_buffer.side_filled[2])
 			{
 				t1 = neighbour_tile_buffer.bottom_tiles[x1];
 				temp1 = neighbour_tile_buffer.bottom_temps[x1];
@@ -1305,8 +1330,9 @@ namespace game
 				set_tile(x2, y2, t1);
 				set_tile_temperature(x2, y2, temp1);
 				set_misc_data_at(x2, y2, misc1);
+				set_tile_moved_this_frame(x2, y2);
 			}
-			else if (x2 == -1)
+			else if (x2 == -1 && neighbour_tile_buffer.side_filled[3])
 			{
 				t2 = neighbour_tile_buffer.left_tiles[y2];
 				temp2 = neighbour_tile_buffer.left_temps[y2];
@@ -1320,8 +1346,9 @@ namespace game
 				set_tile(x1, y1, t2);
 				set_tile_temperature(x1, y1, temp2);
 				set_misc_data_at(x1, y1, misc2);
+				set_tile_moved_this_frame(x1, y1);
 			}
-			else if (x2 == CHUNK_SIZE)
+			else if (x2 == CHUNK_SIZE && neighbour_tile_buffer.side_filled[1])
 			{
 				t2 = neighbour_tile_buffer.right_tiles[y2];
 				temp2 = neighbour_tile_buffer.right_temps[y2];
@@ -1335,8 +1362,9 @@ namespace game
 				set_tile(x1, y1, t2);
 				set_tile_temperature(x1, y1, temp2);
 				set_misc_data_at(x1, y1, misc2);
+				set_tile_moved_this_frame(x1, y1);
 			}
-			else if (y2 == -1)
+			else if (y2 == -1 && neighbour_tile_buffer.side_filled[0])
 			{
 				t2 = neighbour_tile_buffer.top_tiles[x2];
 				temp2 = neighbour_tile_buffer.top_temps[x2];
@@ -1350,8 +1378,9 @@ namespace game
 				set_tile(x1, y1, t2);
 				set_tile_temperature(x1, y1, temp2);
 				set_misc_data_at(x1, y1, misc2);
+				set_tile_moved_this_frame(x1, y1);
 			}
-			else if (y2 == CHUNK_SIZE)
+			else if (y2 == CHUNK_SIZE && neighbour_tile_buffer.side_filled[2])
 			{
 				t2 = neighbour_tile_buffer.bottom_tiles[x2];
 				temp2 = neighbour_tile_buffer.bottom_temps[x2];
@@ -1365,6 +1394,7 @@ namespace game
 				set_tile(x1, y1, t2);
 				set_tile_temperature(x1, y1, temp2);
 				set_misc_data_at(x1, y1, misc2);
+				set_tile_moved_this_frame(x1, y1);
 			}
 			return;
 		}
@@ -1381,6 +1411,8 @@ namespace game
 		set_tile(x2, y2, tile1);
 		set_tile_temperature(x2, y2, temp1);
 		set_misc_data_at(x2, y2, misc1);
+		set_tile_moved_this_frame(x1, y1);
+		set_tile_moved_this_frame(x2, y2);
 	}
 
 	tile_simple_type get_simple_tile_type(uint8_t tile)
@@ -1416,8 +1448,13 @@ namespace game
 		return &neighbour_tile_buffer;
 	}
 
+	void chunk::clear_neighbour_tile_buffer()
+	{
+		neighbour_tile_buffer = chunk_neighbour_tile_buffer();
+	}
+
 	/// @brief Copies the edge tiles of the chunk into the provided buffer for neighbour chunk updates
-	/// @param buffer 
+	/// @param buffer
 	/// @param side The side that this chunk touches the original chunk
 	void chunk::get_neighbour_tile_buffer(chunk_neighbour_tile_buffer *buffer, uint8_t side)
 	{
@@ -1456,6 +1493,11 @@ namespace game
 
 	void chunk::update_neighbour_tiles(chunk_neighbour_tile_buffer *buffer, chunk_neighbour_tile_buffer *buffer_original, uint8_t side)
 	{
+		if (buffer == nullptr || buffer_original == nullptr || buffer->side_filled[side] == 0 || buffer_original->side_filled[side] == 0)
+		{
+			return;
+		}
+
 		lock_chunk();
 
 		switch (side)
@@ -1532,4 +1574,34 @@ namespace game
 
 		unlock_chunk();
 	}
+
+	void chunk::reset_tile_moved_this_frame()
+	{
+		for (int y = 0; y < CHUNK_SIZE; y++)
+		{
+			for (int x = 0; x < CHUNK_SIZE; x++)
+			{
+				tile_moved_this_frame[y][x] = 0;
+			}
+		}
+	}
+
+	void chunk::set_tile_moved_this_frame(int x, int y)
+	{
+		if (x < 0 || y < 0 || x >= CHUNK_SIZE || y >= CHUNK_SIZE)
+		{
+			return;
+		}
+		tile_moved_this_frame[y][x] = 1;
+	}
+
+	uint8_t chunk::get_tile_moved_this_frame(int x, int y)
+	{
+		if (x < 0 || y < 0 || x >= CHUNK_SIZE || y >= CHUNK_SIZE)
+		{
+			return 0;
+		}
+		return tile_moved_this_frame[y][x];
+	}
+
 }

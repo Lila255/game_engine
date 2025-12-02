@@ -24,6 +24,7 @@
 #include "tile_pathfinding_system.hpp"
 #include "tile_conveyor_system.hpp"
 #include "building_component_system.hpp"
+#include "inventory_system.hpp"
 
 #include "tasks.hpp"
 
@@ -31,7 +32,7 @@
 // #define radians(x) ((x) * M_PI / 180.0) // degrees to radians
 // #define raise(x) (1 << x)
 
-#define PIXEL_SCALE 4
+#define PIXEL_SCALE 5
 
 // typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 // typedef K::Point_2 point_2;

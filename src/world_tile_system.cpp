@@ -193,10 +193,16 @@ namespace game
 
 	uint8_t world_tile_system::get_tile_at(int x, int y)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
 		while (tile_x < 0)
@@ -221,10 +227,16 @@ namespace game
 
 	uint8_t world_tile_system::get_write_tile_at(int x, int y)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
 		while (tile_x < 0)
@@ -249,10 +261,16 @@ namespace game
 
 	void world_tile_system::set_tile_at_with_lock(int x, int y, uint8_t t)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		if (tile_data_map.count({chunk_x, chunk_y}) == 0)
 			return;
 
@@ -285,10 +303,16 @@ namespace game
 
 	void world_tile_system::set_tile_at_with_search_and_lock(int x, int y, uint8_t t)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		if (tile_data_map.count({chunk_x, chunk_y}) == 0)
 			return;
 		int tile_x = x % CHUNK_SIZE;
@@ -301,7 +325,7 @@ namespace game
 		{
 			tile_y += CHUNK_SIZE;
 		}
-		
+
 		std::unordered_set<tile_coord, global_tile_coord_hash> checked_tiles;
 		std::queue<tile_coord> tile_queue;
 		tile_queue.push(tile_coord(x, y));
@@ -364,10 +388,16 @@ namespace game
 
 	void world_tile_system::set_tile_copy_at(int x, int y, uint8_t t)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
 		while (tile_x < 0)
@@ -389,10 +419,16 @@ namespace game
 
 	float world_tile_system::get_tile_temperature_at(int x, int y)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
 		while (tile_x < 0)
@@ -415,10 +451,16 @@ namespace game
 
 	uint16_t world_tile_system::get_tile_misc_data_at(int x, int y)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
 		while (tile_x < 0)
@@ -441,10 +483,16 @@ namespace game
 
 	void world_tile_system::set_tile_misc_data_at(int x, int y, uint16_t value)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
 		while (tile_x < 0)
@@ -466,10 +514,16 @@ namespace game
 
 	void world_tile_system::add_tile_misc_data_at(int x, int y, int16_t value)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
 		while (tile_x < 0)
@@ -491,10 +545,16 @@ namespace game
 
 	void world_tile_system::set_tile_temperature_at(int x, int y, float temperature)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
 		while (tile_x < 0)
@@ -515,10 +575,16 @@ namespace game
 
 	void world_tile_system::add_tile_temperature(int x, int y, float temperature)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
 		while (tile_x < 0)
@@ -587,10 +653,16 @@ namespace game
 
 	void world_tile_system::set_tile_at_no_lock(int x, int y, uint8_t tile_type)
 	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
 		int chunk_x = x / CHUNK_SIZE;
 		int chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 		int tile_x = x % CHUNK_SIZE;
 		int tile_y = y % CHUNK_SIZE;
 		while (tile_x < 0)
@@ -818,13 +890,14 @@ namespace game
 	{
 		increment_counter();
 
-		game_engine::box player_box = ((game_engine::box_system*)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()))->get(game_engine::game_engine_pointer->player_entitiy).get_box();
+		game_engine::box player_box = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()))->get(game_engine::game_engine_pointer->player_entitiy).get_box();
 		int player_x = (int)(player_box.x + player_box.w / 2);
 		int player_y = (int)(player_box.y + player_box.h / 2);
-		int chunk_x = player_x / CHUNK_SIZE;
-		int chunk_y = player_y / CHUNK_SIZE;
-		if (player_x < 0) chunk_x--;
-		if (player_y < 0) chunk_y--;
+		// int chunk_x = player_x / CHUNK_SIZE;
+		// int chunk_y = player_y / CHUNK_SIZE;
+		std::pair<int32_t, int32_t> player_chunk = get_chunk_coords_from_world_coords(player_x, player_y);
+		int32_t chunk_x = player_chunk.first;
+		int32_t chunk_y = player_chunk.second;
 
 		// game::RENDERED_CHUNKS_WIDTH
 		int32_t start_chunk_x = chunk_x - game::RENDERED_CHUNKS_WIDTH / 2;
@@ -841,23 +914,37 @@ namespace game
 				else
 				{
 					chunk *c = tile_data_map[{x, y}];
-					task_scheduler_pointer->add_task({&update_chunk_tiles_task_wrapper, new update_chunk_tiles_parameters{c, this, tick_count}});
+					task_scheduler_pointer->add_task({&update_chunk_tiles_task_wrapper, new update_chunk_tiles_parameters{c, this, tick_count, x == chunk_x && y == chunk_y}});
 				}
 			}
 		}
 
-		for (int32_t y = start_chunk_y; y < start_chunk_y + game::RENDERED_CHUNKS_WIDTH; y++)
+		std::unordered_set<entity> nearby_chunks;
+		for (int32_t y = start_chunk_y + 1; y < start_chunk_y + game::RENDERED_CHUNKS_WIDTH - 1; y++)
 		{
-			for (int32_t x = start_chunk_x; x < start_chunk_x + game::RENDERED_CHUNKS_WIDTH; x++)
+			for (int32_t x = start_chunk_x + 1; x < start_chunk_x + game::RENDERED_CHUNKS_WIDTH - 1; x++)
 			{
-				if (tile_data_map.count({x, y}) == 0)
+				if (tile_data_map.count({x, y}) == 0 || chunk_entities_map.count({x, y}) == 0)
 				{
 					continue;
 				}
 				chunk *c = tile_data_map[{x, y}];
-				task_scheduler_pointer->add_task({&recalculate_chunk_outlines_task, new recalculate_chunk_outlines_parameters{c, this, chunk_entities_map[{x, y}]}});				
+				nearby_chunks.insert(chunk_entities_map[{x, y}]);
+				task_scheduler_pointer->add_task({&recalculate_chunk_outlines_task, new recalculate_chunk_outlines_parameters{c, this, chunk_entities_map[{x, y}]}});
 			}
 		}
+
+		box2d_system *b2d_system = (box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>());
+		std::vector<entity> static_body_entities = b2d_system->get_static_body_entities();
+
+		for (auto &ent : static_body_entities)
+		{
+			if (nearby_chunks.count(ent) == 0)
+			{
+				b2d_system->remove_static_body(ent);
+			}
+		}
+		// task_scheduler_pointer->add_task({&recalculate_chunk_outlines_task, new recalculate_chunk_outlines_parameters{tile_data_map[player_chunk], this, chunk_entities_map[player_chunk]}});
 
 		// for (int i = 0; i < NUM_CHUNKS; i++)
 		// for (auto &[key, c] : tile_data_map)
@@ -869,6 +956,7 @@ namespace game
 		// {
 		// 	task_scheduler_pointer->add_task({&recalculate_chunk_outlines_task, new recalculate_chunk_outlines_parameters{c, this, chunk_entities_map[key]}});
 		// }
+
 		return;
 		/*
 		{
@@ -1884,7 +1972,7 @@ namespace game
 			return nullptr;
 		}
 		return tile_data_map[{chunk_x, chunk_y}];
-	} 
+	}
 
 	std::vector<std::vector<std::pair<float, float>>> *world_tile_system::create_outlines(int x, int y)
 	{
@@ -1977,8 +2065,10 @@ namespace game
 		uint32_t num_deleted = 0;
 		int32_t chunk_x = x / CHUNK_SIZE;
 		int32_t chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
 
 		chunk *target_chunk = get_chunk(chunk_x, chunk_y);
 		if (target_chunk != nullptr)
@@ -2009,20 +2099,19 @@ namespace game
 	uint32_t world_tile_system::explode_circle(int x, int y, int radius, float max_temperature, std::unordered_set<uint8_t> tile_deny_list)
 	{
 		uint32_t num_exploded = 0;
-		int32_t chunk_x = x / CHUNK_SIZE;
-		int32_t chunk_y = y / CHUNK_SIZE;
-		if (x < 0) chunk_x--;
-		if (y < 0) chunk_y--;
-		chunk *target_chunk = get_chunk(chunk_x, chunk_y);
+		std::pair<int32_t, int32_t> chunk_coords = get_chunk_coords_from_world_coords(x, y);
+		std::pair<uint16_t, uint16_t> intra_chunk_coords = get_intra_chunk_coords_from_world_coords(x, y);
+		
+		chunk *target_chunk = get_chunk(chunk_coords.first, chunk_coords.second);
 		if (target_chunk != nullptr)
 		{
 			uint32_t modified;
-			modified = target_chunk->explode_circle(x, y, radius, max_temperature, tile_deny_list);
+			modified = target_chunk->explode_circle(intra_chunk_coords.first, intra_chunk_coords.second, radius, max_temperature, tile_deny_list);
 			num_exploded += modified;
 
 			if (modified)
 			{
-				set_modified_chunk(chunk_x, chunk_y, 1);
+				set_modified_chunk(chunk_coords.first, chunk_coords.second, 1);
 			}
 		}
 		// for (int i = 0; i < NUM_CHUNKS; i++)
@@ -2123,11 +2212,13 @@ namespace game
 				neighbour_chunks[i] = tile_data_map[{n_chunk_x, n_chunk_y}];
 			}
 		}
+		c->clear_neighbour_tile_buffer();
 		for (int i = 0; i < 4; i++)
 		{
 			if (neighbour_chunks[i] != nullptr)
 			{
 				neighbour_chunks[i]->get_neighbour_tile_buffer(c->get_neighbour_tile_buffer_pointer(), i);
+				c->get_neighbour_tile_buffer_pointer()->side_filled[i] = true;
 			}
 		}
 
@@ -2297,6 +2388,10 @@ namespace game
 
 					tile_type neighbor_tile = (tile_type)c->get_tile_using_buffer(nx, ny);
 					float neighbor_temp = c->get_tile_temperature_using_buffer(nx, ny);
+					if (neighbor_temp <= -280.0f)
+					{
+						continue;
+					}
 
 					if (neighbor_temp > temp)
 					{
@@ -2327,10 +2422,17 @@ namespace game
 			}
 		}
 
+		auto mid_time = std::chrono::high_resolution_clock::now();
+		c->reset_tile_moved_this_frame();
+		auto mid2_time = std::chrono::high_resolution_clock::now();
+		// printf("reset time: %lld us\n", std::chrono::duration_cast<std::chrono::microseconds>(mid2_time - mid_time).count());
+
 		for (int y = CHUNK_SIZE - 1; y >= 0; y--)
 		{
 			for (int x = forwards_direction ? CHUNK_SIZE - 1 : 0; x < CHUNK_SIZE && x >= 0; x += forwards_direction ? -1 : 1)
 			{
+				if (c->get_tile_moved_this_frame(x, y))
+					continue;
 				tile_type tile = (tile_type)c->get_tile(x, y);
 				float tile_temperature = c->get_tile_temperature(x, y);
 				uint16_t tile_misc_data = c->get_misc_data_at(x, y);
@@ -2340,9 +2442,56 @@ namespace game
 				tile_type right_tile = (tile_type)(c->get_tile_using_buffer(x + 1, y));
 				tile_type left_down_tile = (tile_type)(c->get_tile_using_buffer(x - 1, y + 1));
 				tile_type right_down_tile = (tile_type)(c->get_tile_using_buffer(x + 1, y + 1));
+				tile_type right_up_tile = (tile_type)(c->get_tile_using_buffer(x + 1, y - 1));
+				tile_type left_up_tile = (tile_type)(c->get_tile_using_buffer(x - 1, y - 1));
 
 				switch (tile)
 				{
+					// case AIR:
+					// 	if (below_tile != AIR && get_simple_tile_type(below_tile) == GAS)
+					// 	{
+					// 		bool below_greater = tile < below_tile;
+					// 		float below_tile_temperature = c->get_tile_temperature_using_buffer(x, y + 1);
+					// 		if ((below_greater ? -1 : 1) * 10 + below_tile_temperature - tile_temperature >= 5)
+					// 		{
+					// 			c->switch_tiles_no_lock(x, y, x, y + 1);
+					// 		}
+					// 	}
+					// 	break;
+
+				case VACCUUM:
+					if (left_tile == AIR || right_tile == AIR || below_tile == AIR)
+					{
+						c->set_tile(x, y, AIR);
+					}
+					break;
+
+				case GRASS:
+					if (right_tile == DIRT && get_simple_tile_type(right_up_tile) < SOLID && rand() % 50 == 0)
+					{
+						c->set_tile(x + 1, y, GRASS);
+					}
+					if (left_tile == DIRT && get_simple_tile_type(left_up_tile) < SOLID && rand() % 50 == 0)
+					{
+						c->set_tile(x - 1, y, GRASS);
+					}
+					if (right_down_tile == DIRT && get_simple_tile_type(right_tile) < SOLID && rand() % 50 == 0)
+					{
+						c->set_tile(x + 1, y + 1, GRASS);
+					}
+					if (left_down_tile == DIRT && get_simple_tile_type(left_tile) < SOLID && rand() % 50 == 0)
+					{
+						c->set_tile(x - 1, y + 1, GRASS);
+					}
+					if (y > 1 && right_up_tile == DIRT && get_simple_tile_type(c -> get_tile_using_buffer(x + 1, y - 2)) < SOLID && rand() % 50 == 0)
+					{
+						c->set_tile(x + 1, y - 1, GRASS);
+					}
+					if (y > 1 && left_up_tile == DIRT && get_simple_tile_type(c -> get_tile_using_buffer(x - 1, y - 2)) < SOLID && rand() % 50 == 0)
+					{
+						c->set_tile(x - 1, y - 1, GRASS);
+					}
+					break;
 				case SAND:
 					if (below_tile < SOLID_TILE_START_INDEX)
 					{
@@ -2360,8 +2509,8 @@ namespace game
 						c->switch_tiles_no_lock(x, y, x + 1, y + 1);
 					}
 					break;
-				case ASH:
-				case SNOW:
+					case ASH:
+					case SNOW:
 					if (get_simple_tile_type(below_tile) < SOLID)
 					{
 						c->switch_tiles_no_lock(x, y, x, y + 1);
@@ -2372,7 +2521,8 @@ namespace game
 					{
 						if (tile_temperature < 200.0f)
 						{
-							c->set_tile(x, y, ASH); // rand() % 2 == 0 ? ASH : TEMPORARY_SMOKE);
+							chunk_terrain_modified = true;
+							c->set_tile(x, y, ASH);
 						}
 						break;
 					}
@@ -2381,7 +2531,7 @@ namespace game
 						bool success = c->try_place_tile_with_displacement_no_lock(x, y - 1, POLLUTION, tile_temperature, 0, 0, 32);
 						if (success)
 						{
-							c->add_tile_temperature(x, y, 100.0f);
+							c->add_tile_temperature(x, y, 750.0f);
 							c->add_misc_data_at(x, y, -1);
 						}
 					}
@@ -2408,6 +2558,28 @@ namespace game
 
 					switch (simple_tile)
 					{
+					case GAS:
+						if (game_engine::in_set(tile, AIR))
+						{
+							if (params -> tick_count > 100 && ((params -> tick_count / 64) % 6 == 5 || (params -> tick_count / 50) % 8 == 7) && rand() % 999 == 0)
+							{
+								c -> set_tile(x, y, SNOW);
+								break;
+							}
+						}
+
+						if (below_tile != tile && get_simple_tile_type(below_tile) == GAS && c->get_tile_moved_this_frame(x, y + 1) == false)
+						{
+							bool below_lighter = tile > below_tile;
+							float below_tile_temperature = c->get_tile_temperature_using_buffer(x, y + 1);
+							if ((below_lighter ? 1 : -1) * 10 + below_tile_temperature - tile_temperature > 5)
+							{
+								c->switch_tiles_no_lock(x, y, x, y + 1);
+							}
+						}
+
+						break;
+
 					case LIQUID:
 						// if (tile_temperature > tile_max_temperature[tile] * 0.9f)
 						// {
@@ -2445,7 +2617,7 @@ namespace game
 							if (get_simple_tile_type(below_tile) == LIQUID)
 							{
 								bool greater_tile = tile > below_tile;
-								float below_tile_temperature = c->get_tile_temperature(x, y + 1);
+								float below_tile_temperature = c->get_tile_temperature_using_buffer(x, y + 1);
 								if (greater_tile * 10 + below_tile_temperature - tile_temperature >= 5)
 								{
 									c->switch_tiles_no_lock(x, y, x, y + 1);
@@ -2456,7 +2628,7 @@ namespace game
 							if (get_simple_tile_type(left_down_tile) == LIQUID)
 							{
 								bool greater_tile = tile > left_down_tile;
-								float left_down_tile_temperature = c->get_tile_temperature(x - 1, y + 1);
+								float left_down_tile_temperature = c->get_tile_temperature_using_buffer(x - 1, y + 1);
 								if (greater_tile * 10 + left_down_tile_temperature - tile_temperature >= 5)
 								{
 									c->switch_tiles_no_lock(x, y, x - 1, y + 1);
@@ -2467,7 +2639,7 @@ namespace game
 							if (get_simple_tile_type(right_down_tile) == LIQUID)
 							{
 								bool greater_tile = tile > right_down_tile;
-								float right_down_tile_temperature = c->get_tile_temperature(x + 1, y + 1);
+								float right_down_tile_temperature = c->get_tile_temperature_using_buffer(x + 1, y + 1);
 								if (greater_tile * 10 + right_down_tile_temperature - tile_temperature >= 5)
 								{
 									c->switch_tiles_no_lock(x, y, x + 1, y + 1);
@@ -2485,6 +2657,9 @@ namespace game
 		{
 			for (int x = forwards_direction ? 0 : CHUNK_SIZE - 1; x < CHUNK_SIZE && x >= 0; x += forwards_direction ? 1 : -1)
 			{
+				if (c->get_tile_moved_this_frame(x, y))
+					continue;
+
 				tile_type tile = (tile_type)c->get_tile_using_buffer(x, y);
 				float tile_temperature = c->get_tile_temperature(x, y);
 
@@ -2519,56 +2694,56 @@ namespace game
 					switch (simple_tile)
 					{
 					case GAS:
-						if (get_simple_tile_type(above_tile) == GAS)
+						if (above_tile != tile && get_simple_tile_type(above_tile) == GAS) // && c -> get_tile_moved_this_frame(x, y - 1) == false)
 						{
-							bool above_greater = tile < above_tile;
-							float above_tile_temperature = c->get_tile_temperature(x, y - 1);
+							bool above_lighter = tile > above_tile;
+							float above_tile_temperature = c->get_tile_temperature_using_buffer(x, y - 1);
 
-							if (above_greater * 50 + tile_temperature - above_tile_temperature >= .5)
+							if ((above_lighter ? -1 : 1) * 10 + tile_temperature - above_tile_temperature > 5)
 							{
 								c->switch_tiles_no_lock(x, y, x, y - 1);
 								break;
 							}
 						}
-						if (get_simple_tile_type(left_up_tile) == GAS && get_simple_tile_type(left_tile) == GAS)
+						if (left_up_tile != tile && get_simple_tile_type(left_up_tile) == GAS && get_simple_tile_type(left_tile) == GAS) // && c -> get_tile_moved_this_frame(x - 1, y - 1) == false)
 						{
-							bool left_up_greater = tile < left_up_tile;
-							float left_up_tile_temperature = c->get_tile_temperature(x - 1, y - 1);
+							bool left_up_lighter = tile > left_up_tile;
+							float left_up_tile_temperature = c->get_tile_temperature_using_buffer(x - 1, y - 1);
 
-							if (left_up_greater * 50 + tile_temperature - left_up_tile_temperature >= .5)
+							if ((left_up_lighter ? -1 : 1) * 10 + tile_temperature - left_up_tile_temperature >= 5)
 							{
 								c->switch_tiles_no_lock(x, y, x - 1, y - 1);
 								break;
 							}
 						}
-						if (get_simple_tile_type(right_up_tile) == GAS && get_simple_tile_type(right_tile) == GAS)
+						if (right_up_tile != tile && get_simple_tile_type(right_up_tile) == GAS && get_simple_tile_type(right_tile) == GAS) // && c -> get_tile_moved_this_frame(x + 1, y - 1) == false)
 						{
-							bool right_up_greater = tile < right_up_tile;
-							float right_up_tile_temperature = c->get_tile_temperature(x + 1, y - 1);
+							bool right_up_lighter = tile > right_up_tile;
+							float right_up_tile_temperature = c->get_tile_temperature_using_buffer(x + 1, y - 1);
 
-							if (right_up_greater * 50 + tile_temperature - right_up_tile_temperature >= .5)
+							if ((right_up_lighter ? -1 : 1) * 10 + tile_temperature - right_up_tile_temperature >= 5)
 							{
 								c->switch_tiles_no_lock(x, y, x + 1, y - 1);
 								break;
 							}
 						}
-						if (get_simple_tile_type(left_tile) == GAS)
+						if (left_tile != tile && get_simple_tile_type(left_tile) == GAS) // && c -> get_tile_moved_this_frame(x - 1, y) == false)
 						{
-							bool left_greater = tile < left_tile;
-							float left_tile_temperature = c->get_tile_temperature(x - 1, y);
+							bool left_lighter = tile > left_tile;
+							float left_tile_temperature = c->get_tile_temperature_using_buffer(x - 1, y);
 
-							if (left_greater * 50 + tile_temperature - left_tile_temperature >= .5)
+							if ((left_lighter ? -1 : 1) * 10 + tile_temperature - left_tile_temperature >= 5)
 							{
 								c->switch_tiles_no_lock(x, y, x - 1, y);
 								break;
 							}
 						}
-						if (get_simple_tile_type(right_tile) == GAS)
+						if (right_tile != tile && get_simple_tile_type(right_tile) == GAS) // && c -> get_tile_moved_this_frame(x + 1, y) == false)
 						{
-							bool right_greater = tile < right_tile;
-							float right_tile_temperature = c->get_tile_temperature(x + 1, y);
+							bool right_lighter = tile > right_tile;
+							float right_tile_temperature = c->get_tile_temperature_using_buffer(x + 1, y);
 
-							if (right_greater * 50 + tile_temperature - right_tile_temperature >= .5)
+							if ((right_lighter ? -1 : 1) * 10 + tile_temperature - right_tile_temperature >= 5)
 							{
 								c->switch_tiles_no_lock(x, y, x + 1, y);
 								break;
@@ -2579,6 +2754,53 @@ namespace game
 				}
 			}
 		}
+		
+		if (params -> is_player_chunk)
+		{
+			entity character_ent = game_engine::game_engine_pointer->player_entitiy;
+			b2Body *character_body = ((box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<box2d_system>()))->get_dynamic_body(character_ent);
+			// b2d_mutex.lock();
+			b2Vec2 velocity = character_body->GetLinearVelocity();
+			// b2d_mutex.unlock();
+			game_engine::box character_box = ((game_engine::box_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()))->get(character_ent).get_box();
+
+			for (int y = (int)character_box.y; y < (int)(character_box.y + character_box.h + 2); y++)
+			{
+				for (int x = (int)character_box.x - 1; x < (int)(character_box.x + character_box.w + 2); x++)
+				{
+					if (get_chunk_coords_from_world_coords(x, y) != std::pair<int32_t, int32_t>{c->chunk_x, c->chunk_y})
+					{
+						continue;
+					}
+					std::pair<uint16_t, uint16_t> intra_chunk_coords = get_intra_chunk_coords_from_world_coords(x, y);
+					if (intra_chunk_coords.first >= 0 && intra_chunk_coords.first < CHUNK_SIZE && intra_chunk_coords.second >= 0 && intra_chunk_coords.second < CHUNK_SIZE)
+					{
+						tile_type tile = (tile_type)c->get_tile(intra_chunk_coords.first, intra_chunk_coords.second);
+						
+							
+						bool displace_tile = false;
+						if (tile >= SOLID_TILE_START_INDEX && !is_solid_tile[tile])
+						{
+							displace_tile = true;
+						}
+						else if (velocity.y * velocity.y + velocity.x * velocity.x > 3 && tile >= LIQUID_TILE_START_INDEX && tile < SOLID_TILE_START_INDEX)
+						{
+							displace_tile = true;
+						}
+						if (displace_tile)
+						{
+							c -> set_tile(intra_chunk_coords.first, intra_chunk_coords.second, VACCUUM);
+							float tile_temp = c -> get_tile_temperature(intra_chunk_coords.first, intra_chunk_coords.second);
+							uint16_t tile_misc = c -> get_misc_data_at(intra_chunk_coords.first, intra_chunk_coords.second);
+							float debri_y = character_box.y - 2 > y ? character_box.y - 1 : y;
+							float debri_x = character_box.x + (velocity.x > 0 ? character_box.w + 1 : -1);
+							game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(debri_x , debri_y, velocity.x * 0.1f, velocity.y * 0.1f, 0.5f, tile, VACCUUM, tile, 250, tile_temp, tile_misc)});
+						}
+					}
+				}
+			}
+		}
+		
 		if (chunk_terrain_modified)
 		{
 			set_modified_chunk(c->chunk_x, c->chunk_y, 1);
@@ -2586,10 +2808,7 @@ namespace game
 
 		c->unlock_chunk();
 
-		auto end_time = std::chrono::high_resolution_clock::now();
 
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-		// printf("Chunk (%d, %d) update took %lld microseconds\n", c->chunk_x, c->chunk_y, duration.count());
 
 		c->lock_chunk_copy();
 		c->lock_chunk_shared();
@@ -2599,6 +2818,9 @@ namespace game
 		c->unlock_chunk_shared();
 		c->unlock_chunk_copy();
 
+		auto end_time = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+		// printf("Chunk (%d, %d) update took %lld microseconds\n", c->chunk_x, c->chunk_y, duration.count());
 		for (int i = 0; i < 4; i++)
 		{
 			if (neighbour_chunks[i] != nullptr)
@@ -2637,19 +2859,23 @@ namespace game
 		world_tile_system *wts = params->world_tile_system_pointer;
 
 		c->lock_chunk_shared();
+		auto start_time = std::chrono::high_resolution_clock::now();
 		if (wts->get_modified_chunk(c->chunk_x, c->chunk_y) == 0)
 		{
 			c->unlock_chunk_shared();
 			return true;
 		}
 		c->unlock_chunk_shared();
-		
+
 		std::vector<std::vector<std::pair<float, float>>> *outlines = new std::vector<std::vector<std::pair<float, float>>>();
 		c->create_outlines(outlines);
 		wts->set_modified_chunk(c->chunk_x, c->chunk_y, 0);
 
 		game::box2d_system *box2d_system_pointer = (game::box2d_system *)game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>());
 		box2d_system_pointer->update_static_outlines(params->chunk_entity, outlines);
+		auto end_time = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+		printf("Chunk (%d, %d) outline recalculation took %lld microseconds\n", c->chunk_x, c->chunk_y, duration.count());
 		return true;
 	}
 
@@ -2663,16 +2889,79 @@ namespace game
 	bool world_tile_system::generate_chunk_task(void *parameters)
 	{
 		generate_chunk_parameters *params = (generate_chunk_parameters *)parameters;
-		
+
 		if (tile_data_map.count({params->chunk_x, params->chunk_y}) > 0)
 		{
 			// chunk already exists
 			return true;
 		}
 		chunk *new_chunk = new chunk(params->chunk_x, params->chunk_y);
+
 		new_chunk->create_chunk(params->chunk_x, params->chunk_y);
+		entity chunk_entity = game_engine::game_engine_pointer->create_entity();
 		tile_data_map[{params->chunk_x, params->chunk_y}] = new_chunk;
+		chunk_entities_map[{params->chunk_x, params->chunk_y}] = chunk_entity;
+		modified_chunks_map[{params->chunk_x, params->chunk_y}] = 1;
 
 		return true;
 	}
+
+	bool world_tile_system::has_line_of_sight(int32_t x1, int32_t y1, int32_t x2, int32_t y2, std::unordered_set<tile_type> tile_deny_list)
+	{
+		float current_x_f = x1;
+		float current_y_f = y1;
+
+		float angle = atan2f((float)(y2 - y1), (float)(x2 - x1));
+		float dx = cosf(angle);
+		float dy = sinf(angle);
+		float distance = sqrtf((float)((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)));
+
+		for (float d = 0; d < distance; d += 0.5f)
+		{
+			current_x_f = x1 + dx * d;
+			current_y_f = y1 + dy * d;
+			int32_t current_x = (int32_t)roundf(current_x_f);
+			int32_t current_y = (int32_t)roundf(current_y_f);
+
+			tile_type tile = (tile_type)get_tile_at(current_x, current_y);
+			if (tile >= SOLID_TILE_START_INDEX && tile_deny_list.count(tile) == 0)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	std::pair<int32_t, int32_t> world_tile_system::get_chunk_coords_from_world_coords(int32_t x, int32_t y)
+	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
+
+		int32_t chunk_x = x / CHUNK_SIZE;
+		int32_t chunk_y = y / CHUNK_SIZE;
+		if (x < 0)
+			chunk_x--;
+		if (y < 0)
+			chunk_y--;
+		return {chunk_x, chunk_y};
+	}
+
+	std::pair<uint16_t, uint16_t> world_tile_system::get_intra_chunk_coords_from_world_coords(int32_t x, int32_t y)
+	{
+		if (x < 0)
+			x--;
+		if (y < 0)
+			y--;
+
+		int32_t intra_chunk_x = x % CHUNK_SIZE;
+		int32_t intra_chunk_y = y % CHUNK_SIZE;
+		if (intra_chunk_x < 0)
+			intra_chunk_x += CHUNK_SIZE;
+		if (intra_chunk_y < 0)
+			intra_chunk_y += CHUNK_SIZE;
+		return {intra_chunk_x, intra_chunk_y};
+	}
+
 }

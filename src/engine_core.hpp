@@ -41,8 +41,10 @@ namespace game_engine
 	//     // -1.000000, 1.000000, -1.000000, 1.000000
 	// };
 	extern float projection_matrix[16];
+	extern float projection_matrix_ortho[16];
 	
 	extern float view_matrix[16];
+	extern float view_matrix_ortho[16];
 
 	struct component
 	{
