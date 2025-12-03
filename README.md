@@ -19,8 +19,9 @@ I will need to add some external threat that would oppose the factory's expansio
 ### Gifs
 https://github.com/user-attachments/assets/580635cc-e4bf-42a1-9ac8-97a31d6aa7ca
 
-
 https://github.com/user-attachments/assets/f4b30d4f-84f9-4ff1-b6db-df04b9da78fe
+
+https://github.com/user-attachments/assets/144d4139-b1ad-4052-90d6-b4781b6a8de5
 
 ### Current Issues
 - The lighting system needs work, something is wrong with the way the normals are calculated when the light rays bounce of the tiles.
