@@ -839,6 +839,7 @@ namespace game
 		return false;
 	}
 
+
 	bool world_tile_system::try_place_tile_flush_with_displacement_no_lock(int x, int y, tile_type tile_type, float temperature, uint16_t misc_data, int recursion_depth, int search_size)
 	{
 		uint8_t search_width = 3;
@@ -871,7 +872,7 @@ namespace game
 						}
 					}
 
-					if (solid_neighbours > best_solid_neighbours)
+					if (solid_neighbours > best_solid_neighbours || solid_neighbours == best_solid_neighbours && (i == 0 && j == 0))
 					{
 						best_solid_neighbours = solid_neighbours;
 						best_tile = {check_x, check_y};
@@ -881,7 +882,23 @@ namespace game
 		}
 		if (best_solid_neighbours >= 0)
 		{
-			return try_place_tile_with_displacement_no_lock(best_tile.first, best_tile.second, tile_type, temperature, misc_data, recursion_depth, search_size);
+			std::pair<int32_t, int32_t> chunk_coord = get_chunk_coords_from_world_coords(best_tile.first, best_tile.second);
+			if (tile_data_map.count(chunk_coord) == 0)
+			{
+				return false;
+			}
+			std::pair<uint16_t, uint16_t> local_coords = get_intra_chunk_coords_from_world_coords(best_tile.first, best_tile.second);
+			chunk *c = tile_data_map[chunk_coord];
+			c -> lock_chunk();
+			bool success = c->try_place_tile_with_displacement_no_lock(local_coords.first, local_coords.second, tile_type, temperature, misc_data, recursion_depth, search_size);
+			// if (!success)
+			// {
+			// 	bool success2 = c->try_place_tile_with_displacement_no_lock(local_coords.first, local_coords.second, tile_type, temperature, misc_data, recursion_depth, search_size);
+			// 	printf("failed to place tile at best tile\n");
+			// }
+			c -> unlock_chunk();
+			return success;
+			// return try_place_tile_with_displacement_no_lock(best_tile.first, best_tile.second, tile_type, temperature, misc_data, recursion_depth, search_size);
 		}
 		return false;
 	}
@@ -920,16 +937,21 @@ namespace game
 		}
 
 		std::unordered_set<entity> nearby_chunks;
-		for (int32_t y = start_chunk_y + 1; y < start_chunk_y + game::RENDERED_CHUNKS_WIDTH - 1; y++)
+		for (int32_t y = start_chunk_y; y < start_chunk_y + game::RENDERED_CHUNKS_WIDTH; y++)
 		{
-			for (int32_t x = start_chunk_x + 1; x < start_chunk_x + game::RENDERED_CHUNKS_WIDTH - 1; x++)
+			for (int32_t x = start_chunk_x; x < start_chunk_x + game::RENDERED_CHUNKS_WIDTH; x++)
 			{
 				if (tile_data_map.count({x, y}) == 0 || chunk_entities_map.count({x, y}) == 0)
 				{
 					continue;
 				}
-				chunk *c = tile_data_map[{x, y}];
 				nearby_chunks.insert(chunk_entities_map[{x, y}]);
+				if (x == start_chunk_x || y == start_chunk_y || x == start_chunk_x + game::RENDERED_CHUNKS_WIDTH - 1 || y == start_chunk_y + game::RENDERED_CHUNKS_WIDTH - 1)
+				{
+					continue;	// only update 3x3, but dont delete 5x5
+				}
+
+				chunk *c = tile_data_map[{x, y}];
 				task_scheduler_pointer->add_task({&recalculate_chunk_outlines_task, new recalculate_chunk_outlines_parameters{c, this, chunk_entities_map[{x, y}]}});
 			}
 		}
@@ -2063,23 +2085,28 @@ namespace game
 	uint32_t world_tile_system::delete_circle(int x, int y, int radius, std::unordered_set<uint8_t> tile_deny_list)
 	{
 		uint32_t num_deleted = 0;
-		int32_t chunk_x = x / CHUNK_SIZE;
-		int32_t chunk_y = y / CHUNK_SIZE;
-		if (x < 0)
-			chunk_x--;
-		if (y < 0)
-			chunk_y--;
+		std::unordered_set<std::pair<int32_t, int32_t>, global_tile_pair_hash> affected_chunks;
 
-		chunk *target_chunk = get_chunk(chunk_x, chunk_y);
-		if (target_chunk != nullptr)
+		affected_chunks.insert(get_chunk_coords_from_world_coords(x, y));
+		affected_chunks.insert(get_chunk_coords_from_world_coords(x + radius, y));
+		affected_chunks.insert(get_chunk_coords_from_world_coords(x - radius, y));
+		affected_chunks.insert(get_chunk_coords_from_world_coords(x, y + radius));
+		affected_chunks.insert(get_chunk_coords_from_world_coords(x, y - radius));
+		
+
+		for (auto &[chunk_x, chunk_y] : affected_chunks)
 		{
-			uint32_t modified;
-			modified = target_chunk->delete_circle(x, y, radius, tile_deny_list);
-			num_deleted += modified;
-
-			if (modified)
+			chunk *target_chunk = get_chunk(chunk_x, chunk_y);
+			if (target_chunk != nullptr)
 			{
-				set_modified_chunk(chunk_x, chunk_y, 1);
+				uint32_t modified;
+				modified = target_chunk->delete_circle(x, y, radius, tile_deny_list);
+				num_deleted += modified;
+
+				if (modified)
+				{
+					set_modified_chunk(chunk_x, chunk_y, 1);
+				}
 			}
 		}
 		// for (int i = 0; i < NUM_CHUNKS; i++)
@@ -2559,14 +2586,14 @@ namespace game
 					switch (simple_tile)
 					{
 					case GAS:
-						if (game_engine::in_set(tile, AIR))
-						{
-							if (params -> tick_count > 100 && ((params -> tick_count / 64) % 6 == 5 || (params -> tick_count / 50) % 8 == 7) && rand() % 999 == 0)
-							{
-								c -> set_tile(x, y, SNOW);
-								break;
-							}
-						}
+						// if (game_engine::in_set(tile, AIR))
+						// {
+						// 	if (params -> tick_count > 100 && ((params -> tick_count / 64) % 6 == 5 || (params -> tick_count / 50) % 8 == 7) && rand() % 999 == 0)
+						// 	{
+						// 		c -> set_tile(x, y, SNOW);
+						// 		break;
+						// 	}
+						// }
 
 						if (below_tile != tile && get_simple_tile_type(below_tile) == GAS && c->get_tile_moved_this_frame(x, y + 1) == false)
 						{
@@ -2875,7 +2902,7 @@ namespace game
 		box2d_system_pointer->update_static_outlines(params->chunk_entity, outlines);
 		auto end_time = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-		printf("Chunk (%d, %d) outline recalculation took %lld microseconds\n", c->chunk_x, c->chunk_y, duration.count());
+		// printf("Chunk (%d, %d) outline recalculation took %lld microseconds\n", c->chunk_x, c->chunk_y, duration.count());
 		return true;
 	}
 

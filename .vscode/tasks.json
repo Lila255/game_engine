@@ -154,6 +154,26 @@
                 "isDefault": true
             },
             "problemMatcher": []
+        },
+        // ckean the cmake build files
+        {
+            "label": "CMake Clean",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                ".",
+                "--target",
+                "clean"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
         }
     ],
     "version": "2.0.0"

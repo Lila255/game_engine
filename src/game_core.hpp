@@ -94,7 +94,6 @@ namespace game
 						// 	proj_system->create_projectile(e, (fixture_a->GetBody()->GetPosition().x + glsl_helper::projectile_width / 2), (fixture_a->GetBody()->GetPosition().y + glsl_helper::projectile_height / 2), (rand() % 360) / 360.0f, 250.f, 1.f, b2fixture_types::DEBRIS);
 						// }
 						
-						printf("soginds\n");
 
 						// create flying_creature_nest
 						// game_engine::task_scheduler_pointer->add_task({&delete_circle_task, new delete_circle_params((int)(fixture_a->GetBody()->GetPosition().x * game::box2d_scale + glsl_helper::projectile_width / 2), (int)(fixture_a->GetBody()->GetPosition().y * game::box2d_scale + glsl_helper::projectile_height / 2), explosion_radius)});
@@ -159,6 +158,7 @@ namespace game
 						{
 							projectile &proj = proj_system->get_projectile(proj_ud->ent);
 							game_engine::task_scheduler_pointer->add_task({update_tile_flush_task, new update_tile_params(fixture_a->GetBody()->GetPosition().x * game::box2d_scale, fixture_a->GetBody()->GetPosition().y * game::box2d_scale, debri_tile_type, proj.tile_temperature, proj.tile_misc_data)});
+							proj_system->remove_projectile(proj_ud->ent);
 						}
 						ud_a->type = b2fixture_types::EMPTY;
 					}
@@ -178,6 +178,7 @@ namespace game
 						{
 							projectile &proj = proj_system->get_projectile(proj_ud->ent);
 							game_engine::task_scheduler_pointer->add_task({update_tile_flush_task, new update_tile_params(fixture_b->GetBody()->GetPosition().x * game::box2d_scale, fixture_b->GetBody()->GetPosition().y * game::box2d_scale, debri_tile_type, proj.tile_temperature, proj.tile_misc_data)});
+							proj_system->remove_projectile(proj_ud->ent);
 						}
 						ud_b->type = b2fixture_types::EMPTY;
 					}

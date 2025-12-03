@@ -93,10 +93,10 @@ namespace game_engine
 		GLuint program = 0;
 		std::vector<texture> textures;
 		sprite_type type = STATIC_IMAGE;
-		bool is_ui = false;
+		uint8_t is_ui = 0;
 
-		sprite() : is_ui(false) {}
-		sprite(GLuint program) : program(program), is_ui(false) {}
+		sprite() {}
+		sprite(GLuint program, uint8_t is_ui) : program(program), is_ui(is_ui) {}
 
 		void add_texture(texture t)
 		{
@@ -112,7 +112,7 @@ namespace game_engine
 				program = other.program;
 				textures = other.textures;
 				type = other.type;
-				is_ui = false;
+				is_ui = other.is_ui;
 			}
 			return *this;
 		}
@@ -164,7 +164,6 @@ namespace game_engine
 
 		bool contains_ent(entity ent)
 		{
-			printf("box_system::contains_ent(%d)\n", ent);
 			return m_boxes.contains(ent);
 		}
 	};
@@ -255,46 +254,46 @@ namespace game_engine
 
 		/// @brief Update the VBO for the given entity.
 		/// @param ent The entity to update the VBO for. Entity must contain a box component to pull values from
-		// void update(entity ent)
-		// {
-		// 	// Get the box component
-		// 	box b = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()))->get(ent).get_box();
-		// 	// Create the vertex data
-		// 	// float vertex_data[] = {
-		// 	//     b.x, b.y, b.z, 0.0f, 0.0f,
-		// 	//     b.x + b.w, b.y, b.z, 1.0f, 0.0f,
-		// 	//     b.x + b.w, b.y + b.h, b.z, 1.0f, 1.0f,
-		// 	//     b.x, b.y + b.h, b.z, 0.0f, 1.0f
-		// 	// };
-		// 	// verticies data
-		// 	float vertices[] = {
-		// 		b.x, b.y, b.z,
-		// 		b.x + b.w, b.y, b.z,
-		// 		b.x + b.w, b.y + b.h, b.z,
-		// 		b.x, b.y + b.h, b.z};
-		// 	// texture data
-		// 	float texture_data[] = {
-		// 		0.0f, 0.0f,
-		// 		1.0f, 0.0f,
-		// 		1.0f, 1.0f,
-		// 		0.0f, 1.0f};
+		void update(entity ent)
+		{
+			// Get the box component
+			box b = ((box_system *)game_engine_pointer->get_system(family::type<box_system>()))->get(ent).get_box();
+			// Create the vertex data
+			// float vertex_data[] = {
+			//     b.x, b.y, b.z, 0.0f, 0.0f,
+			//     b.x + b.w, b.y, b.z, 1.0f, 0.0f,
+			//     b.x + b.w, b.y + b.h, b.z, 1.0f, 1.0f,
+			//     b.x, b.y + b.h, b.z, 0.0f, 1.0f
+			// };
+			// verticies data
+			float vertices[] = {
+				b.x, b.y, b.z,
+				b.x + b.w, b.y, b.z,
+				b.x + b.w, b.y + b.h, b.z,
+				b.x, b.y + b.h, b.z};
+			// texture data
+			float texture_data[] = {
+				0.0f, 0.0f,
+				1.0f, 0.0f,
+				1.0f, 1.0f,
+				0.0f, 1.0f};
 
-		// 	// Bind the VAO
-		// 	glBindVertexArray(m_vaos.get(ent));
+			// Bind the VAO
+			glBindVertexArray(m_vaos.get(ent));
 
-		// 	// Bind the VBO
-		// 	glBindBuffer(GL_ARRAY_BUFFER, m_vbos.get(ent));
+			// Bind the VBO
+			glBindBuffer(GL_ARRAY_BUFFER, m_vbos.get(ent));
 
-		// 	// Upload the vertex data to the GPU
-		// 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(texture_data), NULL, GL_DYNAMIC_DRAW);
-		// 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-		// 	glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(texture_data), texture_data);
+			// Upload the vertex data to the GPU
+			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(texture_data), NULL, GL_DYNAMIC_DRAW);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+			glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(texture_data), texture_data);
 
-		// 	// Unbind the VB0
-		// 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-		// 	// Unbind the VAO
-		// 	glBindVertexArray(0);
-		// }
+			// Unbind the VB0
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			// Unbind the VAO
+			glBindVertexArray(0);
+		}
 
 		void update(entity ent, box b, std::vector<float> vertices = {}, std::vector<float> texture_data = {})
 		{
@@ -450,20 +449,21 @@ namespace game_engine
 				// GLuint texture_loc = glGetUniformLocation(program, "tex");
 				// glUniform1i(texture_loc, 0);
 
-				// if (!t.is_ui)
-				// {
+				if (!t.is_ui)
+				{
 					GLuint projection_location = glGetUniformLocation(program, "projection");
 					glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix);
 					GLuint view_location = glGetUniformLocation(program, "view");
 					glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix);
-				// }
-				// else
-				// {
-				// 	GLuint projection_location = glGetUniformLocation(program, "projection");
-				// 	glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix_ortho);
-				// 	GLuint view_location = glGetUniformLocation(program, "view");
-				// 	glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix_ortho);
-				// }
+				}
+				else
+				{
+					GLuint projection_location = glGetUniformLocation(program, "projection");
+					glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection_matrix_ortho);
+					GLuint view_location = glGetUniformLocation(program, "view");
+					glUniformMatrix4fv(view_location, 1, GL_FALSE, view_matrix_ortho);
+				}
+
 				switch (t.type)
 				{
 				case STATIC_IMAGE:

@@ -60,6 +60,12 @@ namespace game_engine
 			m_sparse.resize(entity_capacity, -1);
 		}
 
+		void shrink_to_fit()
+		{
+			m_dense.shrink_to_fit();
+			m_components.shrink_to_fit();
+		}
+
 		/// @brief Add an entity and its component to the set
 		/// @param ent The entity to add
 		/// @param comp The component to add

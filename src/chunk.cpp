@@ -1087,7 +1087,19 @@ namespace game
 					// float vel_x = dx / distance;
 					// float vel_y = dy / distance;
 					tiles_affected++;
-					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(xi + chunk_x * CHUNK_SIZE, yi + chunk_y * CHUNK_SIZE, dx + (rand() % 100 - 50) / 50.0, -dy + (rand() % 100 - 50) / 50.0, 0.15, t, AIR, t, 250, temperature + max_temperature * (1 - normalized_dx), misc)});
+					game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(
+							xi + chunk_x * CHUNK_SIZE, 				// global tile coord x
+							yi + chunk_y * CHUNK_SIZE, 				// global tile coord y
+							dx + (rand() % 100 - 50) / 150.0, 		// vel x
+							-dy + (rand() % 100 - 50) / 150.0, 		// vel y
+							0.15,									// projectile radius
+							t, 										// tile type
+							VACCUUM, 								// permanent tile replace type
+							t, 										// temporary tile replace type
+							250, 									// min lifetime ticks		
+							temperature,							// temperature
+							misc									// misc data	
+						)});
 				}
 			}
 		}
@@ -1130,6 +1142,7 @@ namespace game
 	bool chunk::try_place_tile_with_displacement_no_lock(int x, int y, tile_type tile_t, float temperature, uint16_t misc_data, int recursion_depth, int search_size)
 	{
 		std::unordered_set<tile_coord, intra_chunk_tile_coord_hash> checked_tiles;
+		uint32_t checked_tile_count = 0;
 
 		std::queue<tile_coord> tile_queue;
 		tile_queue.push(tile_coord(x, y));
@@ -1139,10 +1152,15 @@ namespace game
 		tile_simple_type simple_type = get_simple_tile_type(tile_t);
 
 		bool found_non_solid = false;
-		while (!tile_queue.empty() && checked_tiles.size() <= search_size)
+		while (!tile_queue.empty() && checked_tile_count <= search_size)
 		{
 			tile_coord current = tile_queue.front();
 			tile_queue.pop();
+
+			if (checked_tiles.count(current))
+				continue;
+			checked_tiles.insert(current);
+			checked_tile_count++;
 
 			if (current.x < 0 || current.y < 0 || current.x >= CHUNK_SIZE || current.y >= CHUNK_SIZE)
 				continue;
@@ -1153,7 +1171,7 @@ namespace game
 			{
 				found_non_solid = true;
 				tile_queue = std::queue<tile_coord>();
-				checked_tiles.clear();
+				// checked_tiles.clear();
 			}
 
 			if (found_non_solid && !is_solid_tile[current_tile] && (recursion_depth == 0 || current_tile < tile_t))
@@ -1181,31 +1199,51 @@ namespace game
 						set_tile(current.x, current.y, tile_t);
 						set_tile_temperature(current.x, current.y, current_temp);
 						set_misc_data_at(current.x, current.y, current_misc_data);
+						return true;
 					}
-					return success;
 				}
 			}
 
 			for (int i = 0; i < 4; i++)
 			{
 				tile_coord new_tile = tile_coord(current.x + dx[i], current.y + dy[i]);
-				if (!checked_tiles.count(new_tile))
-				{
+				if (new_tile.x < 0 || new_tile.y < 0 || new_tile.x >= CHUNK_SIZE || new_tile.y >= CHUNK_SIZE)
+					continue;
+				
+				// if (!checked_tiles.count(new_tile))
+				// {
 					if (found_non_solid)
 					{
 						if (is_solid_tile[get_tile(new_tile.x, new_tile.y)] == 0)
 						{
 							tile_queue.push(new_tile);
-							checked_tiles.insert(new_tile);
+							// checked_tiles.insert(new_tile);
 						}
 					}
 					else
 					{
 						tile_queue.push(new_tile);
-						checked_tiles.insert(new_tile);
+						// checked_tiles.insert(new_tile);
 					}
-				}
+				// }
 			}
+			if (tile_queue.empty() && found_non_solid)
+			{
+				found_non_solid = false;
+
+				for (int i = 0; i < 4; i++)
+				{
+					tile_coord new_tile = tile_coord(current.x + dx[i], current.y + dy[i]);
+					if (new_tile.x < 0 || new_tile.y < 0 || new_tile.x >= CHUNK_SIZE || new_tile.y >= CHUNK_SIZE)
+						continue;
+					
+					// if (!checked_tiles.count(new_tile))
+					// {
+						tile_queue.push(new_tile);
+					// 	checked_tiles.insert(new_tile);
+					// }
+				}
+			} 
 		}
 
 		return false;

@@ -24,6 +24,7 @@ namespace game
 		game_engine::box_system *box_sys;
 		game_engine::texture_vbo_system *texture_vbo_sys;
 		tile_pathfinding_system* pathfinding_system;
+		world_tile_system* world_tiles;
 		bool running = 0;
 		const uint64_t time_step_ms = 50;
 		
@@ -36,7 +37,7 @@ namespace game
 		void update(uint64_t tick_count);
 		void update_rendering(uint64_t tick_count);
 		flying_creature_system() = delete;
-		flying_creature_system(game::box2d_system * b2d_sys, game_engine::render_system * render_system, game_engine::box_system *box_sys, game_engine::texture_vbo_system *texture_vbo_sys, tile_pathfinding_system* pathfinding_system) : b2d_system(b2d_sys), render_sys(render_system), box_sys(box_sys), texture_vbo_sys(texture_vbo_sys), pathfinding_system(pathfinding_system)
+		flying_creature_system(game::box2d_system * b2d_sys, game_engine::render_system * render_system, game_engine::box_system *box_sys, game_engine::texture_vbo_system *texture_vbo_sys, tile_pathfinding_system* pathfinding_system, world_tile_system* world_tiles) : b2d_system(b2d_sys), render_sys(render_system), box_sys(box_sys), texture_vbo_sys(texture_vbo_sys), pathfinding_system(pathfinding_system), world_tiles(world_tiles)
 		{
 			task_scheduler_pointer = new game_engine::task_scheduler();
 		}

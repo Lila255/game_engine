@@ -10,6 +10,7 @@
 static std::vector<std::vector<std::vector<std::pair<float, float>>>> chunk_outlines;
 
 game::tile_type selected_tile_type = game::tile_type::AIR;
+entity selected_hotbar_entity;
 
 void custom_key_callback(std::unordered_set<int> &keys)
 {
@@ -64,9 +65,6 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		body->ApplyLinearImpulseToCenter(impulse, true);
 	}
 
-	//  {
-	// printf("5");
-	// }
 
 	// s
 	if (keys.count(GLFW_KEY_S) > 0)
@@ -121,40 +119,91 @@ void custom_key_callback(std::unordered_set<int> &keys)
 		keys.erase(GLFW_KEY_LEFT_SHIFT);
 	}
 
+	game_engine::box_system *box_sys = (game_engine::box_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
+	game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
+	
 	if (keys.count(GLFW_KEY_1) > 0)
 	{
 		selected_tile_type = game::tile_type::IRON;
 		keys.erase(GLFW_KEY_1);
+
+		game_engine::box_lerp &selected_hotbar_box = box_sys->get(selected_hotbar_entity);
+		selected_hotbar_box.x = (game_engine::window_width / PIXEL_SCALE - (game_engine::window_width / PIXEL_SCALE) / 3.5f) / 2.f + 0 * ((game_engine::window_width / PIXEL_SCALE) / 3.5f) / 9.f;
+
+		texture_vbo_sys->update(selected_hotbar_entity);
 	}
 
 	if (keys.count(GLFW_KEY_2) > 0)
 	{
 		selected_tile_type = game::tile_type::WATER;
 		keys.erase(GLFW_KEY_2);
+
+		game_engine::box_lerp &selected_hotbar_box = box_sys->get(selected_hotbar_entity);
+		selected_hotbar_box.x = (game_engine::window_width / PIXEL_SCALE - (game_engine::window_width / PIXEL_SCALE) / 3.5f) / 2.f + 1 * ((game_engine::window_width / PIXEL_SCALE) / 3.5f) / 9.f;
+		texture_vbo_sys->update(selected_hotbar_entity);
 	}
 
 	if (keys.count(GLFW_KEY_3) > 0)
 	{
 		selected_tile_type = game::tile_type::WOOD;
 		keys.erase(GLFW_KEY_3);
+		game_engine::box_lerp &selected_hotbar_box = box_sys->get(selected_hotbar_entity);
+		selected_hotbar_box.x = (game_engine::window_width / PIXEL_SCALE - (game_engine::window_width / PIXEL_SCALE) / 3.5f) / 2.f + 2 * ((game_engine::window_width / PIXEL_SCALE) / 3.5f) / 9.f;
+		texture_vbo_sys->update(selected_hotbar_entity);
 	}
 
 	if (keys.count(GLFW_KEY_4) > 0)
 	{
 		selected_tile_type = game::tile_type::EMBER;
 		keys.erase(GLFW_KEY_4);
+		game_engine::box_lerp &selected_hotbar_box = box_sys->get(selected_hotbar_entity);
+		selected_hotbar_box.x = (game_engine::window_width / PIXEL_SCALE - (game_engine::window_width / PIXEL_SCALE) / 3.5f) / 2.f + 3 * ((game_engine::window_width / PIXEL_SCALE) / 3.5f) / 9.f;
+		texture_vbo_sys->update(selected_hotbar_entity);
 	}
 
 	if (keys.count(GLFW_KEY_5) > 0)
 	{
 		selected_tile_type = game::tile_type::BEE_BLACK;
 		keys.erase(GLFW_KEY_5);
+		game_engine::box_lerp &selected_hotbar_box = box_sys->get(selected_hotbar_entity);
+		selected_hotbar_box.x = (game_engine::window_width / PIXEL_SCALE - (game_engine::window_width / PIXEL_SCALE) / 3.5f) / 2.f + 4 * ((game_engine::window_width / PIXEL_SCALE) / 3.5f) / 9.f;
+		texture_vbo_sys->update(selected_hotbar_entity);
 	}
 	
 	if (keys.count(GLFW_KEY_6) > 0)
 	{
 		selected_tile_type = game::tile_type::INSULATION_FOAM;
 		keys.erase(GLFW_KEY_6);
+		game_engine::box_lerp &selected_hotbar_box = box_sys->get(selected_hotbar_entity);
+		selected_hotbar_box.x = (game_engine::window_width / PIXEL_SCALE - (game_engine::window_width / PIXEL_SCALE) / 3.5f) / 2.f + 5 * ((game_engine::window_width / PIXEL_SCALE) / 3.5f) / 9.f;
+		texture_vbo_sys->update(selected_hotbar_entity);
+	}
+
+	if (keys.count(GLFW_KEY_7) > 0)
+	{
+		selected_tile_type = game::tile_type::AIR;
+		keys.erase(GLFW_KEY_7);
+		game_engine::box_lerp &selected_hotbar_box = box_sys->get(selected_hotbar_entity);
+		selected_hotbar_box.x = (game_engine::window_width / PIXEL_SCALE - (game_engine::window_width / PIXEL_SCALE) / 3.5f) / 2.f + 6 * ((game_engine::window_width / PIXEL_SCALE) / 3.5f) / 9.f;
+		texture_vbo_sys->update(selected_hotbar_entity);
+	}
+
+	if (keys.count(GLFW_KEY_8) > 0)
+	{
+		selected_tile_type = game::tile_type::EMBER;
+		keys.erase(GLFW_KEY_8);
+		game_engine::box_lerp &selected_hotbar_box = box_sys->get(selected_hotbar_entity);
+		selected_hotbar_box.x = (game_engine::window_width / PIXEL_SCALE - (game_engine::window_width / PIXEL_SCALE) / 3.5f) / 2.f + 7 * ((game_engine::window_width / PIXEL_SCALE) / 3.5f) / 9.f;
+		texture_vbo_sys->update(selected_hotbar_entity);
+	}
+
+	if (keys.count(GLFW_KEY_9) > 0)
+	{
+		selected_tile_type = game::tile_type::LAVA;
+		keys.erase(GLFW_KEY_9);
+		game_engine::box_lerp &selected_hotbar_box = box_sys->get(selected_hotbar_entity);
+		selected_hotbar_box.x = (game_engine::window_width / PIXEL_SCALE - (game_engine::window_width / PIXEL_SCALE) / 3.5f) / 2.f + 8 * ((game_engine::window_width / PIXEL_SCALE) / 3.5f) / 9.f;
+		texture_vbo_sys->update(selected_hotbar_entity);
 	}
 
 }
@@ -173,13 +222,17 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 	{
 		// // get character position
 		game::box2d_system *b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::box2d_system>()));
+		game_engine::box_system *box_sys = (game_engine::box_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
+
 		entity player = game_engine::game_engine_pointer->player_entitiy;
+
 		b2Body *body = b2d_sys->get_dynamic_body(player);
 		b2Vec2 player_pos = body->GetPosition();
+		game_engine::box_lerp &player_box = box_sys->get(player);
 
 		// // get mouse position
-		int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
-		int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
+		int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale + player_box.w / 2.f);
+		int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale + player_box.h / 2.f);
 		// printf("Delete circle at x: %d, y: %d\n", world_x, world_y);
 		// // get world tile system
 		game::world_tile_system *world_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
@@ -225,7 +278,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 			game_engine::render_system *render_sys = (game_engine::render_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::render_system>()));
 			game_engine::texture_vbo_system *texture_vbo_sys = (game_engine::texture_vbo_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::texture_vbo_system>()));
 			game_engine::box_system *box_sys = (game_engine::box_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
-			game_engine::sprite sprt(game_engine::shader_programs[0]);
+			game_engine::sprite sprt(game_engine::shader_programs[0], 0);
 			GLuint projectile_texture;
 			glsl_helper::create_projectile_texture(projectile_texture);
 
@@ -321,8 +374,11 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 		else
 		{
 			game::world_tile_system *world_sys = (game::world_tile_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game::world_tile_system>()));
-			int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale);
-			int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale);
+			game_engine::box_system *box_sys = (game_engine::box_system *)(game_engine::game_engine_pointer->get_system(game_engine::family::type<game_engine::box_system>()));
+			entity player = game_engine::game_engine_pointer->player_entitiy;
+			game_engine::box_lerp &player_box = box_sys->get(player);
+			int world_x = (int)((1.0 * xpos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_width / PIXEL_SCALE) + player_pos.x * game::box2d_scale + player_box.w / 2.f);
+			int world_y = (int)((1.0 * ypos / PIXEL_SCALE) - 0.5 * (1.0 * game_engine::window_height / PIXEL_SCALE) + player_pos.y * game::box2d_scale + player_box.h / 2.f);
 			if (mouse_click_counter % 2 == 1)
 			{
 				int start_x = (int)last_mouse_click.first;
@@ -342,6 +398,7 @@ void custom_mouse_callback(GLFWwindow *window, std::unordered_set<int> &buttons)
 				{
 					number_of_tiles = 3;
 				}
+
 
 				for (float d = 0; d < dist; d += 1.0f)
 				{
@@ -541,7 +598,7 @@ void run_game(GLFWwindow *window)
 
 	game::tree_system *tree_sys = new game::tree_system(world_sys);
 	eng.add_system(game_engine::family::type<game::tree_system>(), tree_sys);
-	system_names[game_engine::family::type<game::tree_system>()] = "tree_system";
+	system_names[game_engine::family::type<game::tree_system>()] = "tree_system       ";
 
 	game::chunk_frame_system *chunk_frame_sys = new game::chunk_frame_system(box2d_sys, render_sys, world_sys);
 	eng.add_system(game_engine::family::type<game::chunk_frame_system>(), chunk_frame_sys);
@@ -565,7 +622,7 @@ void run_game(GLFWwindow *window)
 	std::thread tree_thread(&game::tree_system::start, tree_sys);
 	std::thread tile_pathfinding_thread(&game::tile_pathfinding_system::start_thread, tile_pathfinding_sys);
 
-	game::flying_creature_system *flying_creature_sys = new game::flying_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys, tile_pathfinding_sys);
+	game::flying_creature_system *flying_creature_sys = new game::flying_creature_system(box2d_sys, render_sys, box_sys, texture_vbo_sys, tile_pathfinding_sys, world_sys);
 	eng.add_system(game_engine::family::type<game::flying_creature_system>(), flying_creature_sys);
 	system_names[game_engine::family::type<game::flying_creature_system>()] = "flying_creature_system";
 
@@ -574,8 +631,8 @@ void run_game(GLFWwindow *window)
 	// system_names[game_engine::family::type<game::tile_conveyor_system>()] = "tile_conveyor_system";
 	box2d_sys->world->SetContactListener(new game::b2_contact_listener());
 
-	// game::inventory_system *inventory_sys = new game::inventory_system();
-	// eng.add_system(game_engine::family::type<game::inventory_system>(), inventory_sys);
+	game::inventory_system *inventory_sys = new game::inventory_system();
+	eng.add_system(game_engine::family::type<game::inventory_system>(), inventory_sys);
 
 	world_sys->generate_world();
 	printf("here: %d\n", glGetError());
@@ -669,7 +726,7 @@ void run_game(GLFWwindow *window)
 	texture_vbo_sys->add(background_entity);
 	printf("here3: %d\n", glGetError());
 	fflush(stdout);
-	game_engine::sprite sprt(game_engine::shader_programs[0]);
+	game_engine::sprite sprt(game_engine::shader_programs[0], 0);
 	printf("Texture is_ui: %d\n", sprt.is_ui);
 	printf("here4: %d\n", glGetError());
 	sprt.add_texture({background_texture, 0, GL_R8, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
@@ -691,7 +748,7 @@ void run_game(GLFWwindow *window)
 	entity temperature_overlay_entity = eng.create_entity();
 	box_sys->add(temperature_overlay_entity, {0.f, 0.f, -4.7, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	texture_vbo_sys->add(temperature_overlay_entity);
-	game_engine::sprite temp_sprt(game_engine::shader_programs[3]);
+	game_engine::sprite temp_sprt(game_engine::shader_programs[3], 0);
 	temp_sprt.add_texture({temperature_overlay_texture, 0, GL_R32F, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	render_sys->add(temperature_overlay_entity, temp_sprt);
 	printf("Error_1.5: x%d\n", glGetError());
@@ -724,7 +781,7 @@ void run_game(GLFWwindow *window)
 	entity all_chunks_entity = eng.create_entity();
 	box_sys->add(all_chunks_entity, {0.f, 0.f, -5.0, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	texture_vbo_sys->add(all_chunks_entity);
-	sprt = game_engine::sprite(game_engine::shader_programs[0]);
+	sprt = game_engine::sprite(game_engine::shader_programs[0], 0);
 	sprt.add_texture({chunk_texture, 0, GL_R8, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	render_sys->add(all_chunks_entity, sprt);
 
@@ -767,7 +824,7 @@ void run_game(GLFWwindow *window)
 	entity player_entity = eng.create_entity();
 	GLuint player_texture;
 	glsl_helper::create_character_texture(player_texture);
-	sprt = game_engine::sprite(game_engine::shader_programs[0]);
+	sprt = game_engine::sprite(game_engine::shader_programs[0], 0);
 	sprt.add_texture({player_texture, 0, GL_R8, glsl_helper::character_width, glsl_helper::character_height});
 	render_sys->add(player_entity, sprt);
 	// box_sys->add(player_entity, {0.f, 0.f, -1.f, 4 * 8.f, 1 * 85.333333333f});
@@ -896,7 +953,7 @@ void run_game(GLFWwindow *window)
 
 	box_sys->add(mater_light_entity, {0.f, 0.f, -4.5f, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	texture_vbo_sys->add(mater_light_entity);
-	sprt = game_engine::sprite(game_engine::shader_programs[2]);
+	sprt = game_engine::sprite(game_engine::shader_programs[2], 0);
 	sprt.add_texture({master_light_texture, 0, GL_R32UI, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	sprt.add_texture({blurred_light_texture, 1, GL_R32UI, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
 	sprt.add_texture({chunk_texture, 2, GL_R8, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH, game::CHUNK_SIZE * game::RENDERED_CHUNKS_WIDTH});
@@ -990,30 +1047,82 @@ void run_game(GLFWwindow *window)
 	std::pair<int32_t, int32_t> last_player_chunk = {-1, -1};
 
 	// inventory_sys
-	// entity hotbar_entity = eng.create_entity();
-	
-	// {
-	// 	std::array<uint8_t, 9> hotbar_texture_data = {game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::WOOD};
-	// 	glsl_helper::create_texture_from_data("hotbar_texture", hotbar_texture_data.data(), 9, 1);
+	entity hotbar_entity = eng.create_entity();
+	{
+		// std::array<uint8_t, 9> hotbar_texture_data = {game::tile_type::WOOD, game::tile_type::LAVA, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::GLASS, game::tile_type::WOOD, game::tile_type::WOOD, game::tile_type::BEE_YELLOW, game::tile_type::WOOD};
+		// glsl_helper::create_texture_from_data("hotbar_texture", hotbar_texture_data.data(), 9, 1);
 		
-	// 	box_sys->add(hotbar_entity, {0.f, 0.f, -2.f, 400.f, 40.f});
-	// 	texture_vbo_sys->add(hotbar_entity);
-	// 	game_engine::sprite hotbar_sprt(game_engine::shader_programs[0]);
-	// 	hotbar_sprt.is_ui = true;
+		const uint16_t hotbar_texture_width = 9 * 9;
+		const uint16_t hotbar_texture_height = 9;
 
-	// 	// std::array<uint8_t, 4> bee_texture = {game::BEE_YELLOW, game::BEE_YELLOW, game::BEE_BLACK, game::BEE_BLACK};
-	// 	// glsl_helper::create_texture_from_data("bee", bee_texture.data(), 2, 2);
+		std::array<uint8_t, hotbar_texture_width * hotbar_texture_height> hotbar_texture_data;
+		for(int i = 0; i < hotbar_texture_width * hotbar_texture_height; i++)
+		{
 
-	// 	hotbar_sprt.add_texture({glsl_helper::texture_map["hotbar_texture"], 0, GL_R8, 9, 1});
+			uint16_t x = i % (9 * 9);
+			uint16_t y = i / (9 * 9);
 
-	// 	render_sys->add(hotbar_entity, hotbar_sprt);
+			if (x % 9 == 0 || x % 9 == 8 || y % 9 == 0 || y % 9 == 8)
+			{
+				hotbar_texture_data[i] = game::GREY;
+			}
+			else
+			{
+				hotbar_texture_data[i] = game::VACCUUM;
+			}
+		}
+		glsl_helper::create_texture_from_data("hotbar_texture", hotbar_texture_data.data(), hotbar_texture_width, hotbar_texture_height);
 
-	// 	game::inventory inventory(9, 1);
+
+		float taskbar_width = (game_engine::window_width / PIXEL_SCALE) / 3.5f;
+		float taskbar_height = taskbar_width / 9.f;
+
+		// box_sys->add(hotbar_entity, {0.f, 0.f, -2.f, taskbar_width, taskbar_height});
+		box_sys->add(hotbar_entity, {(game_engine::window_width / PIXEL_SCALE - taskbar_width) / 2.f, game_engine::window_height / PIXEL_SCALE - taskbar_height - 10.f, -2.f, taskbar_width, taskbar_height});
+		texture_vbo_sys->add(hotbar_entity);
+		game_engine::sprite hotbar_sprt(game_engine::shader_programs[0], 1);
 		
-	// 	inventory.add_item(0, 0, game::inventory_item(1, game::tile_type::WATER));
-	// 	inventory_sys->add_inventory(hotbar_entity, inventory);
 
-	// }
+		hotbar_sprt.add_texture({glsl_helper::texture_map["hotbar_texture"], 0, GL_R8, 9 * 9, 9});
+
+		render_sys->add(hotbar_entity, hotbar_sprt);
+
+
+		std::array<uint8_t, 11 * 11> selected_hotbar_texture_data;
+		for(int i = 0; i < 11 * 11; i++)
+		{
+			uint16_t x = i % 11;
+			uint16_t y = i / 11;
+
+			if (x % 11 == 0 || x % 11 == 10 || y % 11 == 0 || y % 11 == 10)
+			{
+				selected_hotbar_texture_data[i] = game::WHITE;
+			}
+			else
+			{
+				selected_hotbar_texture_data[i] = game::AIR;
+			}
+		}
+		glsl_helper::create_texture_from_data("selected_hotbar_texture", selected_hotbar_texture_data.data(), 11, 11);
+		selected_hotbar_entity = eng.create_entity();
+
+		float selected_taskbar_width = taskbar_width / 9.f;
+		float selected_taskbar_height = taskbar_height;
+		box_sys->add(selected_hotbar_entity, {(game_engine::window_width / PIXEL_SCALE - taskbar_width) / 2.f + 0 * (taskbar_width / 9.f), game_engine::window_height / PIXEL_SCALE - taskbar_height - 10.f, -1.9f, selected_taskbar_width, selected_taskbar_height});
+		texture_vbo_sys->add(selected_hotbar_entity);
+		game_engine::sprite selected_hotbar_sprt(game_engine::shader_programs[0], 1);
+		selected_hotbar_sprt.add_texture({glsl_helper::texture_map["selected_hotbar_texture"], 0, GL_R8, 11, 11});
+		render_sys->add(selected_hotbar_entity, selected_hotbar_sprt);
+
+
+
+
+		game::inventory inventory(9, 1);
+		
+		inventory.add_item(0, 0, game::inventory_item(1, game::tile_type::WATER));
+		inventory_sys->add_inventory(hotbar_entity, inventory);
+
+	}
 
 
 	// Run the game loop
@@ -1458,6 +1567,7 @@ int main()
 	glLoadIdentity();
 	glOrtho(0.0f, game_engine::window_width, game_engine::window_height, 0.0f, 0.0f, 100.0f);
 	glGetFloatv(GL_PROJECTION_MATRIX, game_engine::projection_matrix);
+	glGetFloatv(GL_PROJECTION_MATRIX, game_engine::projection_matrix_ortho);
 	// Print matrix
 	printf("Projection Matrix:\n");
 	for (int i = 0; i < 16; i++)
@@ -1471,7 +1581,9 @@ int main()
 	printf("\n");
 
 	game_engine::projection_matrix[5] *= PIXEL_SCALE;
+	game_engine::projection_matrix_ortho[5] *= PIXEL_SCALE;
 	game_engine::projection_matrix[0] *= PIXEL_SCALE;
+	game_engine::projection_matrix_ortho[0] *= PIXEL_SCALE;
 	// game_engine::projection_matrix[10] = -1.f;
 	// game_engine::projection_matrix[15] = 1.f;
 	// game_engine::projection_matrix[5] *= 2.0f;

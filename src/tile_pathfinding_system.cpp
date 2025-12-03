@@ -49,10 +49,21 @@ namespace game
 			// if the start or end are entities, get their positions
 			if(tp.end_ent != 0)
 			{
-				auto b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer -> get_system(game_engine::family::type<game::box2d_system>()));
-				auto &end_pos = b2d_sys -> get_dynamic_body(tp.end_ent) -> GetPosition();
-				end_x = (int)end_pos.x * box2d_scale;
-				end_y = (int)end_pos.y * box2d_scale;
+				// auto b2d_sys = (game::box2d_system *)(game_engine::game_engine_pointer -> get_system(game_engine::family::type<game::box2d_system>()));
+				// auto &end_pos = b2d_sys -> get_dynamic_body(tp.end_ent) -> GetPosition();
+				// end_x = (int)end_pos.x * box2d_scale;
+				// end_y = (int)end_pos.y * box2d_scale;
+				game_engine::box_system * box_sys = (game_engine::box_system *)(game_engine::game_engine_pointer -> get_system(game_engine::family::type<game_engine::box_system>()));
+				if (box_sys -> contains_ent(tp.end_ent))
+				{
+					game_engine::box_lerp &bl = box_sys -> get(tp.end_ent);
+					end_x = (int)(bl.x + bl.w / 2);
+					end_y = (int)(bl.y + bl.h / 2);
+				}
+				else
+				{
+					printf("No box for ent: %d\n", tp.end_ent);
+				}
 			}
 
 			// if the start and end are very close, skip pathfinding
@@ -200,12 +211,12 @@ namespace game
 			this->update();
 			tick_count++;
 			auto end = std::chrono::steady_clock::now();
-			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 			add_time(elapsed);
 			// printf("Pathfinding tick %d took %d ms out of %d ms\n", tick_count, (int)elapsed, tick_ms);
 			if (elapsed < tick_ms)
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(tick_ms - elapsed));
+				std::this_thread::sleep_for(std::chrono::milliseconds(tick_ms - elapsed / 1000));
 			}
 		}
 	}

@@ -473,7 +473,7 @@ namespace glsl_helper
 				}
 				float normalized_temp = temperature_value / 200.0;
 
-				out_Color = vec4(normalized_temp, 1.0, 1.0 - normalized_temp, 0.0);
+				out_Color = vec4(normalized_temp, 1.0, 1.0 - normalized_temp, 0.15);
 			}
 		)";
 	}
@@ -994,7 +994,7 @@ namespace glsl_helper
 		// std::array<uint8_t, 16> data = {
 		// 	7,7,7,7
 		// };
-
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 		texture_map[texture_name] = texture;
 		return texture;

@@ -26,7 +26,11 @@ namespace game
 		// {
 		// 	printf("projectiles size: %d\n", entities.size());
 		// }
-			
+		if (tick_count % 100 == 0)
+		{
+			projectiles.shrink_to_fit();
+		}
+
 		for (auto &proj_entity : entities)
 		{
 			projectile &projectile = projectiles.get(proj_entity);
@@ -95,6 +99,11 @@ namespace game
 				}
 				else if (projectile.temporary_trail_tile_type != 0)//&& world_tiles->get_tile_at(position.x, position.y) <= AIR)
 				{
+					tile_type current_tile = (tile_type)world_tiles->get_tile_at(position.x, position.y);
+					if (get_simple_tile_type(current_tile) >= get_simple_tile_type(projectile.temporary_trail_tile_type))
+					{
+						continue;
+					}
 					world_tiles->set_tile_copy_at(position.x, position.y, projectile.temporary_trail_tile_type);
 					int16_t tile_temperature = world_tiles->get_tile_temperature_at(position.x, position.y);
 					int16_t new_temperature = tile_temperature + (projectile.tile_temperature - tile_temperature) / 20;

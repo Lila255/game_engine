@@ -1,6 +1,6 @@
 #include "flying_creature_system.hpp"
 #include "tile_pathfinding.hpp"
-// #include ""
+#include "tasks.hpp"
 
 namespace game
 {
@@ -47,7 +47,62 @@ namespace game
 			flying_creature &creature = flying_creatures.get(ent);
 			b2Vec2 force = b2Vec2(0, 0);
 			b2Body *body = b2d_system->get_dynamic_body(ent);
+			game_engine::box_lerp &b = box_sys->get(ent);
 			
+			if (step_num % 2 == 0)
+			{
+				b2Vec2 position = body->GetPosition();
+				b2Vec2 velocity = body->GetLinearVelocity();
+
+				std::pair<int, int> tile_pos = {position.x * box2d_scale, position.y * box2d_scale};
+				for(int y = tile_pos.second - b.h / 2; y < tile_pos.second + b.h / 2; y++)
+				{
+					for(int x = tile_pos.first - b.w / 2; x < tile_pos.first + b.w / 2; x++)
+					{
+						tile_type tt = (tile_type)world_tiles->get_tile_at(x, y);
+						float temp = world_tiles->get_tile_temperature_at(x, y);
+						uint16_t misc_data = world_tiles->get_tile_misc_data_at(x, y);
+
+						// Calculate the collision point on the circle
+						b2Vec2 collision_point = b2Vec2(x, y);
+
+						// Calculate the normal of the collision point
+						b2Vec2 normal = collision_point - position;
+						normal.Normalize();
+
+						// Calculate the velocity of the collision point
+						b2Vec2 collision_velocity = velocity;
+
+						// Calculate the relative velocity in terms of the normal direction
+						float normal_velocity = b2Dot(collision_velocity, normal);
+
+						// Calculate the relative velocity in terms of the tangent direction
+						b2Vec2 tangent = b2Vec2(-normal.y, normal.x);
+						float tangent_velocity = b2Dot(collision_velocity, tangent);
+
+						// debris_velocity
+						b2Vec2 debris_velocity = normal_velocity * normal + tangent_velocity * tangent;
+
+						bool displace_tile = false;
+
+						if (tt >= SOLID_TILE_START_INDEX && !is_solid_tile[tt])
+						{
+							displace_tile = true;
+						}
+						else if (velocity.y * velocity.y + velocity.x * velocity.x > 3 && tt >= LIQUID_TILE_START_INDEX && tt < SOLID_TILE_START_INDEX)
+						{
+							displace_tile = true;
+						}
+						if (displace_tile)
+						{
+							world_tiles -> set_tile_at_with_lock(x, y, VACCUUM);
+							game_engine::task_scheduler_pointer->add_task({&create_single_debris_task, new create_debris_params(b.x + ((velocity.x > 0) ? b.w + 2 : -2), y - 1, debris_velocity.x, debris_velocity.y, 0.5f, tt, VACCUUM, tt, 250, temp, misc_data)});
+							body->SetLinearVelocity(b2Vec2(velocity.x * 0.59f, velocity.y * 0.59f));
+						}
+					}
+				}
+			}
+
 			switch(creature.get_state())
 			{
 				case flying_creature_state::IDLE:
@@ -92,7 +147,7 @@ namespace game
 					tile_pathfinding &tp = tile_pathfinding_sys -> get(ent);
 					if (tp.path.size() > 1)
 					{
-						target_tile = tp.path.at(min((size_t)tp.path.size() - 1, 2));
+						target_tile = tp.path.at(min((size_t)tp.path.size() - 1, 5));
 						target_tile.first;
 						target_tile.second;
 					}
@@ -163,7 +218,7 @@ namespace game
 				
 				//get defs
 				// b2Fixture *fista1 = body->GetFixtureList();
-				body->ApplyForceToCenter(body->GetMass() * -0.38 * (b2d_system->world->GetGravity()) , true);
+				body->ApplyForceToCenter(body->GetMass() * -0.68 * (b2d_system->world->GetGravity()) , true);
 				// sta2def.gravityScale = 0.0f;
 			}
 		}
@@ -200,7 +255,7 @@ namespace game
 		fixture_def.shape = &circle;
 		fixture_def.density = 0.2f;
 		fixture_def.friction = 0.3f;
-		fixture_def.restitution = 0.89f;
+		fixture_def.restitution = 0.19f;
 		fixture_def.filter.categoryBits = b2fixture_types::FLYING_CREATURE;
 
 		b2_user_data *ud = new b2_user_data(ent, b2fixture_types::FLYING_CREATURE);
@@ -215,7 +270,7 @@ namespace game
 		GLuint creature_texture = glsl_helper::texture_map["bee"];
 		// GLuint creature_texture = glsl_helper::texture_map["bee"];
 
-		game_engine::sprite sprt(game_engine::shader_programs[0]);
+		game_engine::sprite sprt(game_engine::shader_programs[0], 0);
 		sprt.add_texture({creature_texture, 0, GL_R8, 2, 2});
 
 		render_sys->add(ent, sprt);

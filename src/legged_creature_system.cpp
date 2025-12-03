@@ -411,7 +411,7 @@ namespace game
 		
 		GLuint creature_texture = glsl_helper::texture_map["spider"];
 
-		game_engine::sprite sprt(game_engine::shader_programs[0]);
+		game_engine::sprite sprt(game_engine::shader_programs[0], 0);
 		sprt.add_texture({creature_texture, 0, GL_R8, 4, 4});
 
 		render_sys->add(ent, sprt);
@@ -448,7 +448,7 @@ namespace game
 				leg.bone_entities.push_back(leg_ent);
 				// game_engine::sprite leg_sprt(game_engine::shader_programs[1]);
 				// leg_sprt.type = game_engine::sprite_type::STATIC_LINE;
-				game_engine::sprite leg_sprt(game_engine::shader_programs[0]);
+				game_engine::sprite leg_sprt(game_engine::shader_programs[0], 0);
 				leg_sprt.add_texture({creature_texture, 0, GL_R8, 4, 4});
 
 				render_sys->add(leg_ent, leg_sprt);
@@ -484,7 +484,7 @@ namespace game
 			// add a small circle to the end of the leg
 			entity foot_ent = game_engine::game_engine_pointer -> create_entity();
 			leg.foot_entity = foot_ent;
-			game_engine::sprite leg_sprt(game_engine::shader_programs[1]);
+			game_engine::sprite leg_sprt(game_engine::shader_programs[1], 0);
 			leg_sprt.add_texture({creature_texture, 0, GL_R8, 2, 2});
 
 			render_sys->add(foot_ent, leg_sprt);
